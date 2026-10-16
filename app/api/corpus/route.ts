@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
  if (!ALLOWED.test(file) || file.includes("..")) return NextResponse.json({ error: "Unknown corpus asset." }, { status: 400 });
  const headers = new Headers(); headers.set("Content-Type", file.endsWith(".json") ? "application/json; charset=utf-8" : "application/gzip"); headers.set("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400"); headers.set("X-Corpus-Source", "saintus-create/CALEGINFO");
  try {
+  if (file === "manifest.json") { const manifest = await readFile(join(process.cwd(), "public", "corpus", file), "utf8"); return new NextResponse(manifest, { status: 200, headers }); }
   const encoded = await readFile(join(process.cwd(), "public", "corpus", file + ".b64"), "utf8");
   return new NextResponse(Buffer.from(encoded.trim(), "base64"), { status: 200, headers });
  } catch { /* Not yet transposed locally: use the source corpus until this asset is copied. */ }
