@@ -182,5 +182,129 @@
       "rows": 4672,
       "sha256": "08e2598d5bdd8f57221387e948d350035bd1f82607012f29f50c9d124eebb33b"
     }
-  ]
+  ],
+  "assets": {
+    "law/BPC.jsonl.gz": [
+      "law/BPC.jsonl.gz.b64.part001",
+      "law/BPC.jsonl.gz.b64.part002",
+      "law/BPC.jsonl.gz.b64.part003"
+    ],
+    "law/CCP.jsonl.gz": [
+      "law/CCP.jsonl.gz.b64"
+    ],
+    "law/CIV.jsonl.gz": [
+      "law/CIV.jsonl.gz.b64"
+    ],
+    "law/COM.jsonl.gz": [
+      "law/COM.jsonl.gz.b64"
+    ],
+    "law/CONS.jsonl.gz": [
+      "law/CONS.jsonl.gz.b64"
+    ],
+    "law/CORP.jsonl.gz": [
+      "law/CORP.jsonl.gz.b64"
+    ],
+    "law/EDC.jsonl.gz": [
+      "law/EDC.jsonl.gz.b64.part001",
+      "law/EDC.jsonl.gz.b64.part002",
+      "law/EDC.jsonl.gz.b64.part003"
+    ],
+    "law/ELEC.jsonl.gz": [
+      "law/ELEC.jsonl.gz.b64"
+    ],
+    "law/EVID.jsonl.gz": [
+      "law/EVID.jsonl.gz.b64"
+    ],
+    "law/FAC.jsonl.gz": [
+      "law/FAC.jsonl.gz.b64"
+    ],
+    "law/FAM.jsonl.gz": [
+      "law/FAM.jsonl.gz.b64"
+    ],
+    "law/FGC.jsonl.gz": [
+      "law/FGC.jsonl.gz.b64"
+    ],
+    "law/FIN.jsonl.gz": [
+      "law/FIN.jsonl.gz.b64"
+    ],
+    "law/GOV.jsonl.gz": [
+      "law/GOV.jsonl.gz.b64.part001",
+      "law/GOV.jsonl.gz.b64.part002",
+      "law/GOV.jsonl.gz.b64.part003",
+      "law/GOV.jsonl.gz.b64.part004",
+      "law/GOV.jsonl.gz.b64.part005"
+    ],
+    "law/HNC.jsonl.gz": [
+      "law/HNC.jsonl.gz.b64"
+    ],
+    "law/HSC.jsonl.gz": [
+      "law/HSC.jsonl.gz.b64.part001",
+      "law/HSC.jsonl.gz.b64.part002",
+      "law/HSC.jsonl.gz.b64.part003",
+      "law/HSC.jsonl.gz.b64.part004",
+      "law/HSC.jsonl.gz.b64.part005"
+    ],
+    "law/INS.jsonl.gz": [
+      "law/INS.jsonl.gz.b64"
+    ],
+    "law/LAB.jsonl.gz": [
+      "law/LAB.jsonl.gz.b64"
+    ],
+    "law/MVC.jsonl.gz": [
+      "law/MVC.jsonl.gz.b64"
+    ],
+    "law/PCC.jsonl.gz": [
+      "law/PCC.jsonl.gz.b64"
+    ],
+    "law/PEN.jsonl.gz": [
+      "law/PEN.jsonl.gz.b64"
+    ],
+    "law/PRC.jsonl.gz": [
+      "law/PRC.jsonl.gz.b64"
+    ],
+    "law/PROB.jsonl.gz": [
+      "law/PROB.jsonl.gz.b64"
+    ],
+    "law/PUC.jsonl.gz": [
+      "law/PUC.jsonl.gz.b64"
+    ],
+    "law/RTC.jsonl.gz": [
+      "law/RTC.jsonl.gz.b64"
+    ],
+    "law/SHC.jsonl.gz": [
+      "law/SHC.jsonl.gz.b64"
+    ],
+    "law/UIC.jsonl.gz": [
+      "law/UIC.jsonl.gz.b64"
+    ],
+    "law/VEH.jsonl.gz": [
+      "law/VEH.jsonl.gz.b64"
+    ],
+    "law/WAT.jsonl.gz": [
+      "law/WAT.jsonl.gz.b64"
+    ],
+    "law/WIC.jsonl.gz": [
+      "law/WIC.jsonl.gz.b64.part001",
+      "law/WIC.jsonl.gz.b64.part002",
+      "law/WIC.jsonl.gz.b64.part003"
+    ],
+    "legislation/BILLS.jsonl.gz": [
+      "legislation/BILLS.jsonl.gz.b64"
+    ],
+    "rules/ROC.jsonl.gz": [
+      "rules/ROC.jsonl.gz.b64"
+    ],
+    "forms/FORMS.jsonl.gz": [
+      "forms/FORMS.jsonl.gz.b64"
+    ],
+    "cases/FAM_CASES.jsonl.gz": [
+      "cases/FAM_CASES.jsonl.gz.b64"
+    ],
+    "directory/DIRECTORY.jsonl.gz": [
+      "directory/DIRECTORY.jsonl.gz.b64"
+    ],
+    "library/wp-digest.jsonl.gz": [
+      "library/wp-digest.jsonl.gz.b64"
+    ]
+  }
 }
