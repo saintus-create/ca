@@ -2,11 +2,11 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { NextRequest, NextResponse } from "next/server";
 const SOURCE = "https://raw.githubusercontent.com/saintus-create/CALEGINFO/main/public/corpus/";
-const ALLOWED = /^(manifest\.json|law\/[A-Z]+\.jsonl\.gz|legislation\/BILLS\.jsonl\.gz|rules\/ROC\.jsonl\.gz|forms\/FORMS\.jsonl\.gz|cases\/FAM_CASES\.json\.gz|directory\/DIRECTORY\.json\.gz|library\/wp-digest\.jsonl\.gz)$/;
+const ALLOWED = /^(manifest\.json|law\/[A-Z]+\.jsonl\.gz|legislation\/BILLS\.jsonl\.gz|rules\/ROC\.jsonl\.gz|forms\/FORMS\.jsonl\.gz|cases\/FAM_CASES\.jsonl\.gz|directory\/DIRECTORY\.jsonl\.gz|library\/wp-digest\.jsonl\.gz)$/;
 export async function GET(request: NextRequest) {
  const file = request.nextUrl.searchParams.get("file") ?? "manifest.json";
  if (!ALLOWED.test(file) || file.includes("..")) return NextResponse.json({ error: "Unknown corpus asset." }, { status: 400 });
- const headers = new Headers(); headers.set("Content-Type", file.endsWith(".json") ? "application/json; charset=utf-8" : "application/gzip"); headers.set("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400"); headers.set("X-Corpus-Source", "saintus-create/CALEGINFO");
+ const headers = new Headers(); headers.set("Content-Type", file.endsWith(".json") ? "application/json; charset=utf-8" : "application/gzip"); headers.set("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400"); headers.set("X-Corpus-Source", "saintus-create/ca cleaned corpus (from CALEGINFO)");
  try {
   if (file === "manifest.json") { const manifest = await readFile(join(process.cwd(), "public", "corpus", file), "utf8"); return new NextResponse(manifest, { status: 200, headers }); }
   const encoded = await readFile(join(process.cwd(), "public", "corpus", file + ".b64"), "utf8");
