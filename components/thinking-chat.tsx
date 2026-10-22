@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from 'react'
 import { ChevronDown, Loader2, Send, Copy } from 'lucide-react'
 import { SearchResultsDisplay } from '@/components/search-results-display'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
-import { CitationTooltip } from '@/components/citation-tooltip'
 import { cn } from '@/lib/utils'
 
 // Import the ThinkingEvent type from thinking-display
@@ -348,7 +347,7 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
               onFocus={() => setShowSuggestions(true)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
               placeholder="Enter query..."
-              className="w-full h-12 rounded-full border border-zinc-200 bg-white pl-5 pr-14 text-base text-zinc-900 dark:text-zinc-100 ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-950 dark:ring-offset-zinc-950 dark:placeholder:text-zinc-400 dark:focus-visible:ring-orange-400 shadow-sm"
+              className="w-full h-12 rounded-full border border-border bg-background pl-5 pr-14 text-base leading-none tracking-[-0.01em] text-foreground shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-orange-400"
               disabled={isSearching}
             />
             <button
@@ -367,7 +366,7 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
           {showSuggestions && !isSearching && (
             <div className="space-y-2">
               <div className={cn(
-                "flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400",
+                "ui-caption flex items-center gap-2",
                 !hasAnimatedSuggestions && "animate-fade-up"
               )} style={{ 
                 animationDelay: !hasAnimatedSuggestions ? '200ms' : '0ms',
@@ -385,7 +384,7 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
                     key={idx}
                     onClick={() => handleSuggestionClick(suggestion)}
                     className={cn(
-                      "w-full text-left p-3 rounded-lg bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 transition-all duration-300 text-sm text-gray-700 dark:text-gray-300 hover:shadow-sm",
+                      "ui-body w-full rounded-lg border border-border/70 bg-muted/60 px-3.5 py-3 text-left transition-all duration-300 hover:border-border hover:bg-muted hover:shadow-sm",
                       !hasAnimatedSuggestions && "animate-fade-up"
                     )}
                     style={{ 
@@ -410,7 +409,7 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
     <div className="flex flex-col-reverse lg:flex-row gap-2 lg:gap-4 h-[calc(100vh-120px)] lg:h-[calc(100vh-200px)] animate-slide-up pt-2 lg:pt-5">
       {/* Chat interface - Bottom on mobile, Left on desktop */}
       <div className={cn(
-        "flex flex-col bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden transition-all duration-700 ease-out",
+        "flex flex-col overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-lg transition-all duration-700 ease-out",
         showFullWidth ? "h-full w-full" : "h-[45vh] lg:h-full lg:w-1/2" // Full height on mobile when browser closed
       )}>
         {/* Messages area */}
@@ -424,7 +423,7 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
               )}
             >
               {message.role === 'user' ? (
-                <div className="max-w-[85%] lg:max-w-[80%] bg-orange-500 text-white px-3 lg:px-4 py-2 lg:py-3 rounded-lg shadow-sm text-sm">
+                <div className="max-w-[85%] whitespace-pre-wrap break-words rounded-lg bg-orange-500 px-3 py-2 text-sm leading-relaxed text-white shadow-sm lg:max-w-[80%] lg:px-4 lg:py-3">
                   {message.content}
                 </div>
               ) : (
@@ -433,8 +432,8 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
                   {message.searchData?.events && message.searchData.events.length > 0 && (
                     <div className="space-y-2">
                       {message.searchData.events.map((event, idx) => {
-                        const colorClass = "bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700"
-                        const textColorClass = "text-gray-700 dark:text-gray-300"
+                        const colorClass = "border-border bg-muted/50"
+                        const textColorClass = "text-foreground/90"
                           
                         if (event.type === 'thinking') {
                           return (
@@ -442,10 +441,10 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
                               <div className="flex items-start gap-2">
                                 <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 flex-shrink-0" />
                                 <div className="flex-1">
-                                  <div className={`text-sm font-medium ${textColorClass} mb-1`}>
+                                  <div className={`ui-subtitle ${textColorClass} mb-1`}>
                                     Thinking Block #{event.number}
                                   </div>
-                                  <div className={`text-sm ${textColorClass} whitespace-pre-wrap`}>
+                                  <div className={`ui-body whitespace-pre-wrap ${textColorClass}`}>
                                     {event.content || ''}
                                   </div>
                                 </div>
@@ -459,15 +458,15 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
                           return (
                             <div key={idx} className={`px-3 lg:px-4 py-2 rounded-lg border ${colorClass} max-w-[90%] lg:max-w-[80%]`}>
                               <div className="flex items-start gap-2">
-                                <div className={`w-1.5 h-1.5 rounded-full ${isWebSearch ? 'bg-purple-500' : isDeepScrape ? 'bg-orange-500' : 'bg-gray-500'} mt-1.5 flex-shrink-0`} />
+                                <div className={`w-1.5 h-1.5 rounded-full ${isWebSearch ? 'bg-purple-500' : isDeepScrape ? 'bg-orange-500' : 'bg-muted-foreground'} mt-1.5 flex-shrink-0`} />
                                 <div className="flex-1">
-                                  <div className="text-sm">
-                                    <span className={`font-medium ${textColorClass}`}>
+                                  <div className="ui-subtitle">
+                                    <span className={textColorClass}>
                                       {isWebSearch ? 'Web Search' : isDeepScrape ? 'Deep Scrape' : event.tool}
                                     </span>
                                   </div>
                                   {(event as { parameters?: { query?: string } }).parameters?.query && (
-                                    <div className={`text-sm ${textColorClass} opacity-80 mt-1`}>
+                                    <div className="ui-body mt-1 text-muted-foreground">
                                       &quot;{(event as { parameters?: { query?: string } }).parameters?.query}&quot;
                                     </div>
                                   )}
@@ -483,15 +482,15 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
                               <div className="flex items-start gap-2">
                                 <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5 flex-shrink-0" />
                                 <div className="flex-1">
-                                  <div className="flex items-center justify-between text-sm">
-                                    <span className={`font-medium ${textColorClass}`}>
+                                  <div className="flex items-baseline justify-between gap-3">
+                                    <span className={`ui-subtitle ${textColorClass}`}>
                                       Results Received
                                     </span>
-                                    <span className={`text-xs ${textColorClass} opacity-80`}>
+                                    <span className="ui-caption shrink-0 tabular-nums">
                                       {event.duration ? `${(event.duration / 1000).toFixed(1)}s` : ''}
                                     </span>
                                   </div>
-                                  <div className={`text-xs ${textColorClass} opacity-80 mt-1 line-clamp-2`}>
+                                  <div className="ui-caption mt-1 line-clamp-2 break-words">
                                     {resultPreview}...
                                   </div>
                                 </div>
@@ -506,20 +505,24 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
                   
                   {/* Show final response */}
                   {message.content ? (
-                    <div className="bg-gray-100 dark:bg-gray-800 px-4 py-3 rounded-lg">
-                      <div className="text-sm text-gray-700 dark:text-gray-300">
-                        <MarkdownRenderer 
-                          content={message.content} 
-                          sources={message.sources || []}
-                        />
-                        <CitationTooltip sources={message.sources || []} />
-                      </div>
+                    <div
+                      className={cn(
+                        "rounded-lg border px-4 py-3",
+                        message.searchData?.status === 'error'
+                          ? "border-destructive/40 bg-destructive/5 text-destructive"
+                          : "border-border bg-muted/50"
+                      )}
+                    >
+                      <MarkdownRenderer
+                        content={message.content}
+                        sources={message.sources || []}
+                      />
                     </div>
                   ) : isSearching && message.searchData?.status === 'searching' ? (
-                    <div className="bg-gray-100 dark:bg-gray-800 px-4 py-3 rounded-lg animate-fade-in" style={{ animationDelay: '200ms', opacity: 0 }}>
+                    <div className="rounded-lg border border-border bg-muted/50 px-4 py-3 animate-fade-in" style={{ animationDelay: '200ms', opacity: 0 }}>
                       <div className="flex items-center gap-2">
                         <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                        <span className="ui-body text-muted-foreground">
                           Researching...
                         </span>
                       </div>
@@ -533,7 +536,7 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
                         onClick={() => {
                           navigator.clipboard.writeText(message.content)
                         }}
-                        className="ml-auto p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
+                        className="ml-auto rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                         title="Copy to clipboard"
                       >
                         <Copy className="h-3.5 w-3.5" />
@@ -549,7 +552,7 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
         </div>
 
         {/* Input area with firesearch style */}
-        <div className="p-2 lg:p-3 border-t border-gray-200 dark:border-gray-700">
+        <div className="border-t border-border p-2 lg:p-3">
           <form onSubmit={handleSubmit}>
             <div className="relative">
               <input
@@ -557,7 +560,7 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Enter query..."
-                className="w-full h-12 rounded-full border border-zinc-200 bg-white pl-5 pr-14 text-base text-zinc-900 dark:text-zinc-100 ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-950 dark:ring-offset-zinc-950 dark:placeholder:text-zinc-400 dark:focus-visible:ring-orange-400 shadow-sm"
+                className="w-full h-12 rounded-full border border-border bg-background pl-5 pr-14 text-base leading-none tracking-[-0.01em] text-foreground shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-orange-400"
                 disabled={isSearching}
               />
               <button

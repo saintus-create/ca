@@ -86,28 +86,28 @@ export function CitationTooltip({ sources }: CitationTooltipProps) {
       }}
       onMouseLeave={() => setTooltip(null)}
     >
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 max-w-sm pointer-events-auto">
+      <div className="pointer-events-auto max-w-sm rounded-lg border border-border bg-popover p-3 text-popover-foreground shadow-lg">
         <div className="flex items-start gap-3">
           <Image 
             src={getFaviconUrl(tooltip.source.url)} 
             alt=""
             width={20}
             height={20}
-            className="w-5 h-5 mt-0.5 flex-shrink-0"
+            className="mt-0.5 h-5 w-5 flex-shrink-0"
             onError={(e) => {
               const img = e.target as HTMLImageElement;
               img.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none"%3E%3Crect width="20" height="20" rx="4" fill="%23E5E7EB"/%3E%3C/svg%3E';
             }}
           />
           <div className="min-w-0">
-            <p className="font-medium text-sm text-gray-900 dark:text-gray-100 break-words">
+            <p className="ui-subtitle break-words">
               {tooltip.source.title}
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 break-all">
+            <p className="ui-caption mt-1 break-all">
               {displayUrl}
             </p>
             {tooltip.source.description && (
-              <p className="text-xs text-gray-600 dark:text-gray-300 mt-2 line-clamp-2">
+              <p className="ui-caption mt-2 line-clamp-2 break-words">
                 {tooltip.source.description}
               </p>
             )}
@@ -116,7 +116,7 @@ export function CitationTooltip({ sources }: CitationTooltipProps) {
       </div>
       {/* Arrow */}
       <div className="absolute left-1/2 -translate-x-1/2 -bottom-2">
-        <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-white dark:border-t-gray-800" />
+        <div className="h-0 w-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-popover" />
       </div>
     </div>
   );

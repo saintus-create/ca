@@ -70,7 +70,7 @@ const getEventColor = (event: ThinkingEvent, index: number) => {
   if (isOdd) {
     return 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/10'
   } else {
-    return 'text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-900/10'
+    return 'text-foreground bg-muted/60'
   }
 }
 
@@ -195,8 +195,8 @@ export function ThinkingDisplay({ events, status, response }: ThinkingDisplayPro
       <div className="space-y-6">
         {/* Screenshots Gallery */}
         {allScreenshots.length > 0 && (
-          <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+          <div className="rounded-lg border border-border bg-muted/40 p-4">
+            <h3 className="ui-subtitle mb-3 flex items-center gap-2 tabular-nums">
               <ImageIcon className="h-4 w-4" />
               Analyzed Pages ({allScreenshots.length})
             </h3>
@@ -216,11 +216,11 @@ export function ThinkingDisplay({ events, status, response }: ThinkingDisplayPro
 
         <div className="flex gap-6 min-h-[400px]">
           {/* Left side - Thinking process */}
-          <div className="flex-1 pr-4 border-r border-gray-200 dark:border-gray-700 overflow-y-auto max-h-[600px]">
-            <div className="sticky top-0 bg-white dark:bg-gray-800 pb-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Research Process</h3>
-                <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
+          <div className="max-h-[600px] flex-1 overflow-y-auto border-r border-border pr-4">
+            <div className="sticky top-0 bg-background pb-3">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="ui-subtitle">Research Process</h3>
+                <div className="ui-caption flex items-center gap-3">
                   <div className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
                     <span>{elapsedTime}s</span>
@@ -258,8 +258,8 @@ export function ThinkingDisplay({ events, status, response }: ThinkingDisplayPro
 
           {/* Right side - Final response */}
           <div className="flex-1 pl-4 overflow-y-auto max-h-[600px] opacity-0 animate-slide-in-right" style={{ animationDelay: `${processEvents.length * 60 + 200}ms`, animationFillMode: 'forwards' }}>
-            <div className="prose prose-sm max-w-none dark:prose-invert">
-              <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Final Response</h3>
+            <div>
+              <h3 className="ui-title mb-4">Final Response</h3>
               <MarkdownRenderer content={response} />
             </div>
           </div>
@@ -278,26 +278,26 @@ export function ThinkingDisplay({ events, status, response }: ThinkingDisplayPro
             <div className="absolute inset-0 bg-orange-500 rounded-full animate-ping opacity-75" />
             <div className="relative w-2 h-2 bg-orange-500 rounded-full" />
           </div>
-          <span className="text-sm font-medium text-gray-900 dark:text-white">
+          <span className="ui-subtitle">
             Researching...
           </span>
         </div>
-        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+        <div className="ui-caption flex items-center gap-2">
           <Clock className="h-4 w-4 animate-pulse" />
-          <span className="number-transition">{elapsedTime}s</span>
+          <span className="number-transition tabular-nums">{elapsedTime}s</span>
         </div>
       </div>
 
       {/* View mode tabs */}
       {(searchResults.length > 0 || allScreenshots.length > 0) && (
-        <div className="flex gap-2 mb-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="mb-4 flex gap-1 border-b border-border">
           <button
             onClick={() => setViewMode('timeline')}
             className={cn(
-              "px-4 py-2 text-sm font-medium transition-colors border-b-2",
-              viewMode === 'timeline' 
-                ? "text-orange-600 border-orange-600" 
-                : "text-gray-600 dark:text-gray-400 border-transparent hover:text-gray-900 dark:hover:text-gray-200"
+              "-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium tracking-[-0.006em] transition-colors",
+              viewMode === 'timeline'
+                ? "border-orange-600 text-orange-600"
+                : "border-transparent text-muted-foreground hover:text-foreground"
             )}
           >
             Timeline
@@ -306,10 +306,10 @@ export function ThinkingDisplay({ events, status, response }: ThinkingDisplayPro
             <button
               onClick={() => setViewMode('results')}
               className={cn(
-                "px-4 py-2 text-sm font-medium transition-colors border-b-2",
-                viewMode === 'results' 
-                  ? "text-orange-600 border-orange-600" 
-                  : "text-gray-600 dark:text-gray-400 border-transparent hover:text-gray-900 dark:hover:text-gray-200"
+                "-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium tracking-[-0.006em] tabular-nums transition-colors",
+                viewMode === 'results'
+                  ? "border-orange-600 text-orange-600"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
               )}
             >
               Search Results ({searchResults.length})
@@ -319,10 +319,10 @@ export function ThinkingDisplay({ events, status, response }: ThinkingDisplayPro
             <button
               onClick={() => setViewMode('screenshots')}
               className={cn(
-                "px-4 py-2 text-sm font-medium transition-colors border-b-2",
-                viewMode === 'screenshots' 
-                  ? "text-orange-600 border-orange-600" 
-                  : "text-gray-600 dark:text-gray-400 border-transparent hover:text-gray-900 dark:hover:text-gray-200"
+                "-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium tracking-[-0.006em] tabular-nums transition-colors",
+                viewMode === 'screenshots'
+                  ? "border-orange-600 text-orange-600"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
               )}
             >
               Screenshots ({allScreenshots.length})
@@ -403,30 +403,31 @@ function ThinkingEvent({ event, index, isLast, isLive, animationDelay = 0 }: Thi
   }, [animationDelay])
 
   const isOdd = index % 2 === 1
-  const bgClass = isOdd ? 'bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20' : 
-                         'bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900/20 dark:to-gray-800/20'
+  const bgClass = isOdd
+    ? 'bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-950/25 dark:to-orange-900/15'
+    : 'bg-gradient-to-r from-muted/50 to-muted/25'
 
   return (
     <div 
       className={cn(
         "relative flex items-start gap-3 p-3 rounded-lg transition-all duration-700 ease-out",
         bgClass,
-        "border border-gray-200 dark:border-gray-700",
+        "border border-border",
         isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2",
         "hover:shadow-md hover:scale-[1.01] cursor-default"
       )}
     >
-      <div className={cn("p-2 rounded-full bg-white dark:bg-gray-800 shadow-sm", colorClass)}>
+      <div className={cn("rounded-full bg-background p-2 shadow-sm", colorClass)}>
         <Icon className="h-4 w-4" />
       </div>
       
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+        <div className="flex items-baseline gap-2">
+          <h4 className="ui-subtitle min-w-0 truncate">
             {title}
           </h4>
           {event.duration && (
-            <span className="text-xs text-gray-500 dark:text-gray-400">
+            <span className="ui-caption shrink-0 tabular-nums">
               {formatDuration(event.duration)}
             </span>
           )}
@@ -437,20 +438,20 @@ function ThinkingEvent({ event, index, isLast, isLive, animationDelay = 0 }: Thi
 
         {/* Inline content for all events */}
         {event.type === 'tool_call' && event.parameters && (
-          <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+          <p className="ui-caption mt-0.5 break-words">
             {(event.parameters.query as string) || (event.parameters.source_url as string)}
           </p>
         )}
 
         {event.type === 'thinking' && event.content && (
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 italic whitespace-pre-wrap">
+          <p className="ui-body mt-0.5 whitespace-pre-wrap text-muted-foreground">
             {event.content}
           </p>
         )}
 
         {event.type === 'tool_result' && event.result && (
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-            {event.result.length > 100 
+          <p className="ui-caption mt-0.5 line-clamp-2 break-words">
+            {event.result.length > 100
               ? event.result.substring(0, 100) + '...'
               : event.result}
           </p>
@@ -468,7 +469,7 @@ function ThinkingEvent({ event, index, isLast, isLive, animationDelay = 0 }: Thi
                     className="w-full"
                   />
                   {isLast && isLive && (
-                    <div className="absolute top-2 right-2 bg-black/80 text-white px-3 py-1 rounded-md text-sm font-mono animate-pulse z-10">
+                    <div className="ui-mono absolute right-2 top-2 z-10 animate-pulse rounded-md bg-black/80 px-3 py-1 text-white">
                       <span>Analyzing page content...</span>
                     </div>
                   )}
@@ -479,7 +480,7 @@ function ThinkingEvent({ event, index, isLast, isLive, animationDelay = 0 }: Thi
         )}
 
         {event.type === 'summary' && (
-          <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+          <p className="ui-caption mt-0.5">
             {event.thinkingBlocks} thinking blocks, {event.toolCalls} tool calls
           </p>
         )}
