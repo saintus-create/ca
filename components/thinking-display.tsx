@@ -13,7 +13,7 @@ import {
   Image as ImageIcon
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { MarkdownRenderer } from '@/app/firesearch/markdown-renderer'
+import { MarkdownRenderer } from '@/components/markdown-renderer'
 import { ScreenshotPreview } from '@/components/screenshot-preview'
 import { SearchResultsDisplay } from '@/components/search-results-display'
 
