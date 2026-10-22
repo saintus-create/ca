@@ -38,9 +38,29 @@ const CORPUS_DIR = path.join(process.cwd(), 'public', 'corpus');
 let manifestCache: Manifest | null = null;
 const datasetCache = new Map<string, CorpusRecord[]>();
 
+async function readCorpusFile(rel: string): Promise<string> {
+  // Preferred: the filesystem (local runs and any host with the repo on
+  // disk). On serverless hosts public/ files are served as static
+  // assets but are NOT present inside the function, so fall back to
+  // fetching the file from the site's own static path.
+  try {
+    return await readFile(path.join(CORPUS_DIR, rel), 'utf8');
+  } catch {
+    // fall through to HTTP
+  }
+  const base =
+    process.env.CORPUS_BASE_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null);
+  if (base) {
+    const res = await fetch(`${base}/corpus/${rel}`);
+    if (res.ok) return await res.text();
+  }
+  throw new Error(`corpus file unavailable: ${rel}`);
+}
+
 async function loadManifest(): Promise<Manifest> {
   if (!manifestCache) {
-    const raw = await readFile(path.join(CORPUS_DIR, 'manifest.json'), 'utf8');
+    const raw = await readCorpusFile('manifest.json');
     manifestCache = JSON.parse(raw) as Manifest;
   }
   return manifestCache;
@@ -62,7 +82,7 @@ async function loadDataset(assetKey: string): Promise<CorpusRecord[]> {
 
   let b64 = '';
   for (const f of files) {
-    b64 += await readFile(path.join(CORPUS_DIR, f), 'utf8');
+    b64 += await readCorpusFile(f);
   }
   const text = gunzipSync(Buffer.from(b64.trim(), 'base64')).toString('utf8');
 
