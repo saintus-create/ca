@@ -16,9 +16,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
-import { AnimatedGradientText } from '@/components/velora/animated-gradient-text'
-import { AuroraBackground } from '@/components/velora/aurora-background'
-import { Meteors } from '@/components/velora/meteors'
 
 export default function OpenResearcherContent() {
   const [hasMessages, setHasMessages] = useState(false)
@@ -129,18 +126,9 @@ export default function OpenResearcherContent() {
           ? 'pt-0 pb-0 opacity-0 max-h-0 overflow-hidden'
           : 'pt-8 pb-2 opacity-100 max-h-96'
         }`}>
-        {!hasMessages && (
-          <>
-            <AuroraBackground
-              intensity="subtle"
-              className="[mask-image:linear-gradient(to_bottom,transparent,black_25%,black_75%,transparent)]"
-            />
-            <Meteors number={10} />
-          </>
-        )}
         <div className="relative z-10 max-w-4xl mx-auto text-center">
           <h1 className="ui-display opacity-0 animate-fade-up [animation-duration:500ms] [animation-delay:200ms] [animation-fill-mode:forwards]">
-            <AnimatedGradientText>Open Researcher</AnimatedGradientText>
+            Open Researcher
           </h1>
           <p className="ui-lede mx-auto mt-5 max-w-xl opacity-0 animate-fade-up [animation-duration:500ms] [animation-delay:600ms] [animation-fill-mode:forwards]">
             Firecrawl-powered search, scrape, and agentic reasoning

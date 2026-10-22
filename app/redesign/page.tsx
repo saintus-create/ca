@@ -10,10 +10,7 @@ import {
   Star,
 } from "lucide-react";
 
-import { AuroraBackground } from "@/components/velora/aurora-background";
-import { AnimatedGradientText } from "@/components/velora/animated-gradient-text";
 import { AnimatedTestimonials } from "@/components/velora/animated-testimonials";
-import { BackgroundBeams } from "@/components/velora/background-beams";
 import { BorderBeam } from "@/components/velora/border-beam";
 import { BrowserMockup } from "@/components/velora/browser-mockup";
 import { BlurFade } from "@/components/velora/blur-fade";
@@ -22,7 +19,6 @@ import { DotPattern } from "@/components/velora/grid-pattern";
 import { Lamp } from "@/components/velora/lamp";
 import { LogoCloud } from "@/components/velora/logo-cloud";
 import { Marquee } from "@/components/velora/marquee";
-import { Meteors } from "@/components/velora/meteors";
 import { NumberTicker } from "@/components/velora/number-ticker";
 import { ShimmerButton } from "@/components/velora/shimmer-button";
 import { SpotlightCard } from "@/components/velora/spotlight-card";
@@ -161,7 +157,7 @@ function Kicker({ children }: { children: React.ReactNode }) {
 
 export default function RedesignPage() {
   return (
-    <div className="dark">
+    <div>
       <div className="min-h-screen bg-background font-sans text-foreground">
         {/* ---------- nav ---------- */}
         <header className="sticky top-0 z-50 border-b border-border/50 bg-background/70 backdrop-blur-xl">
@@ -192,10 +188,7 @@ export default function RedesignPage() {
 
         {/* ---------- hero ---------- */}
         <section className="relative isolate overflow-hidden border-b border-border/50">
-          <AuroraBackground intensity="vivid" />
-          <BackgroundBeams className="opacity-70" />
           <DotPattern className="absolute inset-0 -z-10 size-full fill-foreground/10 [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,black,transparent_75%)]" />
-          <Meteors number={16} />
 
           <Lamp className="pb-14">
             <div className="relative z-10 mx-auto max-w-4xl px-6 text-center">
@@ -208,7 +201,7 @@ export default function RedesignPage() {
 
               <h1 className="mt-7 text-balance text-5xl font-extrabold leading-[1.03] tracking-tight sm:text-7xl">
                 The whole of California law,{" "}
-                <AnimatedGradientText>one search away.</AnimatedGradientText>
+                <span className="text-muted-foreground">one search away.</span>
               </h1>
 
               <BlurFade delay={0.15}>
@@ -402,7 +395,7 @@ export default function RedesignPage() {
           <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {FEATURES.map(({ icon: Icon, title, body, span }) => (
               <SpotlightCard key={title} className={`p-6 ${span}`}>
-                <span className="mb-4 grid size-10 place-items-center rounded-xl border border-border bg-gradient-to-br from-brand/25 to-brand-to/20 text-brand-to">
+                <span className="mb-4 grid size-10 place-items-center rounded-xl border border-border bg-muted text-foreground">
                   <Icon className="size-5" />
                 </span>
                 <h3 className="text-[18px] font-semibold tracking-tight">{title}</h3>
@@ -465,9 +458,7 @@ export default function RedesignPage() {
                 className="rounded-2xl border border-border/60 bg-card/60 p-6 text-center"
               >
                 <div className="text-4xl font-extrabold tracking-tight">
-                  <AnimatedGradientText>
-                    <NumberTicker value={v} suffix={s} />
-                  </AnimatedGradientText>
+                  <NumberTicker value={v} suffix={s} />
                 </div>
                 <div className="mt-2 text-[13px] text-muted-foreground">{l}</div>
               </div>
@@ -508,15 +499,13 @@ export default function RedesignPage() {
         {/* ---------- final CTA ---------- */}
         <section className="relative border-b border-border/50 px-6 py-24">
           <div className="relative mx-auto max-w-5xl overflow-hidden rounded-3xl border border-border bg-card/40 px-8 py-20 text-center">
-            <AuroraBackground intensity="medium" />
-            <Meteors number={12} />
             <DotPattern className="absolute inset-0 size-full fill-foreground/10 [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,black,transparent_75%)]" />
             <BorderBeam size={280} duration={11} />
             <div className="relative z-10">
               <h2 className="text-balance text-4xl font-bold tracking-tight sm:text-5xl">
                 Ask California law anything.
                 <br />
-                <AnimatedGradientText>Watch it answer, cited.</AnimatedGradientText>
+                <span className="text-muted-foreground">Watch it answer, cited.</span>
               </h2>
               <p className="mx-auto mt-5 max-w-xl text-pretty text-[17px] leading-relaxed text-muted-foreground">
                 Bring your own Anthropic key and start in under a minute. The corpus
