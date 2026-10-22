@@ -5,6 +5,8 @@ import { ChevronDown, Loader2, Send, Copy } from 'lucide-react'
 import { SearchResultsDisplay } from '@/components/search-results-display'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
 import { cn } from '@/lib/utils'
+import { SpotlightCard } from '@/components/velora/spotlight-card'
+import { TracingBeam } from '@/components/velora/tracing-beam'
 
 // Import the ThinkingEvent type from thinking-display
 import type { ThinkingEvent } from '@/components/thinking-display'
@@ -347,13 +349,13 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
               onFocus={() => setShowSuggestions(true)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
               placeholder="Enter query..."
-              className="ui-control w-full h-12 rounded-full border border-border bg-background pl-5 pr-14 text-base text-foreground shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-orange-400"
+              className="ui-control w-full h-12 rounded-full border border-border bg-background pl-5 pr-14 text-base text-foreground shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={isSearching}
             />
             <button
               type="submit"
               disabled={isSearching || !input.trim()}
-              className="absolute right-2 top-2 h-8 w-8 bg-orange-500 hover:bg-orange-600 text-white rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center"
+              className="absolute right-2 top-2 h-8 w-8 bg-gradient-to-br from-brand-from to-brand-to text-brand-foreground rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-opacity duration-200 flex items-center justify-center hover:opacity-90"
             >
               {isSearching ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -408,8 +410,8 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
   return (
     <div className="flex flex-col-reverse lg:flex-row gap-2 lg:gap-4 h-[calc(100vh-120px)] lg:h-[calc(100vh-200px)] animate-slide-up pt-2 lg:pt-5">
       {/* Chat interface - Bottom on mobile, Left on desktop */}
-      <div className={cn(
-        "flex flex-col overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-lg transition-all duration-700 ease-out",
+      <SpotlightCard className={cn(
+        "flex flex-col transition-all duration-700 ease-out",
         showFullWidth ? "h-full w-full" : "h-[45vh] lg:h-full lg:w-1/2" // Full height on mobile when browser closed
       )}>
         {/* Messages area */}
@@ -423,13 +425,14 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
               )}
             >
               {message.role === 'user' ? (
-                <div className="max-w-[85%] whitespace-pre-wrap break-words rounded-lg bg-orange-500 px-3 py-2 text-sm leading-relaxed text-white shadow-sm lg:max-w-[80%] lg:px-4 lg:py-3">
+                <div className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl bg-gradient-to-br from-brand-from to-brand-to px-3 py-2 text-sm leading-relaxed text-brand-foreground shadow-sm lg:max-w-[80%] lg:px-4 lg:py-3">
                   {message.content}
                 </div>
               ) : (
                 <div className="max-w-[90%] space-y-3">
                   {/* Show thinking events if available */}
                   {message.searchData?.events && message.searchData.events.length > 0 && (
+                    <TracingBeam className="pl-5">
                     <div className="space-y-2">
                       {message.searchData.events.map((event, idx) => {
                         const colorClass = "border-border bg-muted/50"
@@ -439,7 +442,7 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
                           return (
                             <div key={idx} className={`px-3 lg:px-4 py-2 lg:py-3 rounded-lg border ${colorClass} max-w-[90%] lg:max-w-[80%]`}>
                               <div className="flex items-start gap-2">
-                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 flex-shrink-0" />
+                                <div className="w-1.5 h-1.5 rounded-full bg-brand-to mt-1.5 flex-shrink-0" />
                                 <div className="flex-1">
                                   <div className={`ui-subtitle ${textColorClass} mb-1`}>
                                     Thinking Block #{event.number}
@@ -458,7 +461,7 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
                           return (
                             <div key={idx} className={`px-3 lg:px-4 py-2 rounded-lg border ${colorClass} max-w-[90%] lg:max-w-[80%]`}>
                               <div className="flex items-start gap-2">
-                                <div className={`w-1.5 h-1.5 rounded-full ${isWebSearch ? 'bg-purple-500' : isDeepScrape ? 'bg-orange-500' : 'bg-muted-foreground'} mt-1.5 flex-shrink-0`} />
+                                <div className={`w-1.5 h-1.5 rounded-full ${isWebSearch ? 'bg-brand-via' : isDeepScrape ? 'bg-brand' : 'bg-muted-foreground'} mt-1.5 flex-shrink-0`} />
                                 <div className="flex-1">
                                   <div className="ui-subtitle">
                                     <span className={textColorClass}>
@@ -480,7 +483,7 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
                           return (
                             <div key={idx} className={`px-3 lg:px-4 py-2 rounded-lg border ${colorClass} max-w-[90%] lg:max-w-[80%]`}>
                               <div className="flex items-start gap-2">
-                                <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5 flex-shrink-0" />
+                                <div className="w-1.5 h-1.5 rounded-full bg-brand-to mt-1.5 flex-shrink-0" />
                                 <div className="flex-1">
                                   <div className="flex items-baseline justify-between gap-3">
                                     <span className={`ui-subtitle ${textColorClass}`}>
@@ -501,6 +504,7 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
                         return null
                       })}
                     </div>
+                    </TracingBeam>
                   )}
                   
                   {/* Show final response */}
@@ -521,7 +525,7 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
                   ) : isSearching && message.searchData?.status === 'searching' ? (
                     <div className="rounded-lg border border-border bg-muted/50 px-4 py-3 animate-fade-in" style={{ animationDelay: '200ms', opacity: 0 }}>
                       <div className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
+                        <Loader2 className="h-4 w-4 animate-spin text-brand-to" />
                         <span className="ui-body text-muted-foreground">
                           Researching...
                         </span>
@@ -560,13 +564,13 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Enter query..."
-                className="ui-control w-full h-12 rounded-full border border-border bg-background pl-5 pr-14 text-base text-foreground shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-orange-400"
+                className="ui-control w-full h-12 rounded-full border border-border bg-background pl-5 pr-14 text-base text-foreground shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={isSearching}
               />
               <button
                 type="submit"
                 disabled={isSearching || !input.trim()}
-                className="absolute right-2 top-2 h-8 w-8 bg-orange-500 hover:bg-orange-600 text-white rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center"
+                className="absolute right-2 top-2 h-8 w-8 bg-gradient-to-br from-brand-from to-brand-to text-brand-foreground rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-opacity duration-200 flex items-center justify-center hover:opacity-90"
               >
                 {isSearching ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -577,7 +581,7 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
             </div>
           </form>
         </div>
-      </div>
+      </SpotlightCard>
 
       {/* Browser/Search Results - Top on mobile, Right on desktop */}
       <div className={cn(

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Globe, Search, FileText, Image } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { AnimatedCursor } from './animated-cursor'
+import { BorderBeam } from '@/components/velora/border-beam'
 
 interface SearchResult {
   title: string
@@ -162,10 +163,11 @@ export function SearchResultsDisplay({
     <div 
       ref={browserContainerRef}
       className={cn(
-        "relative flex h-full flex-col overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-lg transition-all duration-500",
+        "relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-lg transition-all duration-500",
         browserClosed && "opacity-0 scale-95 translate-x-full"
       )}
     >
+      {isActive && <BorderBeam size={200} duration={8} />}
       {/* Animated cursor - positioned inside the browser container */}
       {showClosingAnimation && closeButtonRef.current && browserContainerRef.current && (
         <AnimatedCursor
@@ -203,14 +205,14 @@ export function SearchResultsDisplay({
             </span>
             {urlBar.action === 'searching' && (
               <div className="flex items-center gap-1 flex-shrink-0 ml-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-                <span className="ui-caption whitespace-nowrap text-blue-600 dark:text-blue-400">Searching...</span>
+                <div className="w-2 h-2 bg-brand-to rounded-full animate-pulse" />
+                <span className="ui-caption whitespace-nowrap text-brand-to">Searching...</span>
               </div>
             )}
             {urlBar.action === 'scraping' && (
               <div className="flex items-center gap-1 flex-shrink-0 ml-2">
-                <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
-                <span className="ui-caption whitespace-nowrap text-orange-600 dark:text-orange-400">Scraping...</span>
+                <div className="w-2 h-2 bg-brand rounded-full animate-pulse" />
+                <span className="ui-caption whitespace-nowrap text-brand">Scraping...</span>
               </div>
             )}
           </div>
@@ -226,7 +228,7 @@ export function SearchResultsDisplay({
               {!isImageLoaded && (
                 <div className="absolute inset-0 z-10 flex items-center justify-center bg-background">
                   <div className="text-center">
-                    <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <div className="w-16 h-16 border-4 border-brand border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
                     <p className="ui-body text-muted-foreground">Loading page...</p>
                   </div>
                 </div>
@@ -292,11 +294,11 @@ export function SearchResultsDisplay({
                 </div>
               )}
               {isImageLoaded && (
-                <div className="absolute bottom-6 right-6 bg-white border-2 border-orange-500 text-orange-600 px-5 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-fade-up">
+                <div className="absolute bottom-6 right-6 bg-card border-2 border-brand text-brand-to px-5 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-fade-up">
                   <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
-                    <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
-                    <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
+                    <div className="w-2 h-2 bg-brand rounded-full animate-pulse" />
+                    <div className="w-2 h-2 bg-brand rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+                    <div className="w-2 h-2 bg-brand rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
                   </div>
                   <span className="ui-subtitle font-semibold">Scanning page content</span>
                 </div>
@@ -324,7 +326,7 @@ export function SearchResultsDisplay({
                         <span className="hidden lg:inline">{query || 'Search...'}</span>
                       </span>
                       <div className="ml-2 lg:ml-3 p-1 flex-shrink-0">
-                        <Search className="h-4 w-4 lg:h-5 lg:w-5 text-blue-600" />
+                        <Search className="h-4 w-4 lg:h-5 lg:w-5 text-brand-to" />
                       </div>
                     </div>
                   </div>
@@ -380,8 +382,8 @@ export function SearchResultsDisplay({
 
                       {/* Scraping indicator */}
                       {activeResultIndex === index && (
-                        <div className="ui-caption mt-2 inline-flex items-center gap-2 rounded border-2 border-dashed border-green-500 px-3 py-1 text-green-700 animate-selection-pulse-green dark:text-green-400">
-                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                        <div className="ui-caption mt-2 inline-flex items-center gap-2 rounded border-2 border-dashed border-brand px-3 py-1 text-brand-to animate-selection-pulse-green">
+                          <div className="w-2 h-2 bg-brand rounded-full animate-pulse" />
                           <span>Analyzing this page...</span>
                         </div>
                       )}
@@ -440,7 +442,7 @@ export function SearchResultsDisplay({
                       className={cn(
                         "flex-shrink-0 relative rounded-lg overflow-hidden transition-all",
                         selectedScreenshotIndex === index
-                          ? "ring-2 ring-orange-500 dark:ring-orange-400"
+                          ? "ring-2 ring-brand"
                           : "opacity-70 hover:opacity-100"
                       )}
                     >
