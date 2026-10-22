@@ -221,6 +221,31 @@
     color: var(--color-foreground);
   }
 
+  /* Tab strip: the label must sit inside the tab's own 2px rule, so the
+     leading is fixed here rather than inherited from the parent block. */
+  .ui-tab {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    font-weight: 500;
+    letter-spacing: -0.006em;
+    color: var(--color-muted-foreground);
+    white-space: nowrap;
+  }
+  .ui-tab[aria-selected="true"],
+  .ui-tab[data-state="active"] {
+    color: var(--color-foreground);
+  }
+
+  /* Buttons and inputs: one label size, one leading, so every control in the
+     app shares a baseline regardless of which primitive renders it. */
+  .ui-control {
+    font-size: 0.875rem;
+    line-height: 1;
+    font-weight: 500;
+    letter-spacing: -0.004em;
+    font-variant-numeric: tabular-nums;
+  }
+
   .ui-mono {
     font-family: var(--font-mono);
     font-size: 0.8125rem;

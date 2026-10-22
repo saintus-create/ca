@@ -347,7 +347,7 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
               onFocus={() => setShowSuggestions(true)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
               placeholder="Enter query..."
-              className="w-full h-12 rounded-full border border-border bg-background pl-5 pr-14 text-base leading-none tracking-[-0.01em] text-foreground shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-orange-400"
+              className="ui-control w-full h-12 rounded-full border border-border bg-background pl-5 pr-14 text-base text-foreground shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-orange-400"
               disabled={isSearching}
             />
             <button
@@ -560,7 +560,7 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Enter query..."
-                className="w-full h-12 rounded-full border border-border bg-background pl-5 pr-14 text-base leading-none tracking-[-0.01em] text-foreground shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-orange-400"
+                className="ui-control w-full h-12 rounded-full border border-border bg-background pl-5 pr-14 text-base text-foreground shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-orange-400"
                 disabled={isSearching}
               />
               <button

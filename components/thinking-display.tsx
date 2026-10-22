@@ -294,7 +294,7 @@ export function ThinkingDisplay({ events, status, response }: ThinkingDisplayPro
           <button
             onClick={() => setViewMode('timeline')}
             className={cn(
-              "-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium tracking-[-0.006em] transition-colors",
+              "-mb-px whitespace-nowrap border-b-2 px-3 py-2 ui-tab transition-colors",
               viewMode === 'timeline'
                 ? "border-orange-600 text-orange-600"
                 : "border-transparent text-muted-foreground hover:text-foreground"
@@ -306,7 +306,7 @@ export function ThinkingDisplay({ events, status, response }: ThinkingDisplayPro
             <button
               onClick={() => setViewMode('results')}
               className={cn(
-                "-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium tracking-[-0.006em] tabular-nums transition-colors",
+                "-mb-px whitespace-nowrap border-b-2 px-3 py-2 ui-tab tabular-nums transition-colors",
                 viewMode === 'results'
                   ? "border-orange-600 text-orange-600"
                   : "border-transparent text-muted-foreground hover:text-foreground"
@@ -319,7 +319,7 @@ export function ThinkingDisplay({ events, status, response }: ThinkingDisplayPro
             <button
               onClick={() => setViewMode('screenshots')}
               className={cn(
-                "-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium tracking-[-0.006em] tabular-nums transition-colors",
+                "-mb-px whitespace-nowrap border-b-2 px-3 py-2 ui-tab tabular-nums transition-colors",
                 viewMode === 'screenshots'
                   ? "border-orange-600 text-orange-600"
                   : "border-transparent text-muted-foreground hover:text-foreground"

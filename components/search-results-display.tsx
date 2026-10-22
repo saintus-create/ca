@@ -298,7 +298,7 @@ export function SearchResultsDisplay({
                     <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
                     <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
                   </div>
-                  <span className="text-sm font-bold">Scanning page content</span>
+                  <span className="ui-subtitle font-semibold">Scanning page content</span>
                 </div>
               )}
             </div>
@@ -319,7 +319,7 @@ export function SearchResultsDisplay({
                   {/* Search box */}
                   <div className="flex-1 max-w-[400px]">
                     <div className="flex items-center rounded-full border border-border bg-card px-3 py-2 shadow-sm transition-shadow hover:shadow-md lg:px-5 lg:py-2.5">
-                      <span className="min-w-0 flex-1 truncate text-sm font-normal text-foreground/90">
+                      <span className="ui-body min-w-0 flex-1 truncate text-foreground/90">
                         <span className="lg:hidden">{query ? (query.length > 30 ? query.substring(0, 30) + '...' : query) : 'Search...'}</span>
                         <span className="hidden lg:inline">{query || 'Search...'}</span>
                       </span>
@@ -364,14 +364,14 @@ export function SearchResultsDisplay({
                           href={result.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="block text-lg font-medium leading-snug tracking-[-0.015em] text-blue-700 underline-offset-2 hover:underline visited:text-purple-700 dark:text-blue-400 dark:visited:text-purple-400"
+                          className="ui-title block text-blue-700 underline-offset-2 hover:underline visited:text-purple-700 dark:text-blue-400 dark:visited:text-purple-400"
                         >
                           {result.title}
                         </a>
                       </h3>
 
                       {/* Date and description */}
-                      <div className="text-sm leading-relaxed text-foreground/80">
+                      <div className="ui-body text-foreground/80">
                         {result.dateFound && (
                           <span className="text-muted-foreground">{result.dateFound} — </span>
                         )}
@@ -380,7 +380,7 @@ export function SearchResultsDisplay({
 
                       {/* Scraping indicator */}
                       {activeResultIndex === index && (
-                        <div className="mt-2 inline-flex items-center gap-2 rounded border-2 border-dashed border-green-500 px-3 py-1 text-sm text-green-700 animate-selection-pulse-green dark:text-green-400">
+                        <div className="ui-caption mt-2 inline-flex items-center gap-2 rounded border-2 border-dashed border-green-500 px-3 py-1 text-green-700 animate-selection-pulse-green dark:text-green-400">
                           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                           <span>Analyzing this page...</span>
                         </div>
@@ -397,7 +397,7 @@ export function SearchResultsDisplay({
                     </p>
                     <div className="mt-4">
                       <p className="ui-subtitle mb-2">Suggestions:</p>
-                      <ul className="list-inside list-disc space-y-1 text-sm leading-relaxed text-muted-foreground">
+                      <ul className="ui-body list-outside list-disc space-y-1 pl-5 text-muted-foreground">
                         <li>Make sure all words are spelled correctly.</li>
                         <li>Try different keywords.</li>
                         <li>Try more general keywords.</li>
@@ -449,7 +449,7 @@ export function SearchResultsDisplay({
                         alt={`Thumbnail ${index + 1}`}
                         className="h-16 w-24 object-contain bg-muted"
                       />
-                      <div className="absolute inset-x-0 bottom-0 truncate bg-black/60 px-1 py-0.5 text-[0.6875rem] leading-4 text-white">
+                      <div className="ui-caption absolute inset-x-0 bottom-0 truncate bg-black/60 px-1 py-0.5 text-white">
                         {new URL(screenshot.url).hostname}
                       </div>
                     </button>

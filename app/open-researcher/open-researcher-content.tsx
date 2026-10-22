@@ -156,7 +156,7 @@ export default function OpenResearcherContent() {
             Powered by{' '}
             <Link
               href="https://firecrawl.dev"
-              className="font-medium text-orange-600 underline-offset-2 hover:underline dark:text-orange-400"
+              className="ui-caption font-medium text-orange-600 underline-offset-2 hover:underline dark:text-orange-400"
               target="_blank"
               rel="noopener noreferrer"
             >
