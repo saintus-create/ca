@@ -59,7 +59,7 @@ export function ScreenshotPreview({ url, screenshot, isLoading = false, classNam
     <>
       <div 
         className={cn(
-          "relative group cursor-pointer overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800",
+          "group relative cursor-pointer overflow-hidden rounded-lg border border-border bg-muted",
           "transition-all duration-300 hover:shadow-lg hover:scale-[1.02]",
           className
         )}
@@ -84,7 +84,7 @@ export function ScreenshotPreview({ url, screenshot, isLoading = false, classNam
           
           {/* Loading state with scanning animation */}
           {(!imageLoaded || !screenshot) && (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800">
+            <div className="absolute inset-0 flex items-center justify-center bg-muted">
               <Loader2 className="h-6 w-6 animate-spin text-orange-500" />
             </div>
           )}
@@ -119,8 +119,8 @@ export function ScreenshotPreview({ url, screenshot, isLoading = false, classNam
         </div>
 
         {/* URL label */}
-        <div className="p-2 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
-          <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
+        <div className="border-t border-border bg-card p-2">
+          <p className="ui-caption truncate">
             {new URL(url).hostname}
           </p>
         </div>
@@ -132,22 +132,22 @@ export function ScreenshotPreview({ url, screenshot, isLoading = false, classNam
           <DialogTitle className="sr-only">Screenshot of {url}</DialogTitle>
           
           {/* Modal header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex-1 mr-4">
-              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+          <div className="flex items-center justify-between border-b border-border p-4">
+            <div className="mr-4 min-w-0 flex-1">
+              <p className="ui-subtitle truncate">
                 {url}
               </p>
             </div>
             <button
               onClick={() => setShowModal(false)}
-              className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
-              <X className="h-5 w-5 text-gray-500" />
+              <X className="h-5 w-5" />
             </button>
           </div>
 
           {/* Modal body with full screenshot */}
-          <div className="relative w-full h-full overflow-auto bg-gray-50 dark:bg-gray-900">
+          <div className="relative h-full w-full overflow-auto bg-muted/40">
             {screenshot && (
               <div className="relative min-h-[500px]">
                 <Image
@@ -167,7 +167,7 @@ export function ScreenshotPreview({ url, screenshot, isLoading = false, classNam
                     <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 via-transparent to-orange-500/10 animate-scan-horizontal" />
                     
                     {/* Analyzing text */}
-                    <div className="absolute top-4 left-4 bg-black/80 text-white px-3 py-1 rounded-md text-sm font-mono">
+                    <div className="ui-mono absolute left-4 top-4 rounded-md bg-black/80 px-3 py-1 text-white">
                       <span className="animate-pulse">Analyzing page content...</span>
                     </div>
                   </div>

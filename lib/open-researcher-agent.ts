@@ -1,23 +1,9 @@
-import Anthropic from '@anthropic-ai/sdk';
 import FirecrawlApp from '@mendable/firecrawl-js';
 import { executeCorpusSearch } from './corpus-search';
+import { createChat, type LlmMessage } from './llm';
 
 // Lazy initialization for Vercel deployment
-let anthropic: Anthropic | null = null;
 let firecrawl: FirecrawlApp | null = null;
-
-function getAnthropicClient(): Anthropic {
-  if (!anthropic) {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      // ANTHROPIC_API_KEY is not set in environment variables
-      throw new Error('ANTHROPIC_API_KEY environment variable is not set');
-    }
-    // Initializing Anthropic client
-    anthropic = new Anthropic({ apiKey });
-  }
-  return anthropic;
-}
 
 function getFirecrawlClient(): FirecrawlApp {
   if (!firecrawl) {
@@ -31,6 +17,16 @@ function getFirecrawlClient(): FirecrawlApp {
   }
   return firecrawl;
 }
+
+// The model, provider, and thinking configuration all live in lib/llm.ts:
+// Sarvam AI (sarvam-105b) is the default, Anthropic is the fallback.
+const RESEARCH_MAX_TOKENS =
+  Number.parseInt(process.env.LLM_MAX_TOKENS || '', 10) || 8192;
+
+// How many model turns (each may include tool calls) one research run may take.
+// The upstream template recursed with no bound, so a model that kept calling
+// tools could run until the platform killed the function.
+const MAX_RESEARCH_STEPS = Number.parseInt(process.env.LLM_MAX_STEPS || '', 10) || 12;
 
 // Type definitions
 interface ToolDefinition {
@@ -677,22 +673,11 @@ export async function executeTool(toolName: string, input: Record<string, unknow
   }
 }
 
-// Streaming version with callback
-export async function performResearchWithStreaming(
-  query: string, 
-  onEvent: (event: { type: string; [key: string]: unknown }) => void
-): Promise<string> {
-  // Performing research
+// ---------------------------------------------------------------------------
+// Research loop
+// ---------------------------------------------------------------------------
 
-  // Send initial event
-  onEvent({ type: 'start', query });
-
-  const messages: Array<{ role: string; content: string | Array<{ type: string; [key: string]: unknown }> }> = [{
-    role: "user",
-    content: query
-  }];
-
-  const systemPrompt = `You are a research assistant with access to web search and scraping tools, plus a local California Legislative Information corpus (the search_california_law tool) holding the full text of California codes, court rules, judicial forms, legislation, and case law annotations. For questions about California law, search the corpus as well as the web, and prefer the corpus for the actual statutory text. When asked to find specific blog posts on a website, you should:
+const SYSTEM_PROMPT = `You are a research assistant with access to web search and scraping tools, plus a local California Legislative Information corpus (the search_california_law tool) holding the full text of California codes, court rules, judicial forms, legislation, and case law annotations. For questions about California law, search the corpus as well as the web, and prefer the corpus for the actual statutory text. When asked to find specific blog posts on a website, you should:
 
 1. For blog post requests (e.g., "3rd blog post", "5th blog post"):
    - First navigate to the main blog page to see all posts in order
@@ -710,319 +695,99 @@ export async function performResearchWithStreaming(
 
 Be thorough and methodical. Always verify you have the correct post by its position in the blog listing.`;
 
-  const requestParams = {
-    model: "claude-opus-4-20250514",
-    max_tokens: 8000,
-    system: systemPrompt,
-    thinking: {
-      type: "enabled" as const,
-      budget_tokens: 20000
-    },
-    tools: tools,
-    messages: messages
-  };
+type ResearchEvent = { type: string; [key: string]: unknown };
 
-  // Create request with interleaved thinking
-  let response;
-  try {
-    // Creating Anthropic message with interleaved thinking
-    
-    response = await getAnthropicClient().beta.messages.create({
-      ...requestParams,
-      betas: ["interleaved-thinking-2025-05-14"]
-    } as Parameters<Anthropic['beta']['messages']['create']>[0]);
-  } catch (error) {
-    // Failed to create message with beta API
-    
-    if (error instanceof Error) {
-      // Check for specific error types
-      if (error.message.includes('model')) {
-        throw new Error(`Model error: The claude-opus-4-20250514 model may not be available in your region or with your API key. Error: ${error.message}`);
-      }
-      if (error.message.includes('beta')) {
-        throw new Error(`Beta feature error: The interleaved-thinking-2025-05-14 beta may not be enabled for your account. Error: ${error.message}`);
-      }
-      if (error.message.includes('authentication') || error.message.includes('401')) {
-        throw new Error(`Authentication error: Please check your ANTHROPIC_API_KEY. Error: ${error.message}`);
-      }
-      // Include full error details for debugging
-      // Error details logged internally
-    }
-    throw error;
-  }
+function displayToolName(name: string): string {
+  if (name === 'web_search') return 'firecrawl_search';
+  if (name === 'deep_scrape') return 'firecrawl_scrape';
+  return name;
+}
 
-  // Track conversation state
-  const assistantContent: Array<{ type: string; [key: string]: unknown }> = [];
+async function runResearch(
+  query: string,
+  onEvent: (event: ResearchEvent) => void
+): Promise<string> {
+  onEvent({ type: 'start', query });
+
+  const messages: LlmMessage[] = [{ role: 'user', content: query }];
+  let finalResponse = '';
   let thinkingCount = 0;
   let toolCallCount = 0;
-  let currentMessages = [...messages];
-  let finalResponse = '';
 
-  // Process response recursively
-  async function processResponse(resp: { content: Array<{ type: string; thinking?: string; text?: string; name?: string; input?: Record<string, unknown>; id?: string }> }) {
-    for (const block of resp.content) {
+  for (let step = 0; step < MAX_RESEARCH_STEPS; step++) {
+    const result = await createChat({
+      system: SYSTEM_PROMPT,
+      messages,
+      tools,
+      maxTokens: RESEARCH_MAX_TOKENS,
+    });
+
+    // Keep the assistant turn (including any thinking blocks and their
+    // signatures) so tool results can be sent back in the same conversation.
+    messages.push({ role: 'assistant', content: result.blocks });
+
+    for (const block of result.blocks) {
       if (block.type === 'thinking') {
-        thinkingCount++;
-        const thinkingContent = block.thinking || '';
-        
-        // Send thinking event
-        onEvent({
-          type: 'thinking',
-          number: thinkingCount,
-          content: thinkingContent
-        });
-        
-        assistantContent.push(block);
-      } else if (block.type === 'tool_use') {
-        toolCallCount++;
-        const toolDisplayName = block.name === 'web_search' ? 'firecrawl_search' : 
-                                 block.name === 'deep_scrape' ? 'firecrawl_scrape' : 
-                                 block.name;
-        // Executing tool
-        
-        // Send tool call event
-        onEvent({
-          type: 'tool_call',
-          number: toolCallCount,
-          tool: toolDisplayName,
-          parameters: block.input
-        });
-        
-        assistantContent.push(block);
-
-        // Execute the tool
-        const startTime = Date.now();
-        const toolResult = await executeTool(block.name || '', block.input || {});
-        const duration = Date.now() - startTime;
-        
-        // Tool execution completed
-        
-        // Send tool result event with screenshots if available
-        onEvent({
-          type: 'tool_result',
-          tool: block.name || '',
-          duration,
-          result: toolResult.content,
-          screenshots: toolResult.screenshots
-        });
-
-        // Update messages with tool result
-        currentMessages = [
-          ...currentMessages,
-          {
-            role: "assistant",
-            content: [...assistantContent]
-          },
-          {
-            role: "user",
-            content: [{
-              type: "tool_result",
-              tool_use_id: block.id,
-              content: toolResult.content
-            }]
-          }
-        ];
-
-        // Get next response
-        const continuationParams = {
-          ...requestParams,
-          messages: currentMessages
-        };
-
-        let nextResponse;
-        try {
-          nextResponse = await getAnthropicClient().beta.messages.create({
-            ...continuationParams,
-            betas: ["interleaved-thinking-2025-05-14"]
-          } as Parameters<Anthropic['beta']['messages']['create']>[0]);
-        } catch (error) {
-          // Failed to continue conversation with beta API
-          throw error;
+        const thinkingContent = block.thinking ?? '';
+        if (thinkingContent) {
+          thinkingCount++;
+          onEvent({ type: 'thinking', number: thinkingCount, content: thinkingContent });
         }
-
-        // Clear assistant content for next iteration
-        assistantContent.length = 0;
-
-        // Process continuation recursively
-        await processResponse(nextResponse as { content: Array<{ type: string; thinking?: string; text?: string; name?: string; input?: Record<string, unknown>; id?: string }> });
-        return;
       } else if (block.type === 'text') {
-        const textContent = block.text || '';
-        // Processing response
-        
-        // Send final response event
-        onEvent({
-          type: 'response',
-          content: textContent
-        });
-        
-        finalResponse = textContent;
+        const textContent = block.text ?? '';
+        if (textContent) {
+          finalResponse = textContent;
+          onEvent({ type: 'response', content: textContent });
+        }
       }
+    }
+
+    const toolCalls = result.blocks.filter((block) => block.type === 'tool_use');
+    if (toolCalls.length === 0) break;
+
+    for (const call of toolCalls) {
+      toolCallCount++;
+      onEvent({
+        type: 'tool_call',
+        number: toolCallCount,
+        tool: displayToolName(call.name ?? ''),
+        parameters: call.input ?? {},
+      });
+
+      const startedAt = Date.now();
+      const toolResult = await executeTool(call.name ?? '', call.input ?? {});
+      onEvent({
+        type: 'tool_result',
+        tool: call.name ?? '',
+        duration: Date.now() - startedAt,
+        result: toolResult.content,
+        screenshots: toolResult.screenshots,
+      });
+
+      messages.push({
+        role: 'user',
+        content: [
+          {
+            type: 'tool_result',
+            tool_use_id: call.id ?? '',
+            content: toolResult.content,
+          },
+        ],
+      });
     }
   }
 
-  await processResponse(response as { content: Array<{ type: string; thinking?: string; text?: string; name?: string; input?: Record<string, unknown>; id?: string }> });
-
-  // Research completed
-  
-  // Send summary event
-  onEvent({
-    type: 'summary',
-    thinkingBlocks: thinkingCount,
-    toolCalls: toolCallCount
-  });
-  
+  onEvent({ type: 'summary', thinkingBlocks: thinkingCount, toolCalls: toolCallCount });
   return finalResponse;
 }
 
-// Main research function with interleaved thinking
+export async function performResearchWithStreaming(
+  query: string,
+  onEvent: (event: ResearchEvent) => void
+): Promise<string> {
+  return runResearch(query, onEvent);
+}
+
 export async function performResearch(query: string): Promise<string> {
-  // Performing research
-
-  const messages: Array<{ role: string; content: string | Array<{ type: string; [key: string]: unknown }> }> = [{
-    role: "user",
-    content: query
-  }];
-
-  const systemPrompt = `You are a research assistant with access to web search and scraping tools, plus a local California Legislative Information corpus (the search_california_law tool) holding the full text of California codes, court rules, judicial forms, legislation, and case law annotations. For questions about California law, search the corpus as well as the web, and prefer the corpus for the actual statutory text. When asked to find specific blog posts on a website, you should:
-
-1. For blog post requests (e.g., "3rd blog post", "5th blog post"):
-   - First navigate to the main blog page to see all posts in order
-   - Blog posts are typically ordered newest to oldest
-   - Count posts as they appear on the page: 1st = newest/top post, 2nd = second from top, etc.
-   - For firecrawl.dev: Use "site:firecrawl.dev/blog" to find all blog posts
-
-2. To find the correct blog post:
-   - Search with "site:firecrawl.dev/blog" to get the blog listing
-   - If needed, scrape the blog index page to see all posts in order
-   - Count carefully from the top to identify the correct post by position
-   - Then scrape that specific post to get its content
-
-3. Important: When someone asks for the "5th blog post", they mean the 5th post when counting from the newest (top) down, NOT a post with "5" in the title.
-
-Be thorough and methodical. Always verify you have the correct post by its position in the blog listing.`;
-
-  const requestParams = {
-    model: "claude-opus-4-20250514",
-    max_tokens: 8000,
-    system: systemPrompt,
-    thinking: {
-      type: "enabled" as const,
-      budget_tokens: 20000
-    },
-    tools: tools,
-    messages: messages
-  };
-
-  // Create request with interleaved thinking
-  let response;
-  try {
-    // Creating Anthropic message with interleaved thinking
-    
-    response = await getAnthropicClient().beta.messages.create({
-      ...requestParams,
-      betas: ["interleaved-thinking-2025-05-14"]
-    } as Parameters<Anthropic['beta']['messages']['create']>[0]);
-  } catch (error) {
-    // Failed to create message with beta API
-    
-    if (error instanceof Error) {
-      // Check for specific error types
-      if (error.message.includes('model')) {
-        throw new Error(`Model error: The claude-opus-4-20250514 model may not be available in your region or with your API key. Error: ${error.message}`);
-      }
-      if (error.message.includes('beta')) {
-        throw new Error(`Beta feature error: The interleaved-thinking-2025-05-14 beta may not be enabled for your account. Error: ${error.message}`);
-      }
-      if (error.message.includes('authentication') || error.message.includes('401')) {
-        throw new Error(`Authentication error: Please check your ANTHROPIC_API_KEY. Error: ${error.message}`);
-      }
-      // Include full error details for debugging
-      // Error details logged internally
-    }
-    throw error;
-  }
-
-  // Track conversation state
-  const assistantContent: Array<{ type: string; [key: string]: unknown }> = [];
-  let thinkingCount = 0;
-  let toolCallCount = 0;
-  let currentMessages = [...messages];
-  let finalResponse = '';
-
-  // Process response recursively
-  async function processResponse(resp: { content: Array<{ type: string; thinking?: string; text?: string; name?: string; input?: Record<string, unknown>; id?: string }> }) {
-    for (const block of resp.content) {
-      if (block.type === 'thinking') {
-        thinkingCount++;
-        const thinkingContent = block.thinking || '';
-        assistantContent.push(block);
-      } else if (block.type === 'tool_use') {
-        toolCallCount++;
-        const toolDisplayName = block.name === 'web_search' ? 'firecrawl_search' : 
-                                 block.name === 'deep_scrape' ? 'firecrawl_scrape' : 
-                                 block.name;
-        // Executing tool
-        assistantContent.push(block);
-
-        // Execute the tool
-        const startTime = Date.now();
-        const toolResult = await executeTool(block.name || '', block.input || {});
-        const duration = Date.now() - startTime;
-        
-        // Tool execution completed
-
-        // Update messages with tool result
-        currentMessages = [
-          ...currentMessages,
-          {
-            role: "assistant",
-            content: [...assistantContent]
-          },
-          {
-            role: "user",
-            content: [{
-              type: "tool_result",
-              tool_use_id: block.id,
-              content: toolResult.content
-            }]
-          }
-        ];
-
-        // Get next response
-        const continuationParams = {
-          ...requestParams,
-          messages: currentMessages
-        };
-
-        let nextResponse;
-        try {
-          nextResponse = await getAnthropicClient().beta.messages.create({
-            ...continuationParams,
-            betas: ["interleaved-thinking-2025-05-14"]
-          } as Parameters<Anthropic['beta']['messages']['create']>[0]);
-        } catch (error) {
-          // Failed to continue conversation with beta API
-          throw error;
-        }
-
-        // Clear assistant content for next iteration
-        assistantContent.length = 0;
-
-        // Process continuation recursively
-        await processResponse(nextResponse as { content: Array<{ type: string; thinking?: string; text?: string; name?: string; input?: Record<string, unknown>; id?: string }> });
-        return;
-      } else if (block.type === 'text') {
-        const textContent = block.text || '';
-        // Processing response
-        finalResponse = textContent;
-      }
-    }
-  }
-
-  await processResponse(response as { content: Array<{ type: string; thinking?: string; text?: string; name?: string; input?: Record<string, unknown>; id?: string }> });
-
-  // Research completed
-  
-  return finalResponse;
+  return runResearch(query, () => {});
 }

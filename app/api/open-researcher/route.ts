@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { performResearchWithStreaming } from '@/lib/open-researcher-agent'
+import { isProviderConfigured, providerDefaults, resolveProvider } from '@/lib/llm'
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,11 +10,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Query is required' }, { status: 400 })
     }
 
-    // Check for Anthropic API key in environment
-    if (!process.env.ANTHROPIC_API_KEY) {
-      // ANTHROPIC_API_KEY is not configured in environment variables
+    // Check the language model key for the active provider (Sarvam by
+    // default, Anthropic as a fallback).
+    const provider = resolveProvider()
+    if (!isProviderConfigured(provider)) {
+      const { apiKeyEnv } = providerDefaults(provider)
       return NextResponse.json(
-        { error: 'ANTHROPIC_API_KEY is not configured. Please add it to your Vercel environment variables.' },
+        { error: `${apiKeyEnv} is not configured. Add it to your environment variables (see .env.local.example).` },
         { status: 500 }
       )
     }
@@ -68,12 +71,12 @@ export async function POST(req: NextRequest) {
           
           // More user-friendly error messages
           let userFriendlyError = errorMessage
-          if (errorMessage.includes('Model error')) {
-            userFriendlyError = 'The Anthropic claude-opus-4 model is not available. This might be due to regional restrictions or API tier limitations.'
-          } else if (errorMessage.includes('Beta feature error')) {
-            userFriendlyError = 'The interleaved thinking feature is not enabled for your Anthropic API key. This is a beta feature that may require special access.'
-          } else if (errorMessage.includes('Authentication error')) {
-            userFriendlyError = 'Invalid Anthropic API key. Please check your environment variables in Vercel.'
+          if (errorMessage.includes('Authentication error')) {
+            userFriendlyError = `The language model API key was rejected. Check ${providerDefaults(provider).apiKeyEnv}.`
+          } else if (errorMessage.includes('Model error')) {
+            userFriendlyError = `The configured model is not available for this API key (${providerDefaults(provider).model}). Set SARVAM_MODEL (or ANTHROPIC_MODEL).`
+          } else if (errorMessage.includes('FIRECRAWL_API_KEY')) {
+            userFriendlyError = 'The Firecrawl API key is not configured. Add it in the app or as FIRECRAWL_API_KEY.'
           }
           
           const errorData = `data: ${JSON.stringify({ 

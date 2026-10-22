@@ -6,6 +6,7 @@ import { Github, ExternalLink, Loader2 } from 'lucide-react'
 import { ThinkingChat } from '@/components/thinking-chat'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Dialog,
   DialogContent,
@@ -88,7 +89,7 @@ export default function OpenResearcherContent() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="py-4">
+      <header className="py-4 lg:py-5">
         <div className={`px-4 sm:px-6 lg:px-8 transition-all duration-700 ease-in-out ${hasMessages ? 'max-w-[1400px]' : 'max-w-4xl'
           } mx-auto`}>
           <div className="flex items-center justify-between">
@@ -121,17 +122,15 @@ export default function OpenResearcherContent() {
       </header>
 
       {/* Hero Section */}
-      <div className={`px-4 sm:px-6 lg:px-8 transition-all duration-700 ease-in-out ${hasMessages
+      <div className={`relative overflow-hidden px-4 sm:px-6 lg:px-8 transition-all duration-700 ease-in-out ${hasMessages
           ? 'pt-0 pb-0 opacity-0 max-h-0 overflow-hidden'
           : 'pt-8 pb-2 opacity-100 max-h-96'
         }`}>
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-[2.5rem] lg:text-[3.8rem] text-[#36322F] dark:text-white font-semibold tracking-tight leading-[1.1] opacity-0 animate-fade-up [animation-duration:500ms] [animation-delay:200ms] [animation-fill-mode:forwards]">
-            <span className="relative px-1 text-transparent bg-clip-text bg-gradient-to-tr from-red-600 to-yellow-500 inline-flex justify-center items-center">
-              Open Researcher
-            </span>
+        <div className="relative z-10 max-w-4xl mx-auto text-center">
+          <h1 className="ui-display opacity-0 animate-fade-up [animation-duration:500ms] [animation-delay:200ms] [animation-fill-mode:forwards]">
+            Open Researcher
           </h1>
-          <p className="mt-6 text-lg text-zinc-600 dark:text-zinc-400 opacity-0 animate-fade-up [animation-duration:500ms] [animation-delay:600ms] [animation-fill-mode:forwards]">
+          <p className="ui-lede mx-auto mt-5 max-w-xl opacity-0 animate-fade-up [animation-duration:500ms] [animation-delay:600ms] [animation-fill-mode:forwards]">
             Firecrawl-powered search, scrape, and agentic reasoning
           </p>
         </div>
@@ -151,11 +150,11 @@ export default function OpenResearcherContent() {
       {/* Footer */}
       <footer className="px-4 sm:px-6 lg:px-8 py-8 mt-auto">
         <div className="max-w-4xl mx-auto text-center">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="ui-caption">
             Powered by{' '}
             <Link
               href="https://firecrawl.dev"
-              className="text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 font-medium"
+              className="ui-caption font-medium text-brand-to underline-offset-2 hover:underline"
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -184,9 +183,9 @@ export default function OpenResearcherContent() {
               Get Firecrawl API Key
             </Button>
             <div className="flex flex-col gap-2">
-              <label htmlFor="firecrawl-key" className="text-sm font-medium">
+              <Label htmlFor="firecrawl-key" className="ui-label">
                 Firecrawl API Key
-              </label>
+              </Label>
               <Input
                 id="firecrawl-key"
                 type="password"

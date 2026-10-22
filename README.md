@@ -18,8 +18,9 @@ A powerful AI-powered research tool that combines Firecrawl's web scraping capab
 
 - Node.js 18+ and npm
 - API Keys (at least one required):
-  - `ANTHROPIC_API_KEY` - For AI functionality
+  - `SARVAM_API_KEY` - For AI functionality (default model: `sarvam-105b`)
   - `FIRECRAWL_API_KEY` - For web scraping (can be added via UI)
+  - `ANTHROPIC_API_KEY` - Optional fallback provider (Claude)
 
 ## Quick Start
 
@@ -57,15 +58,22 @@ A powerful AI-powered research tool that combines Firecrawl's web scraping capab
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `ANTHROPIC_API_KEY` | Yes | Claude API key for AI functionality |
-| `FIRECRAWL_API_KEY` | No* | Firecrawl API key for web scraping |
+| `SARVAM_API_KEY` | Yes | Sarvam AI key; the agent runs on `sarvam-105b` |
+| `FIRECRAWL_API_KEY` | No* | Firecrawl API key for web search and scraping |
+| `SARVAM_MODEL` | No | Sarvam model id (default `sarvam-105b`) |
+| `SARVAM_BASE_URL` | No | Default `https://api.sarvam.ai/v1` |
+| `SARVAM_REASONING_EFFORT` | No | `low` \| `medium` \| `high` \| `none` |
+| `LLM_PROVIDER` | No | `sarvam` (default) or `anthropic` |
+| `ANTHROPIC_API_KEY` | No | Fallback provider, used when no Sarvam key is set |
+| `ANTHROPIC_MODEL` | No | Default `claude-opus-4-8` |
 
 *Can be provided through the UI if not set in environment variables
 
 ## Getting API Keys
 
-- **Anthropic API Key**: Visit [Anthropic Console](https://console.anthropic.com/)
+- **Sarvam API Key**: Visit [Sarvam AI dashboard](https://dashboard.sarvam.ai)
 - **Firecrawl API Key**: Visit [Firecrawl](https://www.firecrawl.dev/)
+- **Anthropic API Key** (optional fallback): Visit [Anthropic Console](https://console.anthropic.com/)
 
 ## Usage
 
@@ -110,7 +118,7 @@ npm run lint
 - **Next.js 15** - React framework
 - **TypeScript** - Type safety
 - **Tailwind CSS** - Styling
-- **Anthropic Claude** - AI model
+- **Sarvam AI (`sarvam-105b`)** - AI model (OpenAI-compatible chat completions)
 - **Firecrawl** - Web scraping
 - **Radix UI** - UI components
 

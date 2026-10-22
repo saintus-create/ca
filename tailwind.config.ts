@@ -1,5 +1,8 @@
 import type { Config } from "tailwindcss";
 
+// NOTE: Tailwind v4 is configured CSS-first, in app/globals.css (`@theme`).
+// This file is not loaded unless globals.css opts in with `@config`. It is
+// kept in sync so the values are correct if that ever happens.
 const config: Config = {
   content: [
     "./app/**/*.{js,ts,jsx,tsx}",
@@ -56,8 +59,8 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "ui-sans-serif", "system-ui", "sans-serif"],
-        mono: ["ui-monospace", "SFMono-Regular", "monospace"],
+        sans: ["var(--font-geist-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
+        mono: ["var(--font-geist-mono)", "ui-monospace", "SFMono-Regular", "monospace"],
       },
     },
   },
