@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
+import { createChat, isProviderConfigured, providerDefaults, resolveProvider } from '@/lib/llm'
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,17 +9,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Query is required' }, { status: 400 })
     }
 
-    // Check for Anthropic API key
-    if (!process.env.ANTHROPIC_API_KEY) {
+    // The research provider (Sarvam by default, Anthropic as a fallback)
+    // answers follow-up generation too, so one key covers both routes.
+    const provider = resolveProvider()
+    if (!isProviderConfigured(provider)) {
       return NextResponse.json(
-        { error: 'ANTHROPIC_API_KEY is not configured' },
+        { error: `${providerDefaults(provider).apiKeyEnv} is not configured` },
         { status: 500 }
       )
     }
-
-    const anthropic = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
-    })
 
     // Generate follow-up questions based on the initial query
     const prompt = `Based on this search query: "${query}"
@@ -34,30 +32,27 @@ Format the response as a JSON array of strings, like:
 
 Only return the JSON array, nothing else.`
 
-    const response = await anthropic.messages.create({
-      model: 'claude-3-haiku-20240307',
-      max_tokens: 300,
-      temperature: 0.7,
-      messages: [
-        {
-          role: 'user',
-          content: prompt
-        }
-      ]
+    const result = await createChat({
+      system: 'You write concise follow-up research questions and reply with JSON only.',
+      messages: [{ role: 'user', content: prompt }],
+      maxTokens: 400,
     })
 
-    const content = response.content[0]
-    if (content.type !== 'text') {
+    // Reasoning-capable models may return thinking blocks before the answer,
+    // so use the concatenated text rather than the first block.
+    const text = result.text
+    if (!text) {
       throw new Error('Unexpected response type')
     }
 
-    // Parse the JSON response
+    // Parse the JSON response (tolerating a Markdown code fence)
     try {
-      const questions = JSON.parse(content.text)
+      const json = text.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '')
+      const questions = JSON.parse(json)
       if (!Array.isArray(questions)) {
         throw new Error('Response is not an array')
       }
-      
+
       return NextResponse.json({ questions })
     } catch {
       // Failed to parse follow-up questions

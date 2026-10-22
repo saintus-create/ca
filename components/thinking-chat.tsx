@@ -141,6 +141,7 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
 
       const events: ThinkingEvent[] = []
       let finalContent = ''
+      let streamError: string | null = null
 
       while (true) {
         const { done, value } = await reader.read()
@@ -211,6 +212,10 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
                 ))
               } else if (data.type === 'response') {
                 finalContent = data.content
+              } else if (data.type === 'error') {
+                // The route reports failures inside the stream (it has already
+                // sent 200), so surface them here instead of spinning forever.
+                streamError = data.error || data.originalError || 'The research request failed.'
               } else if (data.type === 'done') {
                 setMessages(prev => prev.map(msg => 
                   msg.id === assistantMessage.id
@@ -229,20 +234,22 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
           }
         }
       }
+
+      if (streamError) {
+        throw new Error(streamError)
+      }
     } catch (error) {
       // Search error occurred
       
       let errorMessage = 'Sorry, an error occurred while searching. Please try again.'
       
       if (error instanceof Error) {
-        if (error.message.includes('ANTHROPIC_API_KEY')) {
-          errorMessage = 'The Anthropic API key is not configured. Please contact the site administrator.'
+        if (error.message.includes('SARVAM_API_KEY') || error.message.includes('ANTHROPIC_API_KEY')) {
+          errorMessage = 'The AI model API key is not configured. Please contact the site administrator.'
         } else if (error.message.includes('FIRECRAWL_API_KEY')) {
           errorMessage = 'The Firecrawl API key is not configured. Please contact the site administrator.'
         } else if (error.message.includes('model')) {
-          errorMessage = 'The required AI model is not available. This feature may not be accessible in your region.'
-        } else if (error.message.includes('beta')) {
-          errorMessage = 'The interleaved thinking feature requires special API access. Please contact support.'
+          errorMessage = 'The required AI model is not available for this API key. Please contact the site administrator.'
         } else {
           errorMessage = `Error: ${error.message}`
         }
@@ -250,7 +257,7 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
       
       setMessages(prev => prev.map(msg => 
         msg.id === assistantMessage.id
-          ? { ...msg, content: errorMessage }
+          ? { ...msg, content: errorMessage, searchData: { status: 'error', events: msg.searchData?.events ?? [] } }
           : msg
       ))
     } finally {
