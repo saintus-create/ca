@@ -42,20 +42,34 @@ async function readCorpusFile(rel: string): Promise<string> {
   // Preferred: the filesystem (local runs and any host with the repo on
   // disk). On serverless hosts public/ files are served as static
   // assets but are NOT present inside the function, so fall back to
-  // fetching the file from the site's own static path.
+  // fetching the file over HTTP from, in order: an explicit override,
+  // this deployment's own production URL, its deployment URL, and
+  // finally the public GitHub repo (the corpus lives there too).
   try {
     return await readFile(path.join(CORPUS_DIR, rel), 'utf8');
   } catch {
     // fall through to HTTP
   }
-  const base =
-    process.env.CORPUS_BASE_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null);
-  if (base) {
-    const res = await fetch(`${base}/corpus/${rel}`);
-    if (res.ok) return await res.text();
+  const bases: string[] = [];
+  if (process.env.CORPUS_BASE_URL) bases.push(process.env.CORPUS_BASE_URL);
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL)
+    bases.push(`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`);
+  if (process.env.VERCEL_URL) bases.push(`https://${process.env.VERCEL_URL}`);
+  bases.push('https://raw.githubusercontent.com/saintus-create/ca/main/public');
+
+  let lastError: unknown = null;
+  for (const base of bases) {
+    try {
+      const res = await fetch(`${base}/corpus/${rel}`);
+      if (res.ok) return await res.text();
+      lastError = new Error(`${base}/corpus/${rel} -> HTTP ${res.status}`);
+    } catch (e) {
+      lastError = e;
+    }
   }
-  throw new Error(`corpus file unavailable: ${rel}`);
+  throw new Error(
+    `corpus file unavailable: ${rel} (${lastError instanceof Error ? lastError.message : 'no source reachable'})`
+  );
 }
 
 async function loadManifest(): Promise<Manifest> {

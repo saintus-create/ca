@@ -10,6 +10,13 @@ export async function GET(req: NextRequest) {
   if (!q) {
     return NextResponse.json({ error: 'q is required' }, { status: 400 });
   }
-  const hits = await searchCorpus(q, dataset, limit);
-  return NextResponse.json({ query: q, dataset: dataset || null, count: hits.length, hits });
+  try {
+    const hits = await searchCorpus(q, dataset, limit);
+    return NextResponse.json({ query: q, dataset: dataset || null, count: hits.length, hits });
+  } catch (e) {
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : 'corpus search failed' },
+      { status: 500 }
+    );
+  }
 }
