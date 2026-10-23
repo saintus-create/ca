@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ExternalLink, Loader2, Scale } from 'lucide-react'
+import { ArrowUpRight, BookOpen, ExternalLink, FileText, Landmark, Loader2, Scale } from 'lucide-react'
+import { AnimatedGradientText } from '@/components/velora/animated-gradient-text'
+import { AuroraBackground } from '@/components/velora/aurora-background'
 import { ThinkingChat } from '@/components/thinking-chat'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -93,13 +95,20 @@ export default function OpenResearcherContent({ voiceEnabled = false }: { voiceE
       <header className="py-4 lg:py-5">
         <div className={`px-4 sm:px-6 lg:px-8 transition-all duration-700 ease-in-out ${hasMessages ? 'max-w-[1400px]' : 'max-w-4xl'
           } mx-auto`}>
-          <div className="flex items-center">
-            <Link href="/" className="flex items-center gap-2 text-[15px] font-medium">
-              <span className="grid h-7 w-7 place-items-center rounded-lg bg-foreground text-background">
-                <Scale className="h-4 w-4" />
+          <div className="flex items-center justify-between">
+            <Link href="/" className="group flex items-center gap-3" aria-label="California Law home">
+              <span className="grid size-10 place-items-center rounded-xl bg-[#002868] text-white shadow-[0_6px_18px_rgba(0,40,104,0.18)] transition-transform duration-200 group-hover:scale-[1.03]">
+                <Scale className="size-5" />
               </span>
-              California Law
+              <span>
+                <span className="block text-sm font-semibold tracking-tight text-foreground">California Law</span>
+                <span className="block text-xs text-muted-foreground">Legal research workspace</span>
+              </span>
             </Link>
+            <nav className="hidden items-center gap-5 text-sm text-muted-foreground sm:flex">
+              <a href="https://leginfo.legislature.ca.gov/faces/codes.xhtml" target="_blank" rel="noreferrer" className="transition-colors hover:text-foreground">California Codes <ArrowUpRight className="ml-0.5 inline size-3.5" /></a>
+              <a href="https://www.courts.ca.gov/cms/rules/index.cfm" target="_blank" rel="noreferrer" className="transition-colors hover:text-foreground">Court Rules <ArrowUpRight className="ml-0.5 inline size-3.5" /></a>
+            </nav>
           </div>
         </div>
       </header>
