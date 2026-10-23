@@ -13,6 +13,8 @@ A powerful AI-powered research tool that combines Firecrawl's web scraping capab
 - **Thinking Display**: See the AI's reasoning process in real-time
 - **Smart Citations**: Automatic source tracking and citation generation
 - **Split View Interface**: Side-by-side view of chat and search results
+- **Voice (Cartesia)**: Listen to any answer read aloud with Sonic, and ask
+  questions by microphone with Ink
 
 ## Prerequisites
 
@@ -66,6 +68,10 @@ A powerful AI-powered research tool that combines Firecrawl's web scraping capab
 | `LLM_PROVIDER` | No | `sarvam` (default) or `anthropic` |
 | `ANTHROPIC_API_KEY` | No | Fallback provider, used when no Sarvam key is set |
 | `ANTHROPIC_MODEL` | No | Default `claude-opus-4-8` |
+| `CARTESIA_API_KEY` | No | Enables voice: read answers aloud and ask by mic |
+| `CARTESIA_VOICE_ID` | No | Reading voice; defaults to the first on the account |
+| `CARTESIA_TTS_MODEL` | No | Default `sonic-3.6` |
+| `CARTESIA_STT_MODEL` | No | Default `ink-whisper` |
 
 *Can be provided through the UI if not set in environment variables
 
@@ -74,6 +80,7 @@ A powerful AI-powered research tool that combines Firecrawl's web scraping capab
 - **Sarvam API Key**: Visit [Sarvam AI dashboard](https://dashboard.sarvam.ai)
 - **Firecrawl API Key**: Visit [Firecrawl](https://www.firecrawl.dev/)
 - **Anthropic API Key** (optional fallback): Visit [Anthropic Console](https://console.anthropic.com/)
+- **Cartesia API Key** (optional voice): Visit [play.cartesia.ai/keys](https://play.cartesia.ai/keys)
 
 ## Usage
 
@@ -81,6 +88,10 @@ A powerful AI-powered research tool that combines Firecrawl's web scraping capab
 2. **Web Analysis**: The AI will automatically search and analyze relevant web content
 3. **Follow-up Questions**: Ask follow-up questions to dive deeper
 4. **View Sources**: Click on citations to see source information
+5. **Listen**: Press the speaker on any answer to hear it read aloud; press
+   again to stop. Pick the voice and speed from the header
+6. **Ask by voice**: Press the microphone in the input, speak, then press it
+   again — the transcript lands in the input so you can edit before sending
 
 ## Project Structure
 

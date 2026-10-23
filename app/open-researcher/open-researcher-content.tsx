@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Github, ExternalLink, Loader2 } from 'lucide-react'
 import { ThinkingChat } from '@/components/thinking-chat'
+import { SpeechProvider } from '@/components/speech-provider'
+import { VoicePicker } from '@/components/voice-picker'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -17,12 +19,21 @@ import {
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 
-export default function OpenResearcherContent() {
+interface OpenResearcherContentProps {
+  /**
+   * Whether Cartesia is configured, resolved on the server so the voice
+   * controls render with the first paint instead of popping in after a fetch.
+   */
+  voiceEnabled?: boolean
+}
+
+export default function OpenResearcherContent({ voiceEnabled = false }: OpenResearcherContentProps) {
   const [hasMessages, setHasMessages] = useState(false)
   const [showApiKeyModal, setShowApiKeyModal] = useState(false)
   const [firecrawlApiKey, setFirecrawlApiKey] = useState('')
   const [isValidatingApiKey, setIsValidatingApiKey] = useState(false)
   const [hasFirecrawlKey, setHasFirecrawlKey] = useState(false)
+  const [hasVoice, setHasVoice] = useState(voiceEnabled)
 
   useEffect(() => {
     // Check for Firecrawl API key on mount
@@ -31,6 +42,8 @@ export default function OpenResearcherContent() {
       .then(data => {
         const hasEnvFirecrawlKey = data.environmentStatus.FIRECRAWL_API_KEY
         setHasFirecrawlKey(hasEnvFirecrawlKey)
+        // Voice controls only appear when a Cartesia key is configured.
+        setHasVoice(Boolean(data.environmentStatus.CARTESIA_API_KEY))
 
         // Check localStorage for saved key if not in env
         if (!hasEnvFirecrawlKey) {
@@ -103,20 +116,20 @@ export default function OpenResearcherContent() {
                 className="w-[113px] h-auto"
               />
             </Link>
-            <Button
-              variant="code"
-              asChild
-            >
-              <Link
-                href="https://github.com/mendableai/open-researcher"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2"
-              >
-                <Github className="h-4 w-4" />
-                Use this template
-              </Link>
-            </Button>
+            <div className="flex items-center gap-2">
+              {hasVoice && <VoicePicker />}
+              <Button variant="code" asChild>
+                <Link
+                  href="https://github.com/mendableai/open-researcher"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2"
+                >
+                  <Github className="h-4 w-4" />
+                  Use this template
+                </Link>
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -139,11 +152,14 @@ export default function OpenResearcherContent() {
       {/* Main Content - Full width split layout */}
       <div className="flex-1 px-4 sm:px-6 lg:px-8">
         <div className="h-full max-w-[1400px] mx-auto">
-          <ThinkingChat
-            onMessagesChange={setHasMessages}
-            hasFirecrawlKey={hasFirecrawlKey}
-            onApiKeyRequired={() => setShowApiKeyModal(true)}
-          />
+          <SpeechProvider>
+            <ThinkingChat
+              onMessagesChange={setHasMessages}
+              hasFirecrawlKey={hasFirecrawlKey}
+              hasVoice={hasVoice}
+              onApiKeyRequired={() => setShowApiKeyModal(true)}
+            />
+          </SpeechProvider>
         </div>
       </div>
 

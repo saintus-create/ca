@@ -8,6 +8,7 @@ export async function GET() {
 
   const environmentStatus = {
     FIRECRAWL_API_KEY: !!process.env.FIRECRAWL_API_KEY,
+    CARTESIA_API_KEY: !!process.env.CARTESIA_API_KEY,
     SARVAM_API_KEY: !!process.env.SARVAM_API_KEY,
     ANTHROPIC_API_KEY: !!process.env.ANTHROPIC_API_KEY,
     LLM_PROVIDER: provider,
@@ -21,6 +22,8 @@ export async function GET() {
   const debugInfo = process.env.NODE_ENV === 'development' ? {
     sarvamKeyPrefix: process.env.SARVAM_API_KEY ? process.env.SARVAM_API_KEY.substring(0, 6) + '...' : 'NOT SET',
     anthropicKeyPrefix: process.env.ANTHROPIC_API_KEY ? process.env.ANTHROPIC_API_KEY.substring(0, 10) + '...' : 'NOT SET',
+    cartesiaKeyPrefix: process.env.CARTESIA_API_KEY ? process.env.CARTESIA_API_KEY.substring(0, 6) + '...' : 'NOT SET',
+    cartesiaVoiceId: process.env.CARTESIA_VOICE_ID || null,
     firecrawlKeyPrefix: process.env.FIRECRAWL_API_KEY ? process.env.FIRECRAWL_API_KEY.substring(0, 10) + '...' : 'NOT SET',
     nodeEnv: process.env.NODE_ENV
   } : {};

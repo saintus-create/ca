@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from 'react'
 import { ChevronDown, Loader2, Send, Copy } from 'lucide-react'
 import { SearchResultsDisplay } from '@/components/search-results-display'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
+import { MicButton } from '@/components/mic-button'
+import { SpeakButton } from '@/components/speak-button'
 import { cn } from '@/lib/utils'
 import { SpotlightCard } from '@/components/velora/spotlight-card'
 import { TracingBeam } from '@/components/velora/tracing-beam'
@@ -31,11 +33,13 @@ const SUGGESTED_QUERIES = [
 interface ThinkingChatProps {
   onMessagesChange?: (hasMessages: boolean) => void
   hasFirecrawlKey?: boolean
+  /** True when CARTESIA_API_KEY is configured, so voice controls can show. */
+  hasVoice?: boolean
   onApiKeyRequired?: () => void
   onBrowserClose?: () => void
 }
 
-export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiKeyRequired }: ThinkingChatProps) {
+export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, hasVoice = false, onApiKeyRequired }: ThinkingChatProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isSearching, setIsSearching] = useState(false)
@@ -70,6 +74,13 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
       return () => clearTimeout(timer)
     }
   }, [showSuggestions, hasAnimatedSuggestions])
+
+  const handleTranscript = (text: string) => {
+    setInput((prev) => (prev.trim() ? `${prev.trim()} ${text}` : text))
+    setShowSuggestions(false)
+    // Let the state land before focusing so the caret sits at the end.
+    requestAnimationFrame(() => inputRef.current?.focus())
+  }
 
   const handleSearch = async (query: string) => {
     if (!query.trim() || isSearching) return
@@ -349,9 +360,16 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
               onFocus={() => setShowSuggestions(true)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
               placeholder="Enter query..."
-              className="ui-control w-full h-12 rounded-full border border-border bg-background pl-5 pr-14 text-base text-foreground shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              className={cn("ui-control w-full h-12 rounded-full border border-border bg-background pl-5 text-base text-foreground shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50", hasVoice ? "pr-24" : "pr-14")}
               disabled={isSearching}
             />
+            {hasVoice && (
+              <MicButton
+                onTranscript={handleTranscript}
+                disabled={isSearching}
+                className="absolute right-11 top-2"
+              />
+            )}
             <button
               type="submit"
               disabled={isSearching || !input.trim()}
@@ -535,12 +553,13 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
                   
                   {/* Action buttons for completed responses */}
                   {message.role === 'assistant' && message.content && message.searchData?.status === 'complete' && (
-                    <div className="mt-3 flex items-center">
+                    <div className="mt-3 flex items-center justify-end gap-1">
+                      {hasVoice && <SpeakButton id={message.id} text={message.content} />}
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(message.content)
                         }}
-                        className="ml-auto rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                        className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                         title="Copy to clipboard"
                       >
                         <Copy className="h-3.5 w-3.5" />
@@ -564,9 +583,16 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Enter query..."
-                className="ui-control w-full h-12 rounded-full border border-border bg-background pl-5 pr-14 text-base text-foreground shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className={cn("ui-control w-full h-12 rounded-full border border-border bg-background pl-5 text-base text-foreground shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50", hasVoice ? "pr-24" : "pr-14")}
                 disabled={isSearching}
               />
+              {hasVoice && (
+                <MicButton
+                  onTranscript={handleTranscript}
+                  disabled={isSearching}
+                  className="absolute right-11 top-2"
+                />
+              )}
               <button
                 type="submit"
                 disabled={isSearching || !input.trim()}
