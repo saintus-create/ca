@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { performResearchWithStreaming } from '@/lib/open-researcher-agent'
+import { ResearchCancelledError, performResearchWithStreaming } from '@/lib/open-researcher-agent'
 import { isProviderConfigured, providerDefaults, resolveProvider } from '@/lib/llm'
 
 export async function POST(req: NextRequest) {
@@ -32,43 +32,72 @@ export async function POST(req: NextRequest) {
       )
     }
     
-    // Set Firecrawl API key as environment variable for the agent to use
-    process.env.FIRECRAWL_API_KEY = firecrawlApiKey
-    
+    // The key travels with the request; writing it to process.env would let
+    // two concurrent users overwrite each other's credentials.
+
     // API Keys configured successfully
 
     // Create a streaming response
     const encoder = new TextEncoder()
     const stream = new ReadableStream({
       async start(controller) {
+        // The browser can disappear mid-run (tab closed, navigation, flaky
+        // network). Once that happens the controller is dead: enqueue throws,
+        // and the agent should stop rather than keep spending tokens.
+        let closed = false
+
+        const send = (payload: Record<string, unknown>) => {
+          if (closed) return
+          try {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`))
+          } catch {
+            closed = true
+          }
+        }
+
+        const finish = () => {
+          if (closed) return
+          closed = true
+          try {
+            controller.close()
+          } catch {
+            // Client already gone.
+          }
+        }
+
+        req.signal.addEventListener('abort', () => {
+          closed = true
+        })
+
         try {
           // Perform research with streaming events
-          const finalResponse = await performResearchWithStreaming(query, (event) => {
-            // Add timestamp to events
-            const eventWithTimestamp = { ...event, timestamp: Date.now() }
-            
-            // Send event as SSE
-            const data = `data: ${JSON.stringify({ type: 'event', event: eventWithTimestamp })}\n\n`
-            controller.enqueue(encoder.encode(data))
-          })
+          const finalResponse = await performResearchWithStreaming(
+            query,
+            (event) => {
+              // Add timestamp to events
+              send({ type: 'event', event: { ...event, timestamp: Date.now() } })
+            },
+            { firecrawlApiKey, signal: req.signal }
+          )
 
           // Send final response
           if (finalResponse) {
-            const responseData = `data: ${JSON.stringify({ type: 'response', content: finalResponse })}\n\n`
-            controller.enqueue(encoder.encode(responseData))
+            send({ type: 'response', content: finalResponse })
           }
 
           // Send done event
-          const doneData = `data: ${JSON.stringify({ type: 'done' })}\n\n`
-          controller.enqueue(encoder.encode(doneData))
-          controller.close()
+          send({ type: 'done' })
+          finish()
         } catch (error) {
-          // Research error occurred
+          // A cancelled run is not a failure; the reader is gone.
+          if (error instanceof ResearchCancelledError || req.signal.aborted) {
+            closed = true
+            return
+          }
+
           const errorMessage = error instanceof Error ? error.message : 'Unknown error'
           const errorDetails = error instanceof Error && error.stack ? error.stack : ''
-          
-          // Error details logged internally
-          
+
           // More user-friendly error messages
           let userFriendlyError = errorMessage
           if (errorMessage.includes('Authentication error')) {
@@ -78,15 +107,14 @@ export async function POST(req: NextRequest) {
           } else if (errorMessage.includes('FIRECRAWL_API_KEY')) {
             userFriendlyError = 'The Firecrawl API key is not configured. Add it in the app or as FIRECRAWL_API_KEY.'
           }
-          
-          const errorData = `data: ${JSON.stringify({ 
-            type: 'error', 
+
+          send({
+            type: 'error',
             error: userFriendlyError,
             originalError: errorMessage,
-            details: process.env.NODE_ENV === 'development' ? errorDetails : undefined
-          })}\n\n`
-          controller.enqueue(encoder.encode(errorData))
-          controller.close()
+            details: process.env.NODE_ENV === 'development' ? errorDetails : undefined,
+          })
+          finish()
         }
       }
     })
@@ -94,8 +122,11 @@ export async function POST(req: NextRequest) {
     return new NextResponse(stream, {
       headers: {
         'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
+        'Cache-Control': 'no-cache, no-transform',
         'Connection': 'keep-alive',
+        // Some hosts and proxies buffer a stream until it closes, which makes
+        // the live thinking view arrive all at once at the end.
+        'X-Accel-Buffering': 'no',
       },
     })
   } catch (error) {

@@ -7,6 +7,7 @@ import { MarkdownRenderer } from '@/components/markdown-renderer'
 import { MicButton } from '@/components/mic-button'
 import { SpeakButton } from '@/components/speak-button'
 import { cn } from '@/lib/utils'
+import { parseSseFrame, readSse } from '@/lib/sse'
 import { SpotlightCard } from '@/components/velora/spotlight-card'
 import { TracingBeam } from '@/components/velora/tracing-beam'
 
@@ -146,109 +147,125 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, hasVoi
         throw new Error(errorData.error || errorData.message || 'Search failed')
       }
 
-      const reader = response.body?.getReader()
-      const decoder = new TextDecoder()
-
-      if (!reader) throw new Error('No response stream')
+      if (!response.body) throw new Error('No response stream')
 
       const events: ThinkingEvent[] = []
       let finalContent = ''
       let streamError: string | null = null
+      let completed = false
+      // Track results as we parse them: `searchResults` state is a stale
+      // closure here, so reading it when the run finishes would always yield
+      // the empty array from the start of this function.
+      let latestResults: Array<{ url: string; title: string; description?: string }> = []
 
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
+      const handleFrame = (payload: string) => {
+        let data: {
+          type?: string
+          event?: ThinkingEvent
+          content?: string
+          error?: string
+          originalError?: string
+        }
+        try {
+          data = JSON.parse(payload)
+        } catch {
+          // A frame that is not valid JSON is not worth failing the run over.
+          return
+        }
 
-        const chunk = decoder.decode(value)
-        const lines = chunk.split('\n')
+        if (data.type === 'event' && data.event) {
+          const event = data.event
+          events.push(event)
 
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6))
-              
-              if (data.type === 'event') {
-                events.push(data.event)
-                
-                // Parse search results from tool results
-                if (data.event.type === 'tool_result' && data.event.tool === 'web_search') {
-                  const resultText = data.event.result
-                  const parsedResults = parseSearchResults(resultText)
-                  setSearchResults(parsedResults)
-                  
-                  // Extract screenshots if available
-                  if (data.event.screenshots) {
-                    setScreenshots(data.event.screenshots)
-                  }
-                  
-                  // Check if results mention scraping is happening
-                  if (resultText.includes('(SCRAPED)')) {
-                    // Find first scraped URL
-                    const scrapedMatch = resultText.match(/URL: (https?:\/\/[^\s]+).*?\(SCRAPED\)/)
-                    if (scrapedMatch) {
-                      setTimeout(() => {
-                        setCurrentScrapingUrl(scrapedMatch[1])
-                      }, 1000) // Show search results first, then switch to scraping
-                    }
-                  }
-                }
-                
-                // Track current scraping URL and handle web_search with scraping
-                if (data.event.type === 'tool_call') {
-                  if (data.event.tool === 'web_search' || data.event.tool === 'firecrawl_search') {
-                    // Update the query in the URL bar immediately
-                    const searchQuery = (data.event.parameters as { query?: string })?.query || ''
-                    setCurrentQuery(searchQuery)
-                    setCurrentScrapingUrl('')  // Clear to show search results
-                  } else if (data.event.tool === 'firecrawl_scrape' || data.event.tool === 'deep_scrape') {
-                    const sourceUrl = (data.event.parameters as { source_url?: string })?.source_url || ''
-                    setCurrentScrapingUrl(sourceUrl)
-                  }
-                } else if (data.event.type === 'tool_result') {
-                  if (data.event.tool === 'deep_scrape' || data.event.tool === 'firecrawl_scrape' || data.event.tool === 'web_search') {
-                    // Extract screenshots from results
-                    // Always add new screenshots even if URL is the same (for multiple scrapes of same page)
-                    if (data.event.screenshots) {
-                      setScreenshots(prev => [...prev, ...data.event.screenshots])
-                    }
-                    
-                    // Don't clear scraping URL immediately - let it show the screenshot
-                    // Only clear when a new tool call happens
-                  }
-                }
-                
-                setMessages(prev => prev.map(msg => 
-                  msg.id === assistantMessage.id
-                    ? { ...msg, searchData: { status: 'searching', events: [...events] } }
-                    : msg
-                ))
-              } else if (data.type === 'response') {
-                finalContent = data.content
-              } else if (data.type === 'error') {
-                // The route reports failures inside the stream (it has already
-                // sent 200), so surface them here instead of spinning forever.
-                streamError = data.error || data.originalError || 'The research request failed.'
-              } else if (data.type === 'done') {
-                setMessages(prev => prev.map(msg => 
-                  msg.id === assistantMessage.id
-                    ? { 
-                        ...msg, 
-                        content: finalContent,
-                        searchData: { status: 'complete', events: events },
-                        sources: searchResults // Keep the sources from this specific search
-                      }
-                    : msg
-                ))
+          // Parse search results from tool results
+          if (event.type === 'tool_result' && event.tool === 'web_search') {
+            const resultText = String(event.result ?? '')
+            const parsedResults = parseSearchResults(resultText)
+            latestResults = parsedResults
+            setSearchResults(parsedResults)
+
+            // Extract screenshots if available
+            if (event.screenshots) {
+              setScreenshots(event.screenshots)
+            }
+
+            // Check if results mention scraping is happening
+            if (resultText.includes('(SCRAPED)')) {
+              // Find first scraped URL
+              const scrapedMatch = resultText.match(/URL: (https?:\/\/[^\s]+).*?\(SCRAPED\)/)
+              if (scrapedMatch) {
+                setTimeout(() => {
+                  setCurrentScrapingUrl(scrapedMatch[1])
+                }, 1000) // Show search results first, then switch to scraping
               }
-            } catch (e) {
-              // Error parsing SSE data
             }
           }
+
+          // Track current scraping URL and handle web_search with scraping
+          if (event.type === 'tool_call') {
+            if (event.tool === 'web_search' || event.tool === 'firecrawl_search') {
+              // Update the query in the URL bar immediately
+              const searchQuery = (event.parameters as { query?: string })?.query || ''
+              setCurrentQuery(searchQuery)
+              setCurrentScrapingUrl('')  // Clear to show search results
+            } else if (event.tool === 'firecrawl_scrape' || event.tool === 'deep_scrape') {
+              const sourceUrl = (event.parameters as { source_url?: string })?.source_url || ''
+              setCurrentScrapingUrl(sourceUrl)
+            }
+          } else if (event.type === 'tool_result') {
+            if (event.tool === 'deep_scrape' || event.tool === 'firecrawl_scrape' || event.tool === 'web_search') {
+              // Extract screenshots from results
+              // Always add new screenshots even if URL is the same (for multiple scrapes of same page)
+              if (event.screenshots) {
+                setScreenshots(prev => [...prev, ...event.screenshots!])
+              }
+
+              // Don't clear scraping URL immediately - let it show the screenshot
+              // Only clear when a new tool call happens
+            }
+          }
+
+          setMessages(prev => prev.map(msg =>
+            msg.id === assistantMessage.id
+              ? { ...msg, searchData: { status: 'searching', events: [...events] } }
+              : msg
+          ))
+        } else if (data.type === 'response') {
+          finalContent = data.content || ''
+        } else if (data.type === 'error') {
+          // The route reports failures inside the stream (it has already
+          // sent 200), so surface them here instead of spinning forever.
+          streamError = data.error || data.originalError || 'The research request failed.'
+        } else if (data.type === 'done') {
+          completed = true
+          setMessages(prev => prev.map(msg =>
+            msg.id === assistantMessage.id
+              ? {
+                  ...msg,
+                  content: finalContent,
+                  searchData: { status: 'complete', events: events },
+                  sources: latestResults
+                }
+              : msg
+          ))
         }
+      }
+
+      // Frames are buffered and decoded by lib/sse so a chunk boundary in the
+      // middle of a frame (or a multi-byte character) cannot lose an event.
+      for await (const frame of readSse(response.body)) {
+        const payload = parseSseFrame(frame)
+        if (payload) handleFrame(payload)
       }
 
       if (streamError) {
         throw new Error(streamError)
+      }
+
+      // The connection ended without a done frame (server restart, proxy
+      // timeout, dropped network). Better an error than a spinner forever.
+      if (!completed) {
+        throw new Error('The research stream ended unexpectedly. Please try again.')
       }
     } catch (error) {
       // Search error occurred

@@ -124,6 +124,20 @@ npm start
 npm run lint
 ```
 
+## Testing
+
+```bash
+npm run build && npm test
+```
+
+`npm test` runs the SSE parser unit tests, then an end-to-end smoke test that
+starts the production server against local stand-ins for Sarvam, Firecrawl and
+Cartesia and drives the real routes: a full research run (including a stream
+chopped into 7-byte fragments), the corpus, follow-up questions, voice in both
+directions, per-request API keys, cancellation, and the failure modes — bad key,
+upstream 500, empty model reply, missing key. No network access or secrets
+required, so it works in CI.
+
 ## Tech Stack
 
 - **Next.js 15** - React framework

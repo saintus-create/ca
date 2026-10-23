@@ -6,7 +6,10 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "smoke": "node --experimental-strip-types scripts/smoke.mjs",
+    "test:sse": "node --experimental-strip-types scripts/test-sse.mjs",
+    "test": "npm run test:sse && npm run smoke"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.54.0",
