@@ -943,3 +943,27 @@
     transition-delay: 0ms !important;
   }
 }
+
+
+/* The suggested prompts sit outside the transcript card, so style them with
+   the same neutral surface and brand focus treatment directly. */
+.space-y-2 > button {
+  border-radius: .8rem;
+  border-color: color-mix(in oklab, var(--color-border) 80%, transparent);
+  background: color-mix(in oklab, var(--color-muted) 38%, transparent);
+  transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease;
+}
+.space-y-2 > button:hover {
+  border-color: color-mix(in oklab, var(--color-brand) 35%, var(--color-border));
+  background: color-mix(in oklab, var(--color-brand) 5%, var(--color-background));
+  transform: translateY(-1px);
+}
+
+/* Two-pane research stacks vertically on phones. Cap each pane so the pair
+   fits inside the available viewport instead of forcing page-level scrolling. */
+@media (max-width: 1023px) {
+  .animate-slide-up [class~="h-[45vh]"] {
+    height: min(38dvh, 360px);
+    min-height: 220px;
+  }
+}
