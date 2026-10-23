@@ -10,7 +10,7 @@ const LINKS = [
   { label: "How it works", href: "#how" },
   { label: "Sources", href: "#sources" },
   { label: "Docs", href: "#docs" },
-  { label: "GitHub", href: "#github" },
+  { label: "GitHub", href: "https://github.com/saintus-create/ca" },
 ];
 
 function Logo() {
@@ -49,10 +49,10 @@ export function NavbarFloating() {
         cta={
           <div className="grid grid-cols-2 gap-2 @3xl/navbar:flex @3xl/navbar:items-center @3xl/navbar:gap-1">
             <Button variant="ghost" className="h-9 rounded-full px-4 @max-3xl/navbar:border-border" asChild>
-              <a href="#">GitHub</a>
+              <a href="https://github.com/saintus-create/ca">GitHub</a>
             </Button>
             <Button className="h-9 rounded-full px-4" asChild>
-              <a href="#">
+              <a href="#research">
                 Start researching <ArrowRightIcon data-icon="end" />
               </a>
             </Button>

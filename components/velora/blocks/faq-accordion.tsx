@@ -120,7 +120,7 @@ export function FaqAccordion() {
               size="lg"
               className="h-10 shrink-0 rounded-full px-5"
             >
-              <a href="#">
+              <a href="https://github.com/saintus-create/ca/issues">
                 <MessageCircleIcon aria-hidden />
                 Open an issue
               </a>

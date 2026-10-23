@@ -25,14 +25,14 @@ export const metadata: Metadata = {
 
 export default function OpenResearcherPage() {
   return (
-    <div className="min-h-screen bg-background font-sans text-foreground">
+    <div id="top" className="min-h-screen bg-background font-sans text-foreground">
       <NavbarFloating />
       <HeroAurora />
       <OpenResearcherContent voiceEnabled={isSpeechConfigured()} />
-      <LogosMarquee />
-      <FeaturesBento />
-      <FeaturesSteps />
-      <FaqAccordion />
+      <div id="sources" className="scroll-mt-24"><LogosMarquee /></div>
+      <div id="corpus" className="scroll-mt-24"><FeaturesBento /></div>
+      <div id="how" className="scroll-mt-24"><FeaturesSteps /></div>
+      <div id="docs" className="scroll-mt-24"><FaqAccordion /></div>
       <FooterColumns />
     </div>
   )

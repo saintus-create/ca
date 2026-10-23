@@ -124,14 +124,14 @@ export function FeaturesBento() {
           <BentoGrid className="mt-16 md:grid-cols-2 lg:grid-cols-3">
             <BentoCard
               {...CARDS.integrations}
-              href="#"
+              href="#research"
               className="md:col-span-2"
               background={<IntegrationsVisual />}
             />
-            <BentoCard {...CARDS.automations} href="#" background={<AutomationsVisual />} />
-            <BentoCard {...CARDS.analytics} href="#" background={<AnalyticsVisual />} />
-            <BentoCard {...CARDS.search} href="#" background={<SearchVisual />} />
-            <BentoCard {...CARDS.edge} href="#" background={<EdgeVisual />} />
+            <BentoCard {...CARDS.automations} href="#research" background={<AutomationsVisual />} />
+            <BentoCard {...CARDS.analytics} href="#research" background={<AnalyticsVisual />} />
+            <BentoCard {...CARDS.search} href="#research" background={<SearchVisual />} />
+            <BentoCard {...CARDS.edge} href="#research" background={<EdgeVisual />} />
           </BentoGrid>
         </BlurFade>
       </div>
