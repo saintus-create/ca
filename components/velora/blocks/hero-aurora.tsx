@@ -1,6 +1,3 @@
-import { ArrowRightIcon, SparklesIcon } from "lucide-react";
-
-import { Button } from "@/components/velora/ui/button";
 import { BlurFade } from "@/components/velora/blur-fade";
 import { DotPattern } from "@/components/velora/grid-pattern";
 import { ShimmerButton } from "@/components/velora/shimmer-button";
@@ -19,17 +16,6 @@ export function HeroAurora() {
       />
 
       <div className="relative mx-auto max-w-3xl text-center">
-        <BlurFade>
-          <a
-            href="/corpus"
-            className="inline-flex items-center gap-2 rounded-full border bg-background/60 px-3 py-1 text-sm text-muted-foreground backdrop-blur transition-colors hover:text-foreground"
-          >
-            <SparklesIcon className="size-4 text-primary" />
-            Now indexing all 36 California datasets
-            <ArrowRightIcon className="size-3.5" />
-          </a>
-        </BlurFade>
-
         <h1 className="mt-8 text-4xl font-medium tracking-tight text-balance sm:text-6xl">
           The whole of California law,{" "}
           <span className="text-muted-foreground">one search away</span>
@@ -46,19 +32,9 @@ export function HeroAurora() {
             <a href="#research" className="inline-flex">
               <ShimmerButton>Start researching</ShimmerButton>
             </a>
-            <Button variant="ghost" size="lg" asChild>
-              <a href="/corpus">
-                Explore the corpus <ArrowRightIcon />
-              </a>
-            </Button>
           </div>
         </BlurFade>
 
-        <BlurFade delay={0.4}>
-          <p className="mt-8 text-sm text-muted-foreground">
-            No account needed · Every answer cites its section
-          </p>
-        </BlurFade>
       </div>
     </section>
   );

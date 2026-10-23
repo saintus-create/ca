@@ -391,20 +391,21 @@ export function ResearchChat({
     recorderRef.current = null
   }, [])
 
-  const scopeSelector = (
-    <div className="flex flex-wrap items-center justify-center gap-2">
-      <label
-        htmlFor="corpus-scope"
-        className="text-[12.5px] text-neutral-400 dark:text-neutral-500"
-      >
-        Search in
-      </label>
-      <select
-        id="corpus-scope"
-        value={scope}
-        onChange={(e) => setScope(e.target.value)}
-        className="max-w-[260px] rounded-full border border-black/[0.08] bg-white px-3 py-1.5 text-[12.5px] text-neutral-700 outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400 dark:border-white/[0.09] dark:bg-[#0B0B0D] dark:text-neutral-200"
-      >
+  const scopeStrip = (
+    <div className="flex w-full flex-wrap items-center justify-between gap-2 border-b border-black/[0.06] px-3.5 py-2 dark:border-white/[0.07]">
+      <span className="flex items-center gap-2">
+        <label
+          htmlFor="corpus-scope"
+          className="text-[12.5px] text-neutral-400 dark:text-neutral-500"
+        >
+          Search in
+        </label>
+        <select
+          id="corpus-scope"
+          value={scope}
+          onChange={(e) => setScope(e.target.value)}
+          className="max-w-[240px] rounded-full border border-black/[0.08] bg-white px-3 py-1 text-[12.5px] text-neutral-700 outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400 dark:border-white/[0.09] dark:bg-[#0B0B0D] dark:text-neutral-200"
+        >
         <option value="">All California law</option>
         {groupDatasets(datasets).map(({ group, items }) => (
           <optgroup key={group} label={group}>
@@ -415,7 +416,8 @@ export function ResearchChat({
             ))}
           </optgroup>
         ))}
-      </select>
+        </select>
+      </span>
       <a
         href="/corpus"
         className="text-[12.5px] text-neutral-400 underline decoration-neutral-300 underline-offset-4 transition-colors hover:text-neutral-700 dark:text-neutral-500 dark:decoration-neutral-600 dark:hover:text-neutral-200"
@@ -479,13 +481,15 @@ export function ResearchChat({
           prompts={SUGGESTED_PROMPTS}
           onSelectPrompt={(p) => handleSearch(p.prompt || p.label)}
         />
-        <PromptComposer
-          placeholder="Ask anything about California law"
-          isGenerating={isSearching}
-          onSend={(text) => handleSearch(text)}
-          className="max-w-[640px]"
-        />
-        {scopeSelector}
+        <div className="w-full">
+          {scopeStrip}
+          <PromptComposer
+            placeholder="Ask anything about California law"
+            isGenerating={isSearching}
+            onSend={(text) => handleSearch(text)}
+            className="max-w-none rounded-none border-0 bg-transparent shadow-none"
+          />
+        </div>
         {voiceControls}
         {firecrawlNotice}
       </div>
@@ -555,13 +559,15 @@ export function ResearchChat({
       </div>
 
       <div className="space-y-3 border-t border-black/[0.06] px-4 py-4 dark:border-white/[0.07]">
-        {scopeSelector}
-        <PromptComposer
-          placeholder="Ask a follow-up"
-          isGenerating={isSearching}
-          onSend={(text) => handleSearch(text)}
-          className="mx-auto max-w-[640px]"
-        />
+        <div className="mx-auto w-full max-w-[640px]">
+          {scopeStrip}
+          <PromptComposer
+            placeholder="Ask a follow-up"
+            isGenerating={isSearching}
+            onSend={(text) => handleSearch(text)}
+            className="max-w-none rounded-none border-0 bg-transparent shadow-none"
+          />
+        </div>
         {voiceControls}
         <div className="text-center">{firecrawlNotice}</div>
       </div>

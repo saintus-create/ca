@@ -8,7 +8,6 @@ import OpenResearcherContent from './open-researcher/open-researcher-content'
 import { isSpeechConfigured } from '@/lib/cartesia'
 import { NavbarFloating } from '@/components/velora/blocks/navbar-floating'
 import { HeroAurora } from '@/components/velora/blocks/hero-aurora'
-import { LogosMarquee } from '@/components/velora/blocks/logos-marquee'
 import { FaqAccordion } from '@/components/velora/blocks/faq-accordion'
 import { FooterColumns } from '@/components/velora/blocks/footer-columns'
 
@@ -30,7 +29,6 @@ export default function Home() {
       <div className="bg-[#22364a] py-14 dark:bg-[#141f2b] sm:py-16">
         <OpenResearcherContent voiceEnabled={isSpeechConfigured()} />
       </div>
-      <div id="sources" className="scroll-mt-24"><LogosMarquee /></div>
       <div id="docs" className="scroll-mt-24 bg-[#a5811f]/[0.05] dark:bg-white/[0.02]"><FaqAccordion /></div>
       <FooterColumns />
     </div>

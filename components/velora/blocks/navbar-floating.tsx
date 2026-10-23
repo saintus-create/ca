@@ -7,7 +7,6 @@ const BRAND = "California Legislative Information";
 
 const LINKS = [
   { label: "Corpus", href: "/corpus" },
-  { label: "Sources", href: "/#sources" },
   { label: "Docs", href: "/#docs" },
   { label: "GitHub", href: "https://github.com/saintus-create/ca" },
 ];

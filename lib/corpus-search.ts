@@ -26,6 +26,10 @@ export interface CorpusHit {
   title: string;
   url?: string;
   snippet: string;
+  /** The record's own text (first 3000 chars), so a reader, human or model,
+   *  sees the section itself and not only a window around the match. */
+  text: string;
+  fullLength: number;
   score: number;
 }
 
@@ -199,6 +203,8 @@ export async function searchCorpus(query: string, datasetCode?: string, limit = 
           title: rec.title,
           url: rec.url,
           snippet: snippetAround(rec.text, terms),
+          text: rec.text.slice(0, 3000),
+          fullLength: rec.text.length,
           score,
         });
       }
@@ -221,12 +227,19 @@ export async function executeCorpusSearch(
     if (hits.length === 0) {
       return { content: 'No matching records found in the California Legislative Information corpus.' };
     }
-    const lines = hits.map(
-      (h, i) =>
-        `[${i + 1}] ${h.citation || h.title}, ${h.dataset}${h.title && h.citation ? `: ${h.title}` : ''}${
-          h.url ? `\nSource: ${h.url}` : ''
-        }\n${h.snippet}`
-    );
+    const lines = hits.map((h, i) => {
+      const head = `[${i + 1}] ${h.citation || h.title}, ${h.dataset}${h.title && h.citation ? `: ${h.title}` : ''}${
+        h.url ? `\nSource: ${h.url}` : ''
+      }`;
+      // Give the model the section text, not just the window around the
+      // match. When the record runs past the carried text and the match sits
+      // beyond it, include the match window too.
+      let body = h.text;
+      if (h.fullLength > h.text.length && !h.text.includes(h.snippet.replace(/^\.\.\.|\.\.\.$/g, '').slice(0, 60))) {
+        body = `${h.text}\n[match window] ${h.snippet}`;
+      }
+      return `${head}\n${body}`;
+    });
     return {
       content: `California Legislative Information corpus results for "${query}":\n\n${lines.join('\n\n')}`,
     };
