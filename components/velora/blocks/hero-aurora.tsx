@@ -54,7 +54,7 @@ export function HeroAurora() {
 
         <BlurFade delay={0.4}>
           <p className="mt-8 text-sm text-muted-foreground">
-            36 datasets indexed · Bring your own Anthropic key
+            No account needed · Every answer cites its section
           </p>
         </BlurFade>
       </div>
