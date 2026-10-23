@@ -1,6 +1,9 @@
 // FirecrawlLogo.tsx
 import * as React from "react";
-import flame from "../../public/assets/twemoji-fire.svg";   // 1️⃣ add the Twemoji file to src/ (2 KB, CC-BY 4.0)
+
+// The upstream template imported `../../public/assets/twemoji-fire.svg`,
+// an asset that was never committed — which broke `tsc --noEmit` on a clean
+// checkout. The flame is drawn with the emoji below instead.
 
 export default function FirecrawlLogo({
   className = "",
@@ -31,8 +34,6 @@ export default function FirecrawlLogo({
             🔥
           </div>
         </foreignObject>
-
-        <image href={flame} x="0" y="0" width="600" height="600" />
       </switch>
 
       <path
