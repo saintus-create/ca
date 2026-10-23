@@ -5,6 +5,7 @@ import { ChevronDown, Loader2, Send, Copy } from 'lucide-react'
 import { SearchResultsDisplay } from '@/components/search-results-display'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
 import { cn } from '@/lib/utils'
+import { readSse, parseSseFrame } from '@/lib/sse'
 import { MicButton } from '@/components/mic-button'
 import { SpeakButton } from '@/components/speak-button'
 import { SpotlightCard } from '@/components/velora/spotlight-card'
@@ -44,7 +45,6 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
   const [input, setInput] = useState('')
   const [isSearching, setIsSearching] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(false)
-  const [isTransitioning, setIsTransitioning] = useState(false)
   const [searchResults, setSearchResults] = useState<Array<{ url: string; title: string; description?: string }>>([])
   const [currentQuery, setCurrentQuery] = useState('')
   const [currentScrapingUrl, setCurrentScrapingUrl] = useState('')
@@ -78,12 +78,6 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
   const handleSearch = async (query: string) => {
     if (!query.trim() || isSearching) return
 
-    // Start transition animation
-    setIsTransitioning(true)
-    
-    // Wait for fade animation
-    await new Promise(resolve => setTimeout(resolve, 300))
-
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
@@ -97,7 +91,6 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
     setSearchResults([]) // Clear current search results for this query
     setCurrentScrapingUrl('') // Reset scraping URL
     setScreenshots([]) // Clear screenshots
-    setIsTransitioning(false)
 
     // Create assistant message placeholder
     const assistantMessage: Message = {
@@ -133,26 +126,18 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
         throw new Error(errorData.error || errorData.message || 'Search failed')
       }
 
-      const reader = response.body?.getReader()
-      const decoder = new TextDecoder()
-
-      if (!reader) throw new Error('No response stream')
+      const body = response.body
+      if (!body) throw new Error('No response stream')
 
       const events: ThinkingEvent[] = []
       let finalContent = ''
       let streamError: string | null = null
 
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-
-        const chunk = decoder.decode(value)
-        const lines = chunk.split('\n')
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6))
+      for await (const frame of readSse(body)) {
+        const payload = parseSseFrame(frame)
+        if (payload === null) continue
+        try {
+              const data = JSON.parse(payload)
               
               if (data.type === 'event') {
                 events.push(data.event)
@@ -176,9 +161,7 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
                     // Find first scraped URL
                     const scrapedMatch = resultText.match(/URL: (https?:\/\/[^\s]+).*?\(scraped\)/)
                     if (scrapedMatch) {
-                      setTimeout(() => {
-                        setCurrentScrapingUrl(scrapedMatch[1])
-                      }, 1000) // Show search results first, then switch to scraping
+                      setCurrentScrapingUrl(scrapedMatch[1])
                     }
                   }
                 }
@@ -230,10 +213,8 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
                     : msg
                 ))
               }
-            } catch (e) {
-              // Error parsing SSE data
-            }
-          }
+        } catch (e) {
+          // Ignore malformed frames; keep the stream alive for the next complete event.
         }
       }
 
@@ -359,9 +340,7 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
   // If no messages, show input below hero section
   if (!hasMessages) {
     return (
-      <div className={`w-full max-w-2xl mx-auto mt-4 lg:mt-8 px-4 lg:px-0 transition-all duration-500 ${
-        isTransitioning ? 'opacity-0 transform -translate-y-4' : 'opacity-100 transform translate-y-0'
-      }`}>
+      <div className="w-full max-w-3xl mx-auto mt-4 lg:mt-8 px-4 lg:px-0 motion-safe:animate-fade-up">
         <div className="space-y-4 lg:space-y-8">
           <form onSubmit={handleSubmit} className="relative">
             <input
@@ -372,7 +351,7 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
               onFocus={() => setShowSuggestions(true)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
               placeholder="Enter query..."
-              className="ui-control w-full h-12 rounded-full border border-border bg-background pl-5 pr-14 text-base text-foreground shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              className="ui-control w-full h-14 rounded-2xl border border-border/70 bg-background/95 pl-5 pr-24 text-base text-foreground shadow-[0_12px_40px_rgba(25,45,90,0.08)] backdrop-blur-xl ring-offset-background placeholder:text-muted-foreground transition-[border-color,box-shadow] duration-200 focus-visible:outline-none focus-visible:border-[#5279bd] focus-visible:ring-2 focus-visible:ring-[#5279bd]/25 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={isSearching}
             />
             {voiceEnabled && (
@@ -389,7 +368,7 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
             <button
               type="submit"
               disabled={isSearching || !input.trim()}
-              className="absolute right-2 top-2 h-8 w-8 bg-primary text-primary-foreground rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-opacity duration-200 flex items-center justify-center hover:opacity-90"
+              className="absolute right-2 top-2 h-10 w-10 bg-[#002868] text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-[transform,background-color] duration-200 flex items-center justify-center hover:bg-[#0a3d86] active:scale-95"
             >
               {isSearching ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -555,10 +534,10 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
                   {message.content ? (
                     <div
                       className={cn(
-                        "rounded-lg border px-4 py-3",
+                        "rounded-2xl px-4 py-4 sm:px-5 sm:py-5",
                         message.searchData?.status === 'error'
-                          ? "border-destructive/40 bg-destructive/5 text-destructive"
-                          : "border-border bg-muted/50"
+                          ? "border border-destructive/30 bg-destructive/5 text-destructive"
+                          : "border border-border/50 bg-card/80 shadow-[0_8px_30px_rgba(20,35,70,0.04)] backdrop-blur-sm"
                       )}
                     >
                       <MarkdownRenderer
