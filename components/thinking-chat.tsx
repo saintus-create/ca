@@ -56,8 +56,10 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
 
   // Auto-scroll to bottom when new messages are added
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+    // While a research stream is active, snap to the latest event instead of
+    // repeatedly starting overlapping smooth-scroll animations.
+    messagesEndRef.current?.scrollIntoView({ behavior: isSearching ? 'auto' : 'smooth', block: 'end' })
+  }, [messages, isSearching])
 
   // Notify parent when messages change
   useEffect(() => {
@@ -438,11 +440,11 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
     <div className="flex flex-col-reverse lg:flex-row gap-2 lg:gap-4 h-[calc(100vh-120px)] lg:h-[calc(100vh-200px)] animate-slide-up pt-2 lg:pt-5">
       {/* Chat interface - Bottom on mobile, Left on desktop */}
       <SpotlightCard className={cn(
-        "flex flex-col transition-all duration-700 ease-out",
+        "flex flex-col rounded-3xl border-border/70 bg-white/85 shadow-[0_20px_60px_rgba(20,40,90,0.08)] backdrop-blur-2xl transition-[width,height,box-shadow] duration-300 ease-out dark:bg-card/85",
         showFullWidth ? "h-full w-full" : "h-[45vh] lg:h-full lg:w-1/2" // Full height on mobile when browser closed
       )}>
         {/* Messages area */}
-        <div className="flex-1 overflow-y-auto p-2 lg:p-4 space-y-3 lg:space-y-4">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-5 space-y-4 lg:space-y-5">
           {messages.map((message) => (
             <div
               key={message.id}
@@ -586,7 +588,7 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
         </div>
 
         {/* Input area with firesearch style */}
-        <div className="border-t border-border p-2 lg:p-3">
+        <div className="border-t border-border/50 bg-background/60 p-3 sm:p-4">
           <form onSubmit={handleSubmit}>
             <div className="relative">
               <input
@@ -626,7 +628,7 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
 
       {/* Browser/Search Results - Top on mobile, Right on desktop */}
       <div className={cn(
-        "transition-all duration-700 ease-out",
+        "transition-[width,height,opacity] duration-300 ease-out",
         showFullWidth 
           ? "w-0 opacity-0 h-0 overflow-hidden" 
           : "h-[45vh] lg:h-full lg:w-1/2"
