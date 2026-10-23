@@ -63,7 +63,9 @@ A powerful AI-powered research tool that combines Firecrawl's web scraping capab
 | `SARVAM_MODEL` | No | Sarvam model id (default `sarvam-105b`) |
 | `SARVAM_BASE_URL` | No | Default `https://api.sarvam.ai/v1` |
 | `SARVAM_REASONING_EFFORT` | No | `low` \| `medium` \| `high` \| `none` |
-| `LLM_PROVIDER` | No | `sarvam` (default) or `anthropic` |
+| `LLM_PROVIDER` | No | `sarvam` (default), `venice`, or `anthropic` |
+| `VENICE_API_KEY` | No | Venice key; uncensored alternative provider (`venice-uncensored-1-2`) |
+| `VENICE_MODEL` | No | Venice model id (default `venice-uncensored-1-2`) |
 | `ANTHROPIC_API_KEY` | No | Fallback provider, used when no Sarvam key is set |
 | `ANTHROPIC_MODEL` | No | Default `claude-opus-4-8` |
 

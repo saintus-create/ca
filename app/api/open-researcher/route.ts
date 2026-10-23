@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
           if (errorMessage.includes('Authentication error')) {
             userFriendlyError = `The language model API key was rejected. Check ${providerDefaults(provider).apiKeyEnv}.`
           } else if (errorMessage.includes('Model error')) {
-            userFriendlyError = `The configured model is not available for this API key (${providerDefaults(provider).model}). Set SARVAM_MODEL (or ANTHROPIC_MODEL).`
+            userFriendlyError = `The configured model is not available for this API key (${providerDefaults(provider).model}). Set SARVAM_MODEL (or VENICE_MODEL / ANTHROPIC_MODEL).`
           } else if (errorMessage.includes('FIRECRAWL_API_KEY')) {
             userFriendlyError = 'The Firecrawl API key is not configured. Add it in the app or as FIRECRAWL_API_KEY.'
           }
