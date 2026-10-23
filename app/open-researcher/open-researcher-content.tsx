@@ -142,9 +142,9 @@ export default function OpenResearcherContent({ voiceEnabled = false }: { voiceE
       <Dialog open={showApiKeyModal} onOpenChange={setShowApiKeyModal}>
         <DialogContent className="sm:max-w-md bg-white dark:bg-zinc-900">
           <DialogHeader>
-            <DialogTitle>Firecrawl API Key Required</DialogTitle>
+            <DialogTitle>Web search (optional)</DialogTitle>
             <DialogDescription>
-              This tool requires a Firecrawl API key to search and analyze web content.
+              Add a Firecrawl key to let answers draw on the live web alongside the corpus. The California corpus works without it.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4 py-4">
@@ -154,11 +154,11 @@ export default function OpenResearcherContent({ voiceEnabled = false }: { voiceE
               className="flex items-center justify-center gap-2"
             >
               <ExternalLink className="h-4 w-4" />
-              Get Firecrawl API Key
+              Get a Firecrawl key
             </Button>
             <div className="flex flex-col gap-2">
               <Label htmlFor="firecrawl-key" className="ui-label">
-                Firecrawl API Key
+                Firecrawl key
               </Label>
               <Input
                 id="firecrawl-key"
@@ -179,7 +179,7 @@ export default function OpenResearcherContent({ voiceEnabled = false }: { voiceE
             <Button
               onClick={handleApiKeySubmit}
               disabled={isValidatingApiKey || !firecrawlApiKey.trim()}
-              variant="orange"
+              variant="default"
               className="w-full"
             >
               {isValidatingApiKey ? (
