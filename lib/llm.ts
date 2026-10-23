@@ -323,7 +323,9 @@ function getAnthropicClient(): Anthropic {
     throw new Error('Authentication error: ANTHROPIC_API_KEY is not set.');
   }
   if (!anthropicClient) {
-    anthropicClient = new Anthropic({ apiKey });
+    // Long generations need headroom, and a streaming request keeps bytes
+    // flowing so idle-connection timeouts don't kill it (see anthropicChat).
+    anthropicClient = new Anthropic({ apiKey, timeout: 600_000, maxRetries: 1 });
   }
   return anthropicClient;
 }
@@ -362,9 +364,13 @@ async function anthropicChat(model: string, request: ChatRequest): Promise<LlmBl
 
   let response: Anthropic.Message;
   try {
-    response = (await getAnthropicClient().messages.create(
-      params as unknown as AnthropicCreateParams
-    )) as unknown as Anthropic.Message;
+    // Stream rather than a single request. With thinking enabled the model can
+    // produce nothing for many seconds before the first byte, and an idle
+    // connection gets cut by proxies and some serverless edges (which surfaced
+    // as "Request timed out" at ~36s). Streaming keeps data flowing.
+    response = (await getAnthropicClient()
+      .messages.stream(params as unknown as AnthropicCreateParams)
+      .finalMessage()) as unknown as Anthropic.Message;
   } catch (error) {
     const raw = error instanceof Error ? error.message : 'Unknown error';
     const status = (error as { status?: number }).status;
