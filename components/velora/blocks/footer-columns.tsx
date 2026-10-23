@@ -13,8 +13,6 @@ const COLUMNS: {
     links: [
       { label: "Research", href: "/#research" },
       { label: "Browse the corpus", href: "/corpus" },
-      { label: "Corpus", href: "/#corpus" },
-      { label: "How it works", href: "/#how" },
       { label: "Sources", href: "/#sources" },
     ],
   },

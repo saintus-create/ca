@@ -21,7 +21,7 @@ export function HeroAurora() {
       <div className="relative mx-auto max-w-3xl text-center">
         <BlurFade>
           <a
-            href="#corpus"
+            href="/corpus"
             className="inline-flex items-center gap-2 rounded-full border bg-background/60 px-3 py-1 text-sm text-muted-foreground backdrop-blur transition-colors hover:text-foreground"
           >
             <SparklesIcon className="size-4 text-primary" />
@@ -47,7 +47,7 @@ export function HeroAurora() {
               <ShimmerButton>Start researching</ShimmerButton>
             </a>
             <Button variant="ghost" size="lg" asChild>
-              <a href="#corpus">
+              <a href="/corpus">
                 Explore the corpus <ArrowRightIcon />
               </a>
             </Button>

@@ -6,10 +6,9 @@ import { ResizableNavbar } from "@/components/velora/resizable-navbar";
 const BRAND = "California Legislative Information";
 
 const LINKS = [
-  { label: "Corpus", href: "#corpus" },
-  { label: "How it works", href: "#how" },
-  { label: "Sources", href: "#sources" },
-  { label: "Docs", href: "#docs" },
+  { label: "Corpus", href: "/corpus" },
+  { label: "Sources", href: "/#sources" },
+  { label: "Docs", href: "/#docs" },
   { label: "GitHub", href: "https://github.com/saintus-create/ca" },
 ];
 

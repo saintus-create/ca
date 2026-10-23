@@ -471,7 +471,7 @@ export function ResearchChat({
 
   if (messages.length === 0) {
     return (
-      <div className="mx-auto flex w-full max-w-[640px] flex-col items-center gap-6 px-2">
+      <div className="mx-auto flex w-full max-w-[640px] flex-col items-center gap-6 rounded-2xl border border-black/[0.08] bg-white px-6 py-8 shadow-xs dark:border-white/[0.09] dark:bg-[#0B0B0D]">
         <ChatEmptyState
           variant="Centered"
           title="Ask about California law"

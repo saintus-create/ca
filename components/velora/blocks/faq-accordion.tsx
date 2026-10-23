@@ -23,11 +23,6 @@ const FAQS = [
       "No. The site runs on keys set up by its operator, so there is nothing to bring and nothing to paste in. Web search is included whenever it is switched on for the deployment.",
   },
   {
-    question: "Does the corpus get bundled into the serverless function?",
-    answer:
-      "No. It ships as static assets and is excluded from file tracing, so the functions stay small. On serverless hosts it is read from the site's own static URLs.",
-  },
-  {
     question: "Which model does it use?",
     answer:
       "The model the operator configured for the site, Sarvam by default, with Venice as an alternative. Answers stream in as the research runs, step by step.",
@@ -36,16 +31,6 @@ const FAQS = [
     question: "Can I trust the citations?",
     answer:
       "Every claim links to the section it came from, with the snippet highlighted in place. You should still check anything you intend to rely on. That is what the link is for.",
-  },
-  {
-    question: "Does it work offline?",
-    answer:
-      "No. Both sources are remote: the corpus is fetched over HTTP and the web via Firecrawl.",
-  },
-  {
-    question: "Can I deploy it myself?",
-    answer:
-      "Yes. It is a Next.js app under the MIT licence. Clone it, add a key and ship it to Vercel. The corpus is already in the repo as static assets.",
   },
   {
     question: "Is my data stored?",

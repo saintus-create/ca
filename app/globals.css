@@ -138,6 +138,9 @@
   html {
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
+    /* A slightly larger root size: every rem-based font and spacing value on
+       the site scales up together, so the page breathes instead of cramming. */
+    font-size: 17.5px;
   }
   body {
     background-color: var(--color-background);

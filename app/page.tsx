@@ -9,8 +9,6 @@ import { isSpeechConfigured } from '@/lib/cartesia'
 import { NavbarFloating } from '@/components/velora/blocks/navbar-floating'
 import { HeroAurora } from '@/components/velora/blocks/hero-aurora'
 import { LogosMarquee } from '@/components/velora/blocks/logos-marquee'
-import { FeaturesBento } from '@/components/velora/blocks/features-bento'
-import { FeaturesSteps } from '@/components/velora/blocks/features-steps'
 import { FaqAccordion } from '@/components/velora/blocks/faq-accordion'
 import { FooterColumns } from '@/components/velora/blocks/footer-columns'
 
@@ -29,11 +27,11 @@ export default function Home() {
     <div id="top" className="min-h-screen bg-background font-sans text-foreground">
       <NavbarFloating />
       <HeroAurora />
-      <OpenResearcherContent voiceEnabled={isSpeechConfigured()} />
+      <div className="bg-[#22364a] py-14 dark:bg-[#141f2b] sm:py-16">
+        <OpenResearcherContent voiceEnabled={isSpeechConfigured()} />
+      </div>
       <div id="sources" className="scroll-mt-24"><LogosMarquee /></div>
-      <div id="corpus" className="scroll-mt-24"><FeaturesBento /></div>
-      <div id="how" className="scroll-mt-24"><FeaturesSteps /></div>
-      <div id="docs" className="scroll-mt-24"><FaqAccordion /></div>
+      <div id="docs" className="scroll-mt-24 bg-[#a5811f]/[0.05] dark:bg-white/[0.02]"><FaqAccordion /></div>
       <FooterColumns />
     </div>
   )
