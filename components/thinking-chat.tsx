@@ -356,7 +356,7 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
               onChange={(e) => setInput(e.target.value)}
               onFocus={() => setShowSuggestions(true)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-              placeholder="Enter query..."
+              placeholder="Ask a California law question…"
               className="ui-control w-full h-14 rounded-2xl border border-border/70 bg-background/95 pl-5 pr-24 text-base text-foreground shadow-[0_12px_40px_rgba(25,45,90,0.08)] backdrop-blur-xl ring-offset-background placeholder:text-muted-foreground transition-[border-color,box-shadow] duration-200 focus-visible:outline-none focus-visible:border-[#5279bd] focus-visible:ring-2 focus-visible:ring-[#5279bd]/25 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={isSearching}
             />
