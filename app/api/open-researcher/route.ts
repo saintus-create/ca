@@ -21,21 +21,14 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Get Firecrawl API key from headers first, then fall back to environment variables
+    // Firecrawl is optional. A key supplied through the UI takes precedence;
+    // without one, the California law corpus and the language model still run,
+    // and only the web search/scrape tools return a tool-level error if used.
     const firecrawlApiKey = req.headers.get('X-Firecrawl-API-Key') || process.env.FIRECRAWL_API_KEY
 
-    if (!firecrawlApiKey) {
-      // FIRECRAWL_API_KEY is not configured
-      return NextResponse.json(
-        { error: 'FIRECRAWL_API_KEY is not configured. Please add it via the interface.' },
-        { status: 500 }
-      )
+    if (firecrawlApiKey) {
+      process.env.FIRECRAWL_API_KEY = firecrawlApiKey
     }
-    
-    // Set Firecrawl API key as environment variable for the agent to use
-    process.env.FIRECRAWL_API_KEY = firecrawlApiKey
-    
-    // API Keys configured successfully
 
     // Create a streaming response
     const encoder = new TextEncoder()

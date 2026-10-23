@@ -8,6 +8,7 @@ export async function GET() {
 
   const environmentStatus = {
     FIRECRAWL_API_KEY: !!process.env.FIRECRAWL_API_KEY,
+    CARTESIA_API_KEY: !!process.env.CARTESIA_API_KEY,
     SARVAM_API_KEY: !!process.env.SARVAM_API_KEY,
     VENICE_API_KEY: !!process.env.VENICE_API_KEY,
     ANTHROPIC_API_KEY: !!process.env.ANTHROPIC_API_KEY,

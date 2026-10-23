@@ -13,14 +13,17 @@ A powerful AI-powered research tool that combines Firecrawl's web scraping capab
 - **Thinking Display**: See the AI's reasoning process in real-time
 - **Smart Citations**: Automatic source tracking and citation generation
 - **Split View Interface**: Side-by-side view of chat and search results
+- **Voice Playback**: Listen to completed answers with Cartesia Sonic text-to-speech
 
 ## Prerequisites
 
 - Node.js 18+ and npm
-- API Keys (at least one required):
+- API Keys (at least one model-provider key required):
   - `SARVAM_API_KEY` - For AI functionality (default model: `sarvam-105b`)
-  - `FIRECRAWL_API_KEY` - For web scraping (can be added via UI)
+  - `VENICE_API_KEY` - Optional uncensored alternative provider
   - `ANTHROPIC_API_KEY` - Optional fallback provider (Claude)
+  - `FIRECRAWL_API_KEY` - Optional for web search/scraping (can be added via UI); California corpus research works without it
+  - `CARTESIA_API_KEY` - Optional for voice playback of completed answers
 
 ## Quick Start
 
@@ -68,6 +71,10 @@ A powerful AI-powered research tool that combines Firecrawl's web scraping capab
 | `VENICE_MODEL` | No | Venice model id (default `venice-uncensored-1-2`) |
 | `ANTHROPIC_API_KEY` | No | Fallback provider, used when no Sarvam key is set |
 | `ANTHROPIC_MODEL` | No | Default `claude-opus-4-8` |
+| `CARTESIA_API_KEY` | No | Cartesia key; enables the Listen button (Sonic TTS) |
+| `CARTESIA_MODEL` | No | Cartesia model id (default `sonic-3.6`) |
+| `CARTESIA_VOICE_ID` | No | Cartesia voice id (defaults to Skylar — Friendly Guide) |
+| `CARTESIA_VERSION` | No | Cartesia API version header (default `2026-08-14`) |
 
 *Can be provided through the UI if not set in environment variables
 
@@ -75,6 +82,8 @@ A powerful AI-powered research tool that combines Firecrawl's web scraping capab
 
 - **Sarvam API Key**: Visit [Sarvam AI dashboard](https://dashboard.sarvam.ai)
 - **Firecrawl API Key**: Visit [Firecrawl](https://www.firecrawl.dev/)
+- **Venice API Key** (optional uncensored provider): Visit [Venice API settings](https://venice.ai/settings/api)
+- **Cartesia API Key** (optional voice playback): Visit [Cartesia Playground](https://play.cartesia.ai/)
 - **Anthropic API Key** (optional fallback): Visit [Anthropic Console](https://console.anthropic.com/)
 
 ## Usage

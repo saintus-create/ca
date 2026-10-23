@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { ChevronDown, Loader2, Send, Copy } from 'lucide-react'
+import { ChevronDown, Loader2, Send, Copy, Volume2, VolumeX } from 'lucide-react'
 import { SearchResultsDisplay } from '@/components/search-results-display'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
 import { CitationTooltip } from '@/components/citation-tooltip'
@@ -34,7 +34,54 @@ interface ThinkingChatProps {
   onBrowserClose?: () => void
 }
 
-export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiKeyRequired }: ThinkingChatProps) {
+function plainTextForSpeech(content: string): string {
+  return content
+    .replace(/```[\s\S]*?```/g, ' Code block omitted. ')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/^\s{0,3}>\s?/gm, '')
+    .replace(/^\s*[-*+]\s+/gm, '')
+    .replace(/^\s*\d+\.\s+/gm, '')
+    .replace(/[*_~]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function splitSpeechText(text: string, maxLength = 950): string[] {
+  const sentences = text.match(/[^.!?]+(?:[.!?]+["')\]]*|$)/g) ?? [text]
+  const chunks: string[] = []
+  let current = ''
+
+  const pushCurrent = () => {
+    if (current.trim()) chunks.push(current.trim())
+    current = ''
+  }
+
+  for (const rawSentence of sentences) {
+    const sentence = rawSentence.trim()
+    if (!sentence) continue
+
+    if (sentence.length > maxLength) {
+      pushCurrent()
+      const words = sentence.split(/\s+/)
+      for (const word of words) {
+        if ((current + ' ' + word).trim().length > maxLength) pushCurrent()
+        current = current ? `${current} ${word}` : word
+      }
+      continue
+    }
+
+    if ((current + ' ' + sentence).trim().length > maxLength) pushCurrent()
+    current = current ? `${current} ${sentence}` : sentence
+  }
+
+  pushCurrent()
+  return chunks
+}
+
+export function ThinkingChat({ onMessagesChange }: ThinkingChatProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isSearching, setIsSearching] = useState(false)
@@ -46,8 +93,105 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
   const [screenshots, setScreenshots] = useState<Array<{ url: string; screenshot?: string }>>([])
   const [showFullWidth, setShowFullWidth] = useState(false)
   const [hasAnimatedSuggestions, setHasAnimatedSuggestions] = useState(false)
+  const [speech, setSpeech] = useState<{ id: string; status: 'loading' | 'playing' } | null>(null)
+  const [speechErrors, setSpeechErrors] = useState<Record<string, string>>({})
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const audioUrlRef = useRef<string | null>(null)
+  const playbackIdRef = useRef(0)
+
+  const stopSpeech = () => {
+    playbackIdRef.current += 1
+    const audio = audioRef.current
+    if (audio) {
+      audio.pause()
+      audio.src = ''
+      audio.load()
+      audioRef.current = null
+    }
+    if (audioUrlRef.current) {
+      URL.revokeObjectURL(audioUrlRef.current)
+      audioUrlRef.current = null
+    }
+    setSpeech(null)
+  }
+
+  // Stop any in-flight speech when the chat unmounts.
+  useEffect(() => {
+    return () => {
+      playbackIdRef.current += 1
+      audioRef.current?.pause()
+      if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current)
+    }
+  }, [])
+
+  const handleListen = async (message: Message) => {
+    if (speech?.id === message.id) {
+      stopSpeech()
+      return
+    }
+
+    stopSpeech()
+    const playbackId = playbackIdRef.current
+    const text = plainTextForSpeech(message.content)
+
+    if (!text) {
+      setSpeechErrors(prev => ({ ...prev, [message.id]: 'There is no readable text to play.' }))
+      return
+    }
+
+    setSpeechErrors(prev => {
+      const next = { ...prev }
+      delete next[message.id]
+      return next
+    })
+    setSpeech({ id: message.id, status: 'loading' })
+
+    try {
+      for (const chunk of splitSpeechText(text)) {
+        if (playbackIdRef.current !== playbackId) return
+
+        const response = await fetch('/api/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: chunk }),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Speech generation failed.' }))
+          throw new Error(errorData.error || 'Speech generation failed.')
+        }
+
+        if (playbackIdRef.current !== playbackId) return
+
+        const audioUrl = URL.createObjectURL(await response.blob())
+        audioUrlRef.current = audioUrl
+        const audio = new Audio(audioUrl)
+        audioRef.current = audio
+        setSpeech({ id: message.id, status: 'playing' })
+
+        await new Promise<void>((resolve, reject) => {
+          audio.onended = () => resolve()
+          audio.onerror = () => reject(new Error('Audio playback failed.'))
+          audio.play().catch(reject)
+        })
+
+        URL.revokeObjectURL(audioUrl)
+        if (audioUrlRef.current === audioUrl) audioUrlRef.current = null
+        if (audioRef.current === audio) audioRef.current = null
+      }
+    } catch (error) {
+      if (playbackIdRef.current !== playbackId) return
+      setSpeechErrors(prev => ({
+        ...prev,
+        [message.id]:
+          error instanceof Error ? error.message : 'Speech generation failed. Please try again.',
+      }))
+    } finally {
+      if (playbackIdRef.current === playbackId) setSpeech(null)
+    }
+  }
 
   // Auto-scroll to bottom when new messages are added
   useEffect(() => {
@@ -73,12 +217,8 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
   const handleSearch = async (query: string) => {
     if (!query.trim() || isSearching) return
 
-    // Check if Firecrawl API key is available
-    if (!hasFirecrawlKey && !localStorage.getItem('firecrawl_api_key')) {
-      onApiKeyRequired?.()
-      return
-    }
-
+    // Firecrawl is optional: without a key, corpus research still runs and
+    // only the web tools report that they are unavailable.
     // Start transition animation
     setIsTransitioning(true)
     
@@ -244,7 +384,7 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
       let errorMessage = 'Sorry, an error occurred while searching. Please try again.'
       
       if (error instanceof Error) {
-        if (error.message.includes('SARVAM_API_KEY') || error.message.includes('ANTHROPIC_API_KEY')) {
+        if (error.message.includes('SARVAM_API_KEY') || error.message.includes('VENICE_API_KEY') || error.message.includes('ANTHROPIC_API_KEY')) {
           errorMessage = 'The AI model API key is not configured. Please contact the site administrator.'
         } else if (error.message.includes('FIRECRAWL_API_KEY')) {
           errorMessage = 'The Firecrawl API key is not configured. Please contact the site administrator.'
@@ -528,16 +668,38 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
                   
                   {/* Action buttons for completed responses */}
                   {message.role === 'assistant' && message.content && message.searchData?.status === 'complete' && (
-                    <div className="mt-3 flex items-center">
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(message.content)
-                        }}
-                        className="ml-auto p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
-                        title="Copy to clipboard"
-                      >
-                        <Copy className="h-3.5 w-3.5" />
-                      </button>
+                    <div className="mt-3">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => void handleListen(message)}
+                          className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
+                          title={speech?.id === message.id ? 'Stop listening' : 'Listen to this answer'}
+                        >
+                          {speech?.id === message.id ? (
+                            speech.status === 'loading' ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <VolumeX className="h-3.5 w-3.5" />
+                            )
+                          ) : (
+                            <Volume2 className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(message.content)
+                          }}
+                          className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
+                          title="Copy to clipboard"
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      {speechErrors[message.id] && (
+                        <p className="mt-1 text-right text-xs text-red-600 dark:text-red-400">
+                          {speechErrors[message.id]}
+                        </p>
+                      )}
                     </div>
                   )}
                   
