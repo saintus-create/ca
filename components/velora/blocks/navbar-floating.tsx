@@ -42,12 +42,6 @@ function Logo() {
 export function NavbarFloating() {
   return (
     <div className="relative isolate overflow-x-clip">
-      {/* Soft brand glow at the top of the page */}
-      <div
-        aria-hidden
-        className="absolute inset-x-0 top-0 -z-10 h-144 bg-radial-[ellipse_at_50%_0%] from-brand/15 via-brand/5 via-40% to-transparent to-70%"
-      />
-
       <ResizableNavbar
         items={LINKS}
         logo={<Logo />}

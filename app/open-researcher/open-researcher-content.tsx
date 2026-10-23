@@ -2,10 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Github, ExternalLink, Loader2 } from 'lucide-react'
+import { Github, ExternalLink, Loader2, Scale } from 'lucide-react'
 import { ThinkingChat } from '@/components/thinking-chat'
-import { SpeechProvider } from '@/components/speech-provider'
-import { VoicePicker } from '@/components/voice-picker'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -19,21 +17,12 @@ import {
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 
-interface OpenResearcherContentProps {
-  /**
-   * Whether Cartesia is configured, resolved on the server so the voice
-   * controls render with the first paint instead of popping in after a fetch.
-   */
-  voiceEnabled?: boolean
-}
-
-export default function OpenResearcherContent({ voiceEnabled = false }: OpenResearcherContentProps) {
+export default function OpenResearcherContent() {
   const [hasMessages, setHasMessages] = useState(false)
   const [showApiKeyModal, setShowApiKeyModal] = useState(false)
   const [firecrawlApiKey, setFirecrawlApiKey] = useState('')
   const [isValidatingApiKey, setIsValidatingApiKey] = useState(false)
   const [hasFirecrawlKey, setHasFirecrawlKey] = useState(false)
-  const [hasVoice, setHasVoice] = useState(voiceEnabled)
 
   useEffect(() => {
     // Check for Firecrawl API key on mount
@@ -42,8 +31,6 @@ export default function OpenResearcherContent({ voiceEnabled = false }: OpenRese
       .then(data => {
         const hasEnvFirecrawlKey = data.environmentStatus.FIRECRAWL_API_KEY
         setHasFirecrawlKey(hasEnvFirecrawlKey)
-        // Voice controls only appear when a Cartesia key is configured.
-        setHasVoice(Boolean(data.environmentStatus.CARTESIA_API_KEY))
 
         // Check localStorage for saved key if not in env
         if (!hasEnvFirecrawlKey) {
@@ -106,30 +93,26 @@ export default function OpenResearcherContent({ voiceEnabled = false }: OpenRese
         <div className={`px-4 sm:px-6 lg:px-8 transition-all duration-700 ease-in-out ${hasMessages ? 'max-w-[1400px]' : 'max-w-4xl'
           } mx-auto`}>
           <div className="flex items-center justify-between">
-            <Link href="https://firecrawl.dev" target="_blank" rel="noopener noreferrer">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/firecrawl-logo-with-fire.png"
-                alt="Firecrawl Logo"
-                width={113}
-                height={24}
-                className="w-[113px] h-auto"
-              />
+            <Link href="/" className="flex items-center gap-2 text-[15px] font-semibold">
+              <span className="grid h-7 w-7 place-items-center rounded-lg bg-foreground text-background">
+                <Scale className="h-4 w-4" />
+              </span>
+              Open Researcher
             </Link>
-            <div className="flex items-center gap-2">
-              {hasVoice && <VoicePicker />}
-              <Button variant="code" asChild>
-                <Link
-                  href="https://github.com/mendableai/open-researcher"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2"
-                >
-                  <Github className="h-4 w-4" />
-                  Use this template
-                </Link>
-              </Button>
-            </div>
+            <Button
+              variant="code"
+              asChild
+            >
+              <Link
+                href="https://github.com/saintus-create/ca"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2"
+              >
+                <Github className="h-4 w-4" />
+                GitHub
+              </Link>
+            </Button>
           </div>
         </div>
       </header>
@@ -144,7 +127,7 @@ export default function OpenResearcherContent({ voiceEnabled = false }: OpenRese
             Open Researcher
           </h1>
           <p className="ui-lede mx-auto mt-5 max-w-xl opacity-0 animate-fade-up [animation-duration:500ms] [animation-delay:600ms] [animation-fill-mode:forwards]">
-            Firecrawl-powered search, scrape, and agentic reasoning
+            California law research with real-time thinking and citations
           </p>
         </div>
       </div>
@@ -152,14 +135,11 @@ export default function OpenResearcherContent({ voiceEnabled = false }: OpenRese
       {/* Main Content - Full width split layout */}
       <div className="flex-1 px-4 sm:px-6 lg:px-8">
         <div className="h-full max-w-[1400px] mx-auto">
-          <SpeechProvider>
-            <ThinkingChat
-              onMessagesChange={setHasMessages}
-              hasFirecrawlKey={hasFirecrawlKey}
-              hasVoice={hasVoice}
-              onApiKeyRequired={() => setShowApiKeyModal(true)}
-            />
-          </SpeechProvider>
+          <ThinkingChat
+            onMessagesChange={setHasMessages}
+            hasFirecrawlKey={hasFirecrawlKey}
+            onApiKeyRequired={() => setShowApiKeyModal(true)}
+          />
         </div>
       </div>
 

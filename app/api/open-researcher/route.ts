@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ResearchCancelledError, performResearchWithStreaming } from '@/lib/open-researcher-agent'
+import { performResearchWithStreaming } from '@/lib/open-researcher-agent'
 import { isProviderConfigured, providerDefaults, resolveProvider } from '@/lib/llm'
+import { executeCorpusSearch } from '@/lib/corpus-search'
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,89 +16,75 @@ export async function POST(req: NextRequest) {
     const provider = resolveProvider()
     if (!isProviderConfigured(provider)) {
       const { apiKeyEnv } = providerDefaults(provider)
-      return NextResponse.json(
-        { error: `${apiKeyEnv} is not configured. Add it to your environment variables (see .env.local.example).` },
-        { status: 500 }
-      )
+      // No language model is configured. Rather than a dead end, answer
+      // directly from the California corpus — and say plainly that this is
+      // what happened, so a corpus search is never mistaken for a reasoned
+      // answer.
+      const { content } = await executeCorpusSearch(query, undefined, 6)
+      const notice =
+        `> **Corpus-only result.** No language model is configured on this deployment ` +
+        `(\`${apiKeyEnv}\` is unset), so this is a direct search of the California corpus ` +
+        `rather than a reasoned answer. Set \`${apiKeyEnv}\` to enable full research.\n\n`
+      const encoder = new TextEncoder()
+      const stream = new ReadableStream({
+        start(controller) {
+          const send = (payload: unknown) =>
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`))
+          send({ type: 'event', event: { type: 'tool_call', tool: 'search_california_law', parameters: { query }, timestamp: Date.now() } })
+          send({ type: 'event', event: { type: 'tool_result', tool: 'search_california_law', result: content, timestamp: Date.now() } })
+          send({ type: 'response', content: notice + content })
+          send({ type: 'done' })
+          controller.close()
+        },
+      })
+      return new NextResponse(stream, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+        },
+      })
     }
 
-    // Get Firecrawl API key from headers first, then fall back to environment variables
+    // Web search is optional. The California corpus needs no key, so a missing
+    // Firecrawl key degrades the run to corpus-only rather than failing it.
     const firecrawlApiKey = req.headers.get('X-Firecrawl-API-Key') || process.env.FIRECRAWL_API_KEY
-
-    if (!firecrawlApiKey) {
-      // FIRECRAWL_API_KEY is not configured
-      return NextResponse.json(
-        { error: 'FIRECRAWL_API_KEY is not configured. Please add it via the interface.' },
-        { status: 500 }
-      )
-    }
+    if (firecrawlApiKey) process.env.FIRECRAWL_API_KEY = firecrawlApiKey
     
-    // The key travels with the request; writing it to process.env would let
-    // two concurrent users overwrite each other's credentials.
-
     // API Keys configured successfully
 
     // Create a streaming response
     const encoder = new TextEncoder()
     const stream = new ReadableStream({
       async start(controller) {
-        // The browser can disappear mid-run (tab closed, navigation, flaky
-        // network). Once that happens the controller is dead: enqueue throws,
-        // and the agent should stop rather than keep spending tokens.
-        let closed = false
-
-        const send = (payload: Record<string, unknown>) => {
-          if (closed) return
-          try {
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`))
-          } catch {
-            closed = true
-          }
-        }
-
-        const finish = () => {
-          if (closed) return
-          closed = true
-          try {
-            controller.close()
-          } catch {
-            // Client already gone.
-          }
-        }
-
-        req.signal.addEventListener('abort', () => {
-          closed = true
-        })
-
         try {
           // Perform research with streaming events
-          const finalResponse = await performResearchWithStreaming(
-            query,
-            (event) => {
-              // Add timestamp to events
-              send({ type: 'event', event: { ...event, timestamp: Date.now() } })
-            },
-            { firecrawlApiKey, signal: req.signal }
-          )
+          const finalResponse = await performResearchWithStreaming(query, (event) => {
+            // Add timestamp to events
+            const eventWithTimestamp = { ...event, timestamp: Date.now() }
+            
+            // Send event as SSE
+            const data = `data: ${JSON.stringify({ type: 'event', event: eventWithTimestamp })}\n\n`
+            controller.enqueue(encoder.encode(data))
+          })
 
           // Send final response
           if (finalResponse) {
-            send({ type: 'response', content: finalResponse })
+            const responseData = `data: ${JSON.stringify({ type: 'response', content: finalResponse })}\n\n`
+            controller.enqueue(encoder.encode(responseData))
           }
 
           // Send done event
-          send({ type: 'done' })
-          finish()
+          const doneData = `data: ${JSON.stringify({ type: 'done' })}\n\n`
+          controller.enqueue(encoder.encode(doneData))
+          controller.close()
         } catch (error) {
-          // A cancelled run is not a failure; the reader is gone.
-          if (error instanceof ResearchCancelledError || req.signal.aborted) {
-            closed = true
-            return
-          }
-
+          // Research error occurred
           const errorMessage = error instanceof Error ? error.message : 'Unknown error'
           const errorDetails = error instanceof Error && error.stack ? error.stack : ''
-
+          
+          // Error details logged internally
+          
           // More user-friendly error messages
           let userFriendlyError = errorMessage
           if (errorMessage.includes('Authentication error')) {
@@ -107,14 +94,15 @@ export async function POST(req: NextRequest) {
           } else if (errorMessage.includes('FIRECRAWL_API_KEY')) {
             userFriendlyError = 'The Firecrawl API key is not configured. Add it in the app or as FIRECRAWL_API_KEY.'
           }
-
-          send({
-            type: 'error',
+          
+          const errorData = `data: ${JSON.stringify({ 
+            type: 'error', 
             error: userFriendlyError,
             originalError: errorMessage,
-            details: process.env.NODE_ENV === 'development' ? errorDetails : undefined,
-          })
-          finish()
+            details: process.env.NODE_ENV === 'development' ? errorDetails : undefined
+          })}\n\n`
+          controller.enqueue(encoder.encode(errorData))
+          controller.close()
         }
       }
     })
@@ -122,11 +110,8 @@ export async function POST(req: NextRequest) {
     return new NextResponse(stream, {
       headers: {
         'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache, no-transform',
+        'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
-        // Some hosts and proxies buffer a stream until it closes, which makes
-        // the live thinking view arrive all at once at the end.
-        'X-Accel-Buffering': 'no',
       },
     })
   } catch (error) {

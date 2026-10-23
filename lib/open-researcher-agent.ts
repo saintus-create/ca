@@ -2,37 +2,20 @@ import FirecrawlApp from '@mendable/firecrawl-js';
 import { executeCorpusSearch } from './corpus-search';
 import { createChat, type LlmMessage } from './llm';
 
-// Firecrawl clients, cached per API key.
-//
-// The UI can supply its own Firecrawl key per request. Writing that into
-// process.env (as the upstream template did) means two concurrent users with
-// different keys overwrite each other, so the key travels with the request
-// instead and the cache is keyed by it.
-const firecrawlClients = new Map<string, FirecrawlApp>();
+// Lazy initialization for Vercel deployment
+let firecrawl: FirecrawlApp | null = null;
 
-function getFirecrawlClient(requestKey?: string): FirecrawlApp {
-  const apiKey = requestKey || process.env.FIRECRAWL_API_KEY;
-  if (!apiKey) {
-    // FIRECRAWL_API_KEY is not set in environment variables
-    throw new Error('FIRECRAWL_API_KEY environment variable is not set');
+function getFirecrawlClient(): FirecrawlApp {
+  if (!firecrawl) {
+    const apiKey = process.env.FIRECRAWL_API_KEY;
+    if (!apiKey) {
+      // FIRECRAWL_API_KEY is not set in environment variables
+      throw new Error('FIRECRAWL_API_KEY environment variable is not set');
+    }
+    // Initializing Firecrawl client
+    firecrawl = new FirecrawlApp({ apiKey });
   }
-
-  const cached = firecrawlClients.get(apiKey);
-  if (cached) return cached;
-
-  // FIRECRAWL_BASE_URL points the SDK at a self-hosted instance (or a local
-  // stand-in during tests); otherwise it uses api.firecrawl.dev.
-  const apiUrl = process.env.FIRECRAWL_BASE_URL?.replace(/\/+$/, '') || undefined;
-  const client = new FirecrawlApp({ apiKey, apiUrl });
-
-  // One entry per configured key is plenty; drop the oldest beyond that so a
-  // long-lived process cannot accumulate clients.
-  if (firecrawlClients.size >= 8) {
-    const oldest = firecrawlClients.keys().next().value;
-    if (oldest) firecrawlClients.delete(oldest);
-  }
-  firecrawlClients.set(apiKey, client);
-  return client;
+  return firecrawl;
 }
 
 // The model, provider, and thinking configuration all live in lib/llm.ts:
@@ -211,7 +194,7 @@ const tools: ToolDefinition[] = [
 ];
 
 // Execute Firecrawl search with two-step approach
-async function executeWebSearch(query: string, limit: number = 5, scrapeContent: boolean = false, tbs?: string, requestKey?: string): Promise<{ content: string; screenshots: Array<{ url: string; screenshot?: string }> }> {
+async function executeWebSearch(query: string, limit: number = 5, scrapeContent: boolean = false, tbs?: string): Promise<{ content: string; screenshots: Array<{ url: string; screenshot?: string }> }> {
   // Performing firecrawl search
   
   const screenshots: Array<{ url: string; screenshot?: string }> = [];
@@ -229,7 +212,7 @@ async function executeWebSearch(query: string, limit: number = 5, scrapeContent:
       searchOptions.tbs = tbs;
     }
 
-    const metadataResults = await getFirecrawlClient(requestKey).search(query, searchOptions) as FirecrawlSearchResult;
+    const metadataResults = await getFirecrawlClient().search(query, searchOptions) as FirecrawlSearchResult;
     
     if (!metadataResults.data || metadataResults.data.length === 0) {
       return { content: "No search results found.", screenshots: [] };
@@ -320,7 +303,7 @@ async function executeWebSearch(query: string, limit: number = 5, scrapeContent:
           scrapeOptions.tbs = tbs;
         }
 
-        const scrapedResults = await getFirecrawlClient(requestKey).search(query, scrapeOptions) as FirecrawlSearchResult;
+        const scrapedResults = await getFirecrawlClient().search(query, scrapeOptions) as FirecrawlSearchResult;
         
         // Add scraped content to output
         output += `\n--- SCRAPED CONTENT ---\n\n`;
@@ -523,8 +506,7 @@ async function executeDeepScrape(
   linkFilter?: string, 
   maxDepth: number = 1, 
   maxLinks: number = 5,
-  formats: string[] = ["markdown"],
-  requestKey?: string
+  formats: string[] = ["markdown"]
 ): Promise<{ content: string; screenshots: Array<{ url: string; screenshot?: string }> }> {
   // Performing firecrawl scrape
   
@@ -535,7 +517,7 @@ async function executeDeepScrape(
     
     let sourceResult;
     try {
-      sourceResult = await getFirecrawlClient(requestKey).scrapeUrl(sourceUrl, {
+      sourceResult = await getFirecrawlClient().scrapeUrl(sourceUrl, {
         formats: ['markdown', 'links', 'screenshot@fullPage']
       });
     } catch (scrapeError) {
@@ -601,7 +583,7 @@ async function executeDeepScrape(
     // Scrape each link in parallel
     const scrapePromises = linksToScrape.map(async (link: string) => {
       try {
-        const result = await getFirecrawlClient(requestKey).scrapeUrl(link, { 
+        const result = await getFirecrawlClient().scrapeUrl(link, { 
           formats: [...formats, 'screenshot@fullPage'] as ("markdown" | "html" | "content" | "rawHtml" | "links" | "screenshot" | "screenshot@fullPage" | "extract" | "json" | "changeTracking")[]
         });
         
@@ -660,29 +642,45 @@ async function executeDeepScrape(
   }
 }
 
+// The web tools need a Firecrawl key; the corpus tool does not. Rather than
+// failing a whole research run because one source is unconfigured, offer only
+// the tools that can actually execute.
+export function availableTools(): ToolDefinition[] {
+  return process.env.FIRECRAWL_API_KEY
+    ? tools
+    : tools.filter((tool) => tool.name === 'search_california_law');
+}
+
+function systemPromptFor(toolset: ToolDefinition[]): string {
+  const hasWeb = toolset.some((tool) => tool.name === 'web_search');
+  return hasWeb
+    ? SYSTEM_PROMPT
+    : `${SYSTEM_PROMPT}\n\nNote: web search and scraping are not configured in this deployment. Do not attempt to use them. Answer from the California corpus alone with search_california_law, and if a question genuinely needs live web data, say so plainly instead of guessing.`;
+}
+
 // Execute tool based on name
-export async function executeTool(
-  toolName: string,
-  input: Record<string, unknown>,
-  requestKey?: string
-): Promise<{ content: string; screenshots?: Array<{ url: string; screenshot?: string }> }> {
+export async function executeTool(toolName: string, input: Record<string, unknown>): Promise<{ content: string; screenshots?: Array<{ url: string; screenshot?: string }> }> {
   switch (toolName) {
     case 'web_search':
+      if (!process.env.FIRECRAWL_API_KEY) {
+        return { content: 'Web search is not configured in this deployment. Use search_california_law against the California corpus instead.' };
+      }
       return await executeWebSearch(
         input.query as string, 
         (input.limit as number) || 5, 
         (input.scrape_content as boolean) || false,
-        input.tbs as string | undefined,
-        requestKey
+        input.tbs as string | undefined
       );
     case 'deep_scrape':
+      if (!process.env.FIRECRAWL_API_KEY) {
+        return { content: 'Web scraping is not configured in this deployment. Use search_california_law against the California corpus instead.' };
+      }
       return await executeDeepScrape(
         input.source_url as string,
         input.link_filter as string | undefined,
         (input.max_depth as number) || 1,
         (input.max_links as number) || 5,
-        (input.formats as string[]) || ['markdown'],
-        requestKey
+        (input.formats as string[]) || ['markdown']
       );
     case 'analyze_content':
       return { content: await analyzeContent(input.content as string, input.analysis_type as string, input.context as string | undefined) };
@@ -727,31 +725,10 @@ function displayToolName(name: string): string {
   return name;
 }
 
-export interface ResearchOptions {
-  /** Firecrawl key supplied by the caller (UI) rather than the environment. */
-  firecrawlApiKey?: string;
-  /** Aborted when the browser goes away, so we stop paying for the run. */
-  signal?: AbortSignal;
-}
-
-/** Thrown when the caller aborted the run; the route treats it as silence. */
-export class ResearchCancelledError extends Error {
-  constructor() {
-    super('Research run cancelled');
-    this.name = 'ResearchCancelledError';
-  }
-}
-
-function throwIfAborted(signal?: AbortSignal) {
-  if (signal?.aborted) throw new ResearchCancelledError();
-}
-
 async function runResearch(
   query: string,
-  onEvent: (event: ResearchEvent) => void,
-  options: ResearchOptions = {}
+  onEvent: (event: ResearchEvent) => void
 ): Promise<string> {
-  const { firecrawlApiKey, signal } = options;
   onEvent({ type: 'start', query });
 
   const messages: LlmMessage[] = [{ role: 'user', content: query }];
@@ -760,12 +737,11 @@ async function runResearch(
   let toolCallCount = 0;
 
   for (let step = 0; step < MAX_RESEARCH_STEPS; step++) {
-    throwIfAborted(signal);
-
+    const toolset = availableTools();
     const result = await createChat({
-      system: SYSTEM_PROMPT,
+      system: systemPromptFor(toolset),
       messages,
-      tools,
+      tools: toolset,
       maxTokens: RESEARCH_MAX_TOKENS,
     });
 
@@ -793,7 +769,6 @@ async function runResearch(
     if (toolCalls.length === 0) break;
 
     for (const call of toolCalls) {
-      throwIfAborted(signal);
       toolCallCount++;
       onEvent({
         type: 'tool_call',
@@ -803,7 +778,7 @@ async function runResearch(
       });
 
       const startedAt = Date.now();
-      const toolResult = await executeTool(call.name ?? '', call.input ?? {}, firecrawlApiKey);
+      const toolResult = await executeTool(call.name ?? '', call.input ?? {});
       onEvent({
         type: 'tool_result',
         tool: call.name ?? '',
@@ -826,31 +801,16 @@ async function runResearch(
   }
 
   onEvent({ type: 'summary', thinkingBlocks: thinkingCount, toolCalls: toolCallCount });
-
-  // The loop can finish without any text: the model only ever called tools,
-  // or it stopped right at the step ceiling. Returning '' would leave the UI
-  // showing a finished run with an empty answer, so say what happened.
-  if (!finalResponse.trim()) {
-    const message =
-      toolCallCount > 0
-        ? `The research run stopped after ${MAX_RESEARCH_STEPS} steps without writing an answer. ` +
-          `It made ${toolCallCount} tool call${toolCallCount === 1 ? '' : 's'}; raise LLM_MAX_STEPS or narrow the question.`
-        : 'The model returned no text for this question. Try rephrasing it.';
-    finalResponse = message;
-    onEvent({ type: 'response', content: message });
-  }
-
   return finalResponse;
 }
 
 export async function performResearchWithStreaming(
   query: string,
-  onEvent: (event: ResearchEvent) => void,
-  options: ResearchOptions = {}
+  onEvent: (event: ResearchEvent) => void
 ): Promise<string> {
-  return runResearch(query, onEvent, options);
+  return runResearch(query, onEvent);
 }
 
-export async function performResearch(query: string, options: ResearchOptions = {}): Promise<string> {
-  return runResearch(query, () => {}, options);
+export async function performResearch(query: string): Promise<string> {
+  return runResearch(query, () => {});
 }

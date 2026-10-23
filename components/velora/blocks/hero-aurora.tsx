@@ -1,8 +1,6 @@
 import { ArrowRightIcon, SparklesIcon } from "lucide-react";
 
 import { Button } from "@/components/velora/ui/button";
-import { AnimatedGradientText } from "@/components/velora/animated-gradient-text";
-import { AuroraBackground } from "@/components/velora/aurora-background";
 import { BlurFade } from "@/components/velora/blur-fade";
 import { DotPattern } from "@/components/velora/grid-pattern";
 import { ShimmerButton } from "@/components/velora/shimmer-button";
@@ -15,7 +13,6 @@ import { ShimmerButton } from "@/components/velora/shimmer-button";
 export function HeroAurora() {
   return (
     <section className="relative isolate overflow-hidden px-6 py-24 sm:py-32 lg:px-8">
-      <AuroraBackground intensity="medium" />
       <DotPattern
         aria-hidden
         className="absolute inset-0 -z-10 size-full fill-foreground/10 [mask-image:radial-gradient(ellipse_at_center,black,transparent_70%)]"
@@ -35,7 +32,7 @@ export function HeroAurora() {
 
         <h1 className="mt-8 text-4xl font-semibold tracking-tight text-balance sm:text-6xl">
           The whole of California law,{" "}
-          <AnimatedGradientText>one search away</AnimatedGradientText>
+          <span className="text-muted-foreground">one search away</span>
         </h1>
 
         <p className="mx-auto mt-6 max-w-xl text-lg text-pretty text-muted-foreground">

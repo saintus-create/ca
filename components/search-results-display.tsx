@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Globe, Search, FileText, Image } from 'lucide-react'
+import { Globe, Search, FileText, Image, Scale } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { AnimatedCursor } from './animated-cursor'
 import { BorderBeam } from '@/components/velora/border-beam'
@@ -305,18 +305,19 @@ export function SearchResultsDisplay({
               )}
             </div>
           </div>
-        ) : viewMode === 'search' && !showScreenshot ? (
+        ) : (viewMode === 'search' || viewMode === 'history') && !showScreenshot ? (
           <div className="flex h-full flex-col bg-background">
             {/* Google-style search header - always show when we have results */}
             {(query || results.length > 0) && (
               <div className="border-b border-border bg-background px-3 py-2 lg:px-6 lg:py-3">
                 <div className="flex items-center gap-3 lg:gap-8">
-                  {/* Firecrawl logo */}
-                  <img 
-                    src="/firecrawl-logo-with-fire.png" 
-                    alt="Firecrawl" 
-                    className="h-6 lg:h-8 w-auto flex-shrink-0"
-                  />
+                  {/* Brand wordmark for the mock results page */}
+                  <span className="flex flex-shrink-0 items-center gap-2 text-[15px] font-semibold lg:text-base">
+                    <span className="grid h-6 w-6 place-items-center rounded-md bg-foreground text-background lg:h-7 lg:w-7">
+                      <Scale className="h-3.5 w-3.5" />
+                    </span>
+                    Open Researcher
+                  </span>
                   
                   {/* Search box */}
                   <div className="flex-1 max-w-[400px]">
@@ -347,8 +348,16 @@ export function SearchResultsDisplay({
                 {/* Search results */}
                 <div className="space-y-6">
                 {results.map((result, index) => {
-                  const hostname = new URL(result.url).hostname
-                  const urlPath = result.url.split('/').slice(3).filter(Boolean).join(' › ')
+                  // Corpus hits cite a statute rather than a page, so there is
+                  // no URL to parse — the citation itself is the identifier.
+                  let hostname = 'California corpus'
+                  let urlPath = ''
+                  try {
+                    hostname = new URL(result.url).hostname
+                    urlPath = result.url.split('/').slice(3).filter(Boolean).join(' › ')
+                  } catch {
+                    hostname = (result.title || 'California corpus').split('—')[0].trim()
+                  }
                   
                   return (
                     <div key={index} className="group">

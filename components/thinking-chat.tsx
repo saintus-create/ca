@@ -4,10 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { ChevronDown, Loader2, Send, Copy } from 'lucide-react'
 import { SearchResultsDisplay } from '@/components/search-results-display'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
-import { MicButton } from '@/components/mic-button'
-import { SpeakButton } from '@/components/speak-button'
 import { cn } from '@/lib/utils'
-import { parseSseFrame, readSse } from '@/lib/sse'
 import { SpotlightCard } from '@/components/velora/spotlight-card'
 import { TracingBeam } from '@/components/velora/tracing-beam'
 
@@ -34,13 +31,11 @@ const SUGGESTED_QUERIES = [
 interface ThinkingChatProps {
   onMessagesChange?: (hasMessages: boolean) => void
   hasFirecrawlKey?: boolean
-  /** True when CARTESIA_API_KEY is configured, so voice controls can show. */
-  hasVoice?: boolean
   onApiKeyRequired?: () => void
   onBrowserClose?: () => void
 }
 
-export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, hasVoice = false, onApiKeyRequired }: ThinkingChatProps) {
+export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiKeyRequired }: ThinkingChatProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isSearching, setIsSearching] = useState(false)
@@ -76,21 +71,8 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, hasVoi
     }
   }, [showSuggestions, hasAnimatedSuggestions])
 
-  const handleTranscript = (text: string) => {
-    setInput((prev) => (prev.trim() ? `${prev.trim()} ${text}` : text))
-    setShowSuggestions(false)
-    // Let the state land before focusing so the caret sits at the end.
-    requestAnimationFrame(() => inputRef.current?.focus())
-  }
-
   const handleSearch = async (query: string) => {
     if (!query.trim() || isSearching) return
-
-    // Check if Firecrawl API key is available
-    if (!hasFirecrawlKey && !localStorage.getItem('firecrawl_api_key')) {
-      onApiKeyRequired?.()
-      return
-    }
 
     // Start transition animation
     setIsTransitioning(true)
@@ -147,125 +129,112 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, hasVoi
         throw new Error(errorData.error || errorData.message || 'Search failed')
       }
 
-      if (!response.body) throw new Error('No response stream')
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
+
+      if (!reader) throw new Error('No response stream')
 
       const events: ThinkingEvent[] = []
       let finalContent = ''
       let streamError: string | null = null
-      let completed = false
-      // Track results as we parse them: `searchResults` state is a stale
-      // closure here, so reading it when the run finishes would always yield
-      // the empty array from the start of this function.
-      let latestResults: Array<{ url: string; title: string; description?: string }> = []
 
-      const handleFrame = (payload: string) => {
-        let data: {
-          type?: string
-          event?: ThinkingEvent
-          content?: string
-          error?: string
-          originalError?: string
-        }
-        try {
-          data = JSON.parse(payload)
-        } catch {
-          // A frame that is not valid JSON is not worth failing the run over.
-          return
-        }
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
 
-        if (data.type === 'event' && data.event) {
-          const event = data.event
-          events.push(event)
+        const chunk = decoder.decode(value)
+        const lines = chunk.split('\n')
 
-          // Parse search results from tool results
-          if (event.type === 'tool_result' && event.tool === 'web_search') {
-            const resultText = String(event.result ?? '')
-            const parsedResults = parseSearchResults(resultText)
-            latestResults = parsedResults
-            setSearchResults(parsedResults)
-
-            // Extract screenshots if available
-            if (event.screenshots) {
-              setScreenshots(event.screenshots)
-            }
-
-            // Check if results mention scraping is happening
-            if (resultText.includes('(SCRAPED)')) {
-              // Find first scraped URL
-              const scrapedMatch = resultText.match(/URL: (https?:\/\/[^\s]+).*?\(SCRAPED\)/)
-              if (scrapedMatch) {
-                setTimeout(() => {
-                  setCurrentScrapingUrl(scrapedMatch[1])
-                }, 1000) // Show search results first, then switch to scraping
-              }
-            }
-          }
-
-          // Track current scraping URL and handle web_search with scraping
-          if (event.type === 'tool_call') {
-            if (event.tool === 'web_search' || event.tool === 'firecrawl_search') {
-              // Update the query in the URL bar immediately
-              const searchQuery = (event.parameters as { query?: string })?.query || ''
-              setCurrentQuery(searchQuery)
-              setCurrentScrapingUrl('')  // Clear to show search results
-            } else if (event.tool === 'firecrawl_scrape' || event.tool === 'deep_scrape') {
-              const sourceUrl = (event.parameters as { source_url?: string })?.source_url || ''
-              setCurrentScrapingUrl(sourceUrl)
-            }
-          } else if (event.type === 'tool_result') {
-            if (event.tool === 'deep_scrape' || event.tool === 'firecrawl_scrape' || event.tool === 'web_search') {
-              // Extract screenshots from results
-              // Always add new screenshots even if URL is the same (for multiple scrapes of same page)
-              if (event.screenshots) {
-                setScreenshots(prev => [...prev, ...event.screenshots!])
-              }
-
-              // Don't clear scraping URL immediately - let it show the screenshot
-              // Only clear when a new tool call happens
-            }
-          }
-
-          setMessages(prev => prev.map(msg =>
-            msg.id === assistantMessage.id
-              ? { ...msg, searchData: { status: 'searching', events: [...events] } }
-              : msg
-          ))
-        } else if (data.type === 'response') {
-          finalContent = data.content || ''
-        } else if (data.type === 'error') {
-          // The route reports failures inside the stream (it has already
-          // sent 200), so surface them here instead of spinning forever.
-          streamError = data.error || data.originalError || 'The research request failed.'
-        } else if (data.type === 'done') {
-          completed = true
-          setMessages(prev => prev.map(msg =>
-            msg.id === assistantMessage.id
-              ? {
-                  ...msg,
-                  content: finalContent,
-                  searchData: { status: 'complete', events: events },
-                  sources: latestResults
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6))
+              
+              if (data.type === 'event') {
+                events.push(data.event)
+                
+                // Parse search results from tool results
+                if (
+                  data.event.type === 'tool_result' &&
+                  (data.event.tool === 'web_search' || data.event.tool === 'search_california_law')
+                ) {
+                  const resultText = data.event.result
+                  const parsedResults = parseSearchResults(resultText)
+                  if (parsedResults.length > 0) setSearchResults(parsedResults)
+                  
+                  // Extract screenshots if available
+                  if (data.event.screenshots) {
+                    setScreenshots(data.event.screenshots)
+                  }
+                  
+                  // Check if results mention scraping is happening
+                  if (resultText.includes('(SCRAPED)')) {
+                    // Find first scraped URL
+                    const scrapedMatch = resultText.match(/URL: (https?:\/\/[^\s]+).*?\(SCRAPED\)/)
+                    if (scrapedMatch) {
+                      setTimeout(() => {
+                        setCurrentScrapingUrl(scrapedMatch[1])
+                      }, 1000) // Show search results first, then switch to scraping
+                    }
+                  }
                 }
-              : msg
-          ))
+                
+                // Track current scraping URL and handle web_search with scraping
+                if (data.event.type === 'tool_call') {
+                  if (data.event.tool === 'web_search' || data.event.tool === 'firecrawl_search') {
+                    // Update the query in the URL bar immediately
+                    const searchQuery = (data.event.parameters as { query?: string })?.query || ''
+                    setCurrentQuery(searchQuery)
+                    setCurrentScrapingUrl('')  // Clear to show search results
+                  } else if (data.event.tool === 'firecrawl_scrape' || data.event.tool === 'deep_scrape') {
+                    const sourceUrl = (data.event.parameters as { source_url?: string })?.source_url || ''
+                    setCurrentScrapingUrl(sourceUrl)
+                  }
+                } else if (data.event.type === 'tool_result') {
+                  if (data.event.tool === 'deep_scrape' || data.event.tool === 'firecrawl_scrape' || data.event.tool === 'web_search') {
+                    // Extract screenshots from results
+                    // Always add new screenshots even if URL is the same (for multiple scrapes of same page)
+                    if (data.event.screenshots) {
+                      setScreenshots(prev => [...prev, ...data.event.screenshots])
+                    }
+                    
+                    // Don't clear scraping URL immediately - let it show the screenshot
+                    // Only clear when a new tool call happens
+                  }
+                }
+                
+                setMessages(prev => prev.map(msg => 
+                  msg.id === assistantMessage.id
+                    ? { ...msg, searchData: { status: 'searching', events: [...events] } }
+                    : msg
+                ))
+              } else if (data.type === 'response') {
+                finalContent = data.content
+              } else if (data.type === 'error') {
+                // The route reports failures inside the stream (it has already
+                // sent 200), so surface them here instead of spinning forever.
+                streamError = data.error || data.originalError || 'The research request failed.'
+              } else if (data.type === 'done') {
+                setMessages(prev => prev.map(msg => 
+                  msg.id === assistantMessage.id
+                    ? { 
+                        ...msg, 
+                        content: finalContent,
+                        searchData: { status: 'complete', events: events },
+                        sources: searchResults // Keep the sources from this specific search
+                      }
+                    : msg
+                ))
+              }
+            } catch (e) {
+              // Error parsing SSE data
+            }
+          }
         }
-      }
-
-      // Frames are buffered and decoded by lib/sse so a chunk boundary in the
-      // middle of a frame (or a multi-byte character) cannot lose an event.
-      for await (const frame of readSse(response.body)) {
-        const payload = parseSseFrame(frame)
-        if (payload) handleFrame(payload)
       }
 
       if (streamError) {
         throw new Error(streamError)
-      }
-
-      // The connection ended without a done frame (server restart, proxy
-      // timeout, dropped network). Better an error than a spinner forever.
-      if (!completed) {
-        throw new Error('The research stream ended unexpectedly. Please try again.')
       }
     } catch (error) {
       // Search error occurred
@@ -273,12 +242,14 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, hasVoi
       let errorMessage = 'Sorry, an error occurred while searching. Please try again.'
       
       if (error instanceof Error) {
+        // The server already names the variable that is missing, and that is
+        // the only actionable part, so show it rather than a generic apology.
         if (error.message.includes('SARVAM_API_KEY') || error.message.includes('ANTHROPIC_API_KEY')) {
-          errorMessage = 'The AI model API key is not configured. Please contact the site administrator.'
+          errorMessage = `The language model key is not configured on this deployment. ${error.message}`
         } else if (error.message.includes('FIRECRAWL_API_KEY')) {
-          errorMessage = 'The Firecrawl API key is not configured. Please contact the site administrator.'
+          errorMessage = `Web search is not configured on this deployment. ${error.message} The California corpus still works.`
         } else if (error.message.includes('model')) {
-          errorMessage = 'The required AI model is not available for this API key. Please contact the site administrator.'
+          errorMessage = `The configured model is not available for this API key. ${error.message}`
         } else {
           errorMessage = `Error: ${error.message}`
         }
@@ -315,7 +286,9 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, hasVoi
       // Match result entries like "[1] Title"
       const titleMatch = line.match(/^\[(\d+)\]\s+(.+)$/)
       if (titleMatch) {
-        if (currentResult && currentResult.url && currentResult.title) {
+        // Corpus hits cite a statute and carry no URL, so a URL cannot be a
+        // requirement for keeping a result.
+        if (currentResult && currentResult.title) {
           results.push(currentResult as { url: string; title: string; description?: string })
         }
         currentResult = {
@@ -329,6 +302,12 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, hasVoi
       // Match URL lines
       if (line.startsWith('URL: ') && currentResult) {
         currentResult.url = line.substring(5)
+        continue
+      }
+
+      // Corpus hits cite the statute rather than a page URL
+      if (line.startsWith('Source: ') && currentResult) {
+        currentResult.url = line.substring(8).trim()
         continue
       }
       
@@ -349,10 +328,22 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, hasVoi
         currentResult.markdown = line.substring(17)
         continue
       }
+
+      // Corpus snippets arrive as a bare line beneath the citation, with no
+      // "Key: " prefix to match on.
+      if (
+        currentResult &&
+        !currentResult.description &&
+        line.trim().length > 40 &&
+        !/^[A-Za-z][A-Za-z ]{0,12}: /.test(line)
+      ) {
+        currentResult.description = line.trim()
+        continue
+      }
     }
     
     // Don't forget the last result
-    if (currentResult && currentResult.url && currentResult.title) {
+    if (currentResult && currentResult.title) {
       results.push(currentResult as { url: string; title: string; description?: string })
     }
     
@@ -377,16 +368,9 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, hasVoi
               onFocus={() => setShowSuggestions(true)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
               placeholder="Enter query..."
-              className={cn("ui-control w-full h-12 rounded-full border border-border bg-background pl-5 text-base text-foreground shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50", hasVoice ? "pr-24" : "pr-14")}
+              className="ui-control w-full h-12 rounded-full border border-border bg-background pl-5 pr-14 text-base text-foreground shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={isSearching}
             />
-            {hasVoice && (
-              <MicButton
-                onTranscript={handleTranscript}
-                disabled={isSearching}
-                className="absolute right-11 top-2"
-              />
-            )}
             <button
               type="submit"
               disabled={isSearching || !input.trim()}
@@ -399,6 +383,16 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, hasVoi
               )}
             </button>
           </form>
+
+          {!hasFirecrawlKey && (
+            <button
+              type="button"
+              onClick={() => onApiKeyRequired?.()}
+              className="ui-caption mx-auto flex items-center gap-1.5 text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Web search is off — searching the corpus only. Add a Firecrawl key
+            </button>
+          )}
 
           {showSuggestions && !isSearching && (
             <div className="space-y-2">
@@ -570,13 +564,12 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, hasVoi
                   
                   {/* Action buttons for completed responses */}
                   {message.role === 'assistant' && message.content && message.searchData?.status === 'complete' && (
-                    <div className="mt-3 flex items-center justify-end gap-1">
-                      {hasVoice && <SpeakButton id={message.id} text={message.content} />}
+                    <div className="mt-3 flex items-center">
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(message.content)
                         }}
-                        className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                        className="ml-auto rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                         title="Copy to clipboard"
                       >
                         <Copy className="h-3.5 w-3.5" />
@@ -600,16 +593,9 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, hasVoi
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Enter query..."
-                className={cn("ui-control w-full h-12 rounded-full border border-border bg-background pl-5 text-base text-foreground shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50", hasVoice ? "pr-24" : "pr-14")}
+                className="ui-control w-full h-12 rounded-full border border-border bg-background pl-5 pr-14 text-base text-foreground shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={isSearching}
               />
-              {hasVoice && (
-                <MicButton
-                  onTranscript={handleTranscript}
-                  disabled={isSearching}
-                  className="absolute right-11 top-2"
-                />
-              )}
               <button
                 type="submit"
                 disabled={isSearching || !input.trim()}
