@@ -130,6 +130,7 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
       if (!body) throw new Error('No response stream')
 
       const events: ThinkingEvent[] = []
+      let currentSearchResults: Array<{ url: string; title: string; description?: string }> = []
       let finalContent = ''
       let streamError: string | null = null
 
@@ -149,7 +150,10 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
                 ) {
                   const resultText = data.event.result
                   const parsedResults = parseSearchResults(resultText)
-                  if (parsedResults.length > 0) setSearchResults(parsedResults)
+                  if (parsedResults.length > 0) {
+                    currentSearchResults = parsedResults
+                    setSearchResults(parsedResults)
+                  }
                   
                   // Extract screenshots if available
                   if (data.event.screenshots) {
@@ -208,7 +212,7 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
                         ...msg, 
                         content: finalContent,
                         searchData: { status: 'complete', events: events },
-                        sources: searchResults // Keep the sources from this specific search
+                        sources: currentSearchResults // Keep the sources from this specific search
                       }
                     : msg
                 ))
@@ -589,14 +593,25 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Enter query..."
-                className="ui-control w-full h-12 rounded-full border border-border bg-background pl-5 pr-14 text-base text-foreground shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="Ask a California law question…"
+                className="ui-control w-full h-14 rounded-2xl border border-border/70 bg-background/95 pl-5 pr-24 text-base text-foreground shadow-[0_8px_28px_rgba(25,45,90,0.07)] backdrop-blur-xl ring-offset-background placeholder:text-muted-foreground transition-[border-color,box-shadow] duration-200 focus-visible:outline-none focus-visible:border-[#5279bd] focus-visible:ring-2 focus-visible:ring-[#5279bd]/25 disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={isSearching}
               />
+              {voiceEnabled && (
+                <span className="absolute right-12 top-3">
+                  <MicButton
+                    disabled={isSearching}
+                    onTranscript={(text) => {
+                      setInput(text)
+                      inputRef.current?.focus()
+                    }}
+                  />
+                </span>
+              )}
               <button
                 type="submit"
                 disabled={isSearching || !input.trim()}
-                className="absolute right-2 top-2 h-8 w-8 bg-primary text-primary-foreground rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-opacity duration-200 flex items-center justify-center hover:opacity-90"
+                className="absolute right-2 top-2 h-10 w-10 rounded-xl bg-[#002868] text-white transition-[transform,background-color] duration-200 hover:bg-[#0a3d86] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center"
               >
                 {isSearching ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
