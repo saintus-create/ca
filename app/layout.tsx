@@ -9,7 +9,7 @@ import { Toaster } from "sonner";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "California Law",
+  title: "California Legislative Information",
   description: "California law research with real-time thinking and citations",
 };
 

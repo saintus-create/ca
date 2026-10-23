@@ -11,7 +11,7 @@ const photo = (id: string) =>
 
 const FEATURED = {
   before:
-    "We put our whole practice on California Law last spring. Six months later, drafting a memo takes",
+    "We put our whole practice on California Legislative Information last spring. Six months later, drafting a memo takes",
   highlight: "a third of the time",
   after: "and every citation lands on the right section.",
   name: "Dana Whitfield",
@@ -175,7 +175,7 @@ export function TestimonialsGrid() {
             </h2>
             <p className="mt-5 text-lg text-pretty text-muted-foreground">
               Public defenders, solo practitioners and policy analysts on what
-              changed after they moved their practice to California Law.
+              changed after they moved their practice to California Legislative Information.
             </p>
           </div>
           <Button variant="outline" asChild className="self-start lg:self-auto">

@@ -1,124 +1,110 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { performResearchWithStreaming } from '@/lib/open-researcher-agent'
 import { isProviderConfigured, providerDefaults, resolveProvider } from '@/lib/llm'
-import { executeCorpusSearch } from '@/lib/corpus-search'
-
-const SSE_HEADERS = {
-  'Content-Type': 'text/event-stream',
-  'Cache-Control': 'no-cache',
-  'Connection': 'keep-alive',
-}
-
-/**
- * Answers straight from the California corpus, labelled as such.
- *
- * Used when the language model is missing, or configured but unusable (no
- * credit, revoked key, retired model). A broken model key must not take the
- * site down - the corpus is the part that always works.
- */
-function corpusOnlyResponse(query: string, reason: string): NextResponse {
-  const encoder = new TextEncoder()
-  const stream = new ReadableStream({
-    async start(controller) {
-      const send = (payload: unknown) =>
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`))
-      try {
-        const { content } = await executeCorpusSearch(query, undefined, 6)
-        const notice =
-          `> **Corpus-only result.** ${reason} This is a direct search of the ` +
-          `California corpus rather than a reasoned answer.\n\n`
-        send({ type: 'event', event: { type: 'tool_call', tool: 'search_california_law', parameters: { query }, timestamp: Date.now() } })
-        send({ type: 'event', event: { type: 'tool_result', tool: 'search_california_law', result: content, timestamp: Date.now() } })
-        send({ type: 'response', content: notice + content })
-        send({ type: 'done' })
-      } catch (error) {
-        send({ type: 'error', error: error instanceof Error ? error.message : 'Corpus search failed.' })
-      } finally {
-        controller.close()
-      }
-    },
-  })
-  return new NextResponse(stream, { headers: SSE_HEADERS })
-}
 
 export async function POST(req: NextRequest) {
   try {
-    const { query } = await req.json()
+    const { query, dataset } = await req.json()
+    const scopeDataset = typeof dataset === 'string' && dataset.trim() ? dataset.trim() : undefined
 
     if (!query) {
       return NextResponse.json({ error: 'Query is required' }, { status: 400 })
     }
 
-    // Web search is optional. The California corpus needs no key, so a missing
-    // Firecrawl key degrades the run to corpus-only rather than failing it.
-    const firecrawlApiKey = req.headers.get('X-Firecrawl-API-Key') || process.env.FIRECRAWL_API_KEY
-    if (firecrawlApiKey) process.env.FIRECRAWL_API_KEY = firecrawlApiKey
-
     // Check the language model key for the active provider (Sarvam by
-    // default, Venice and Anthropic as alternatives).
+    // default, Anthropic as a fallback).
     const provider = resolveProvider()
-    const { apiKeyEnv } = providerDefaults(provider)
-
     if (!isProviderConfigured(provider)) {
-      return corpusOnlyResponse(
-        query,
-        `No language model is configured on this deployment (\`${apiKeyEnv}\` is unset).`
+      const { apiKeyEnv } = providerDefaults(provider)
+      return NextResponse.json(
+        { error: `${apiKeyEnv} is not configured. Add it to your environment variables (see .env.local.example).` },
+        { status: 500 }
       )
     }
 
+    // Firecrawl is optional. A key supplied through the UI takes precedence;
+    // without one, the California law corpus and the language model still run,
+    // and only the web search/scrape tools return a tool-level error if used.
+    const firecrawlApiKey = req.headers.get('X-Firecrawl-API-Key') || process.env.FIRECRAWL_API_KEY
+
+    if (firecrawlApiKey) {
+      process.env.FIRECRAWL_API_KEY = firecrawlApiKey
+    }
+
+    // Create a streaming response
     const encoder = new TextEncoder()
     const stream = new ReadableStream({
       async start(controller) {
-        const send = (payload: unknown) =>
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`))
         try {
+          // Perform research with streaming events
           const finalResponse = await performResearchWithStreaming(query, (event) => {
-            send({ type: 'event', event: { ...event, timestamp: Date.now() } })
-          })
+            // Add timestamp to events
+            const eventWithTimestamp = { ...event, timestamp: Date.now() }
+            
+            // Send event as SSE
+            const data = `data: ${JSON.stringify({ type: 'event', event: eventWithTimestamp })}\n\n`
+            controller.enqueue(encoder.encode(data))
+          }, scopeDataset)
 
-          if (finalResponse) send({ type: 'response', content: finalResponse })
-          send({ type: 'done' })
-          controller.close()
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-
-          // A configured-but-unusable key must not take the site down either.
-          try {
-            const { content } = await executeCorpusSearch(query, undefined, 6)
-            const notice =
-              `> **Corpus-only result.** The language model is unavailable on this ` +
-              `deployment (${errorMessage}), so this is a direct search of the California ` +
-              `corpus rather than a reasoned answer.\n\n`
-            send({ type: 'event', event: { type: 'tool_call', tool: 'search_california_law', parameters: { query }, timestamp: Date.now() } })
-            send({ type: 'event', event: { type: 'tool_result', tool: 'search_california_law', result: content, timestamp: Date.now() } })
-            send({ type: 'response', content: notice + content })
-            send({ type: 'done' })
-            controller.close()
-            return
-          } catch {
-            // Corpus unavailable too - fall through and report the model error.
+          // Send final response
+          if (finalResponse) {
+            const responseData = `data: ${JSON.stringify({ type: 'response', content: finalResponse })}\n\n`
+            controller.enqueue(encoder.encode(responseData))
           }
 
+          // Send done event
+          const doneData = `data: ${JSON.stringify({ type: 'done' })}\n\n`
+          controller.enqueue(encoder.encode(doneData))
+          controller.close()
+        } catch (error) {
+          // Research error occurred
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+          const errorDetails = error instanceof Error && error.stack ? error.stack : ''
+          
+          // Error details logged internally
+          
+          // More user-friendly error messages
           let userFriendlyError = errorMessage
           if (errorMessage.includes('Authentication error')) {
-            userFriendlyError = `The language model API key was rejected. Check ${apiKeyEnv}.`
+            userFriendlyError = `The language model API key was rejected. Check ${providerDefaults(provider).apiKeyEnv}.`
           } else if (errorMessage.includes('Model error')) {
             userFriendlyError = `The configured model is not available for this API key (${providerDefaults(provider).model}). Set SARVAM_MODEL (or VENICE_MODEL / ANTHROPIC_MODEL).`
           } else if (errorMessage.includes('FIRECRAWL_API_KEY')) {
             userFriendlyError = 'The Firecrawl API key is not configured. Add it in the app or as FIRECRAWL_API_KEY.'
           }
-
-          send({ type: 'error', error: userFriendlyError, originalError: errorMessage })
+          
+          const errorData = `data: ${JSON.stringify({ 
+            type: 'error', 
+            error: userFriendlyError,
+            originalError: errorMessage,
+            details: process.env.NODE_ENV === 'development' ? errorDetails : undefined
+          })}\n\n`
+          controller.enqueue(encoder.encode(errorData))
           controller.close()
         }
-      },
+      }
     })
 
-    return new NextResponse(stream, { headers: SSE_HEADERS })
+    return new NextResponse(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
+    })
   } catch (error) {
+    // API route error occurred
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    
+    // Log more details for debugging
+    // Full error details logged internally
+    
     return NextResponse.json(
-      { error: 'Internal server error', message: errorMessage },
+      { 
+        error: 'Internal server error',
+        message: errorMessage,
+        hint: 'Check the Vercel function logs for more details'
+      },
       { status: 500 }
     )
   }

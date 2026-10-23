@@ -721,7 +721,8 @@ function displayToolName(name: string): string {
 
 async function runResearch(
   query: string,
-  onEvent: (event: ResearchEvent) => void
+  onEvent: (event: ResearchEvent) => void,
+  scopeDataset?: string
 ): Promise<string> {
   onEvent({ type: 'start', query });
 
@@ -732,8 +733,11 @@ async function runResearch(
 
   for (let step = 0; step < MAX_RESEARCH_STEPS; step++) {
     const toolset = availableTools();
+    const system = scopeDataset
+      ? `${systemPromptFor(toolset)}\n\nScope: the user has restricted this conversation to the ${scopeDataset} dataset. Every corpus search is limited to it. If the question falls outside that dataset, say so plainly instead of guessing.`
+      : systemPromptFor(toolset);
     const result = await createChat({
-      system: systemPromptFor(toolset),
+      system,
       messages,
       tools: toolset,
       maxTokens: RESEARCH_MAX_TOKENS,
@@ -764,15 +768,20 @@ async function runResearch(
 
     for (const call of toolCalls) {
       toolCallCount++;
+      const input: Record<string, unknown> = { ...(call.input ?? {}) };
+      // A user-selected scope wins over the model's choice of dataset.
+      if (scopeDataset && call.name === 'search_california_law') {
+        input.dataset = scopeDataset;
+      }
       onEvent({
         type: 'tool_call',
         number: toolCallCount,
         tool: displayToolName(call.name ?? ''),
-        parameters: call.input ?? {},
+        parameters: input,
       });
 
       const startedAt = Date.now();
-      const toolResult = await executeTool(call.name ?? '', call.input ?? {});
+      const toolResult = await executeTool(call.name ?? '', input);
       onEvent({
         type: 'tool_result',
         tool: call.name ?? '',
@@ -800,9 +809,10 @@ async function runResearch(
 
 export async function performResearchWithStreaming(
   query: string,
-  onEvent: (event: ResearchEvent) => void
+  onEvent: (event: ResearchEvent) => void,
+  scopeDataset?: string
 ): Promise<string> {
-  return runResearch(query, onEvent);
+  return runResearch(query, onEvent, scopeDataset);
 }
 
 export async function performResearch(query: string): Promise<string> {

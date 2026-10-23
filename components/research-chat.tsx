@@ -21,6 +21,7 @@ import type {
 import { LiveWaveform } from '@/components/elevenlabs/live-waveform'
 import { BarVisualizer } from '@/components/elevenlabs/bar-visualizer'
 import type { ThinkingEvent } from '@/components/thinking-display'
+import { fetchDatasets, groupDatasets, type DatasetInfo } from '@/components/corpus/datasets'
 
 interface Message {
   id: string
@@ -114,6 +115,14 @@ export function ResearchChat({
 }: ResearchChatProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [isSearching, setIsSearching] = useState(false)
+  const [scope, setScope] = useState('')
+  const [datasets, setDatasets] = useState<DatasetInfo[]>([])
+
+  useEffect(() => {
+    fetchDatasets()
+      .then(setDatasets)
+      .catch(() => setDatasets([]))
+  }, [])
   const [voiceState, setVoiceState] = useState<VoiceInputState>('idle')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const recorderRef = useRef<MediaRecorder | null>(null)
@@ -210,7 +219,7 @@ export function ResearchChat({
         const response = await fetch('/api/open-researcher', {
           method: 'POST',
           headers,
-          body: JSON.stringify({ query }),
+          body: JSON.stringify({ query, dataset: scope || undefined }),
         })
 
         if (!response.ok) {
@@ -322,7 +331,7 @@ export function ResearchChat({
         setIsSearching(false)
       }
     },
-    [isSearching],
+    [isSearching, scope],
   )
 
   // Voice capture: the ElevenLabs LiveWaveform owns the microphone stream and
@@ -381,6 +390,40 @@ export function ResearchChat({
     }
     recorderRef.current = null
   }, [])
+
+  const scopeSelector = (
+    <div className="flex flex-wrap items-center justify-center gap-2">
+      <label
+        htmlFor="corpus-scope"
+        className="text-[12.5px] text-neutral-400 dark:text-neutral-500"
+      >
+        Search in
+      </label>
+      <select
+        id="corpus-scope"
+        value={scope}
+        onChange={(e) => setScope(e.target.value)}
+        className="max-w-[260px] rounded-full border border-black/[0.08] bg-white px-3 py-1.5 text-[12.5px] text-neutral-700 outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400 dark:border-white/[0.09] dark:bg-[#0B0B0D] dark:text-neutral-200"
+      >
+        <option value="">All California law</option>
+        {groupDatasets(datasets).map(({ group, items }) => (
+          <optgroup key={group} label={group}>
+            {items.map((d) => (
+              <option key={d.code} value={d.code}>
+                {d.name}
+              </option>
+            ))}
+          </optgroup>
+        ))}
+      </select>
+      <a
+        href="/corpus"
+        className="text-[12.5px] text-neutral-400 underline decoration-neutral-300 underline-offset-4 transition-colors hover:text-neutral-700 dark:text-neutral-500 dark:decoration-neutral-600 dark:hover:text-neutral-200"
+      >
+        Browse the corpus
+      </a>
+    </div>
+  )
 
   const voiceControls = voiceEnabled ? (
     <div className="flex flex-col items-center gap-3">
@@ -442,6 +485,7 @@ export function ResearchChat({
           onSend={(text) => handleSearch(text)}
           className="max-w-[640px]"
         />
+        {scopeSelector}
         {voiceControls}
         {firecrawlNotice}
       </div>
@@ -511,6 +555,7 @@ export function ResearchChat({
       </div>
 
       <div className="space-y-3 border-t border-black/[0.06] px-4 py-4 dark:border-white/[0.07]">
+        {scopeSelector}
         <PromptComposer
           placeholder="Ask a follow-up"
           isGenerating={isSearching}

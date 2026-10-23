@@ -1,6 +1,6 @@
 import { Badge } from "@/components/velora/ui/badge";
 
-const BRAND = "California Law";
+const BRAND = "California Legislative Information";
 const TAGLINE =
   "California law, researched in seconds. Corpus plus web, every claim cited.";
 
@@ -11,16 +11,17 @@ const COLUMNS: {
   {
     title: "Product",
     links: [
-      { label: "Research", href: "#research" },
-      { label: "Corpus", href: "#corpus" },
-      { label: "How it works", href: "#how" },
-      { label: "Sources", href: "#sources" },
+      { label: "Research", href: "/#research" },
+      { label: "Browse the corpus", href: "/corpus" },
+      { label: "Corpus", href: "/#corpus" },
+      { label: "How it works", href: "/#how" },
+      { label: "Sources", href: "/#sources" },
     ],
   },
   {
     title: "Resources",
     links: [
-      { label: "FAQ", href: "#docs" },
+      { label: "FAQ", href: "/#docs" },
       { label: "GitHub repository", href: "https://github.com/saintus-create/ca" },
       { label: "Report an issue", href: "https://github.com/saintus-create/ca/issues" },
     ],
@@ -102,7 +103,10 @@ export function FooterColumns() {
         </div>
 
         <div className="mt-16 flex flex-col-reverse gap-4 border-t pt-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <p>© 2026 {BRAND}, Inc. All rights reserved.</p>
+          <p>
+            © 2026 {BRAND}. An independent research tool, not an official
+            website of the State of California.
+          </p>
           <nav aria-label="Legal">
             <ul className="flex flex-wrap gap-x-6 gap-y-2">
               {LEGAL.map((label) => (

@@ -316,7 +316,7 @@ export function SearchResultsDisplay({
                     <span className="grid h-6 w-6 place-items-center rounded-md bg-foreground text-background lg:h-7 lg:w-7">
                       <Scale className="h-3.5 w-3.5" />
                     </span>
-                    California Law
+                    California Legislative Information
                   </span>
                   
                   {/* Search box */}
