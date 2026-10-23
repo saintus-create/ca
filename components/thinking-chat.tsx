@@ -36,7 +36,7 @@ interface ThinkingChatProps {
   hasFirecrawlKey?: boolean
   onApiKeyRequired?: () => void
   onBrowserClose?: () => void
-  /** Render the voice controls. Only true when Cartesia is configured. */
+  /** Render browser-native microphone and read-aloud controls. */
   voiceEnabled?: boolean
 }
 
