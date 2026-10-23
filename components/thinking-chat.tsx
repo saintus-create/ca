@@ -5,6 +5,8 @@ import { ChevronDown, Loader2, Send, Copy } from 'lucide-react'
 import { SearchResultsDisplay } from '@/components/search-results-display'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
 import { cn } from '@/lib/utils'
+import { MicButton } from '@/components/mic-button'
+import { SpeakButton } from '@/components/speak-button'
 import { SpotlightCard } from '@/components/velora/spotlight-card'
 import { TracingBeam } from '@/components/velora/tracing-beam'
 
@@ -33,9 +35,11 @@ interface ThinkingChatProps {
   hasFirecrawlKey?: boolean
   onApiKeyRequired?: () => void
   onBrowserClose?: () => void
+  /** Render the voice controls. Only true when Cartesia is configured. */
+  voiceEnabled?: boolean
 }
 
-export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiKeyRequired }: ThinkingChatProps) {
+export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiKeyRequired, voiceEnabled = false }: ThinkingChatProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isSearching, setIsSearching] = useState(false)
@@ -371,6 +375,17 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
               className="ui-control w-full h-12 rounded-full border border-border bg-background pl-5 pr-14 text-base text-foreground shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={isSearching}
             />
+            {voiceEnabled && (
+              <span className="absolute right-12 top-2">
+                <MicButton
+                  disabled={isSearching}
+                  onTranscript={(text) => {
+                    setInput(text)
+                    inputRef.current?.focus()
+                  }}
+                />
+              </span>
+            )}
             <button
               type="submit"
               disabled={isSearching || !input.trim()}
@@ -564,12 +579,15 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
                   
                   {/* Action buttons for completed responses */}
                   {message.role === 'assistant' && message.content && message.searchData?.status === 'complete' && (
-                    <div className="mt-3 flex items-center">
+                    <div className="mt-3 flex items-center justify-end gap-1">
+                      {voiceEnabled && (
+                        <SpeakButton id={message.id} text={message.content} />
+                      )}
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(message.content)
                         }}
-                        className="ml-auto rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                        className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                         title="Copy to clipboard"
                       >
                         <Copy className="h-3.5 w-3.5" />

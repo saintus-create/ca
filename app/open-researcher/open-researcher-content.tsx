@@ -16,8 +16,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
+import { SpeechProvider } from '@/components/speech-provider'
 
-export default function OpenResearcherContent() {
+export default function OpenResearcherContent({ voiceEnabled = false }: { voiceEnabled?: boolean }) {
   const [hasMessages, setHasMessages] = useState(false)
   const [showApiKeyModal, setShowApiKeyModal] = useState(false)
   const [firecrawlApiKey, setFirecrawlApiKey] = useState('')
@@ -135,11 +136,22 @@ export default function OpenResearcherContent() {
       {/* Main Content - Full width split layout */}
       <div className="flex-1 px-4 sm:px-6 lg:px-8">
         <div className="h-full max-w-[1400px] mx-auto">
-          <ThinkingChat
-            onMessagesChange={setHasMessages}
-            hasFirecrawlKey={hasFirecrawlKey}
-            onApiKeyRequired={() => setShowApiKeyModal(true)}
-          />
+          {voiceEnabled ? (
+            <SpeechProvider>
+              <ThinkingChat
+                onMessagesChange={setHasMessages}
+                hasFirecrawlKey={hasFirecrawlKey}
+                onApiKeyRequired={() => setShowApiKeyModal(true)}
+                voiceEnabled
+              />
+            </SpeechProvider>
+          ) : (
+            <ThinkingChat
+              onMessagesChange={setHasMessages}
+              hasFirecrawlKey={hasFirecrawlKey}
+              onApiKeyRequired={() => setShowApiKeyModal(true)}
+            />
+          )}
         </div>
       </div>
 
