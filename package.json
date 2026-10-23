@@ -6,7 +6,10 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "smoke": "node --experimental-strip-types scripts/smoke.mjs",
+    "test:sse": "node --experimental-strip-types scripts/test-sse.mjs",
+    "test": "npm run test:sse && npm run smoke"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.54.0",
@@ -45,8 +48,10 @@
     "geist": "^1.8.2",
     "input-otp": "^1.5.0",
     "lucide-react": "^0.511.0",
+    "motion": "^13.4.6",
     "next": "^15.5.28",
     "next-themes": "^0.4.6",
+    "radix-ui": "^1.6.7",
     "react": "^19.0.0",
     "react-day-picker": "^8.10.2",
     "react-dom": "^19.0.0",

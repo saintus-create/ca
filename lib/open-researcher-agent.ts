@@ -642,10 +642,29 @@ async function executeDeepScrape(
   }
 }
 
+// The web tools need a Firecrawl key; the corpus tool does not. Rather than
+// failing a whole research run because one source is unconfigured, offer only
+// the tools that can actually execute.
+export function availableTools(): ToolDefinition[] {
+  return process.env.FIRECRAWL_API_KEY
+    ? tools
+    : tools.filter((tool) => tool.name === 'search_california_law');
+}
+
+function systemPromptFor(toolset: ToolDefinition[]): string {
+  const hasWeb = toolset.some((tool) => tool.name === 'web_search');
+  return hasWeb
+    ? SYSTEM_PROMPT
+    : `${SYSTEM_PROMPT}\n\nNote: web search and scraping are not configured in this deployment. Do not attempt to use them. Answer from the California corpus alone with search_california_law, and if a question genuinely needs live web data, say so plainly instead of guessing.`;
+}
+
 // Execute tool based on name
 export async function executeTool(toolName: string, input: Record<string, unknown>): Promise<{ content: string; screenshots?: Array<{ url: string; screenshot?: string }> }> {
   switch (toolName) {
     case 'web_search':
+      if (!process.env.FIRECRAWL_API_KEY) {
+        return { content: 'Web search is not configured in this deployment. Use search_california_law against the California corpus instead.' };
+      }
       return await executeWebSearch(
         input.query as string, 
         (input.limit as number) || 5, 
@@ -653,6 +672,9 @@ export async function executeTool(toolName: string, input: Record<string, unknow
         input.tbs as string | undefined
       );
     case 'deep_scrape':
+      if (!process.env.FIRECRAWL_API_KEY) {
+        return { content: 'Web scraping is not configured in this deployment. Use search_california_law against the California corpus instead.' };
+      }
       return await executeDeepScrape(
         input.source_url as string,
         input.link_filter as string | undefined,
@@ -715,10 +737,11 @@ async function runResearch(
   let toolCallCount = 0;
 
   for (let step = 0; step < MAX_RESEARCH_STEPS; step++) {
+    const toolset = availableTools();
     const result = await createChat({
-      system: SYSTEM_PROMPT,
+      system: systemPromptFor(toolset),
       messages,
-      tools,
+      tools: toolset,
       maxTokens: RESEARCH_MAX_TOKENS,
     });
 

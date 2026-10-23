@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Globe, Search, FileText, Image } from 'lucide-react'
+import { Globe, Search, FileText, Image, Scale } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { AnimatedCursor } from './animated-cursor'
+import { BorderBeam } from '@/components/velora/border-beam'
 
 interface SearchResult {
   title: string
@@ -162,10 +163,11 @@ export function SearchResultsDisplay({
     <div 
       ref={browserContainerRef}
       className={cn(
-        "h-full flex flex-col bg-white dark:bg-gray-900 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shadow-lg transition-all duration-500 relative",
+        "relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-lg transition-all duration-500",
         browserClosed && "opacity-0 scale-95 translate-x-full"
       )}
     >
+      {isActive && <BorderBeam size={200} duration={8} />}
       {/* Animated cursor - positioned inside the browser container */}
       {showClosingAnimation && closeButtonRef.current && browserContainerRef.current && (
         <AnimatedCursor
@@ -183,7 +185,7 @@ export function SearchResultsDisplay({
       )}
       
       {/* Fake browser URL bar */}
-      <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-2 flex-shrink-0">
+      <div className="flex-shrink-0 border-b border-border bg-muted px-4 py-2">
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1">
             <div 
@@ -196,21 +198,21 @@ export function SearchResultsDisplay({
             <div className="w-3 h-3 rounded-full bg-yellow-500" />
             <div className="w-3 h-3 rounded-full bg-green-500" />
           </div>
-          <div className="flex-1 flex items-center gap-2 bg-white dark:bg-gray-700 rounded-md px-3 py-1 min-w-0">
+          <div className="flex min-w-0 flex-1 items-center gap-2 rounded-md bg-background px-3 py-1">
             {urlBar.icon}
-            <span className="text-sm text-gray-600 dark:text-gray-300 font-mono truncate flex-1 min-w-0">
+            <span className="ui-mono min-w-0 flex-1 truncate text-muted-foreground">
               {urlBar.text}
             </span>
             {urlBar.action === 'searching' && (
               <div className="flex items-center gap-1 flex-shrink-0 ml-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-                <span className="text-xs text-blue-500 whitespace-nowrap">Searching...</span>
+                <div className="w-2 h-2 bg-brand-to rounded-full animate-pulse" />
+                <span className="ui-caption whitespace-nowrap text-brand-to">Searching...</span>
               </div>
             )}
             {urlBar.action === 'scraping' && (
               <div className="flex items-center gap-1 flex-shrink-0 ml-2">
-                <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
-                <span className="text-xs text-orange-500 whitespace-nowrap">Scraping...</span>
+                <div className="w-2 h-2 bg-brand rounded-full animate-pulse" />
+                <span className="ui-caption whitespace-nowrap text-brand">Scraping...</span>
               </div>
             )}
           </div>
@@ -221,13 +223,13 @@ export function SearchResultsDisplay({
       <div className="flex-1 overflow-hidden relative">
         {(viewMode === 'search' && showScreenshot && currentScreenshot) ? (
           <div className="absolute inset-0 flex">
-            <div className="relative flex-1 bg-white dark:bg-gray-900 flex items-center justify-center overflow-hidden">
+            <div className="relative flex flex-1 items-center justify-center overflow-hidden bg-background">
               {/* Loading state for image */}
               {!isImageLoaded && (
-                <div className="absolute inset-0 flex items-center justify-center bg-white dark:bg-gray-900 z-10">
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-background">
                   <div className="text-center">
-                    <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-gray-600 dark:text-gray-400">Loading page...</p>
+                    <div className="w-16 h-16 border-4 border-brand border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="ui-body text-muted-foreground">Loading page...</p>
                   </div>
                 </div>
               )}
@@ -292,39 +294,40 @@ export function SearchResultsDisplay({
                 </div>
               )}
               {isImageLoaded && (
-                <div className="absolute bottom-6 right-6 bg-white border-2 border-orange-500 text-orange-600 px-5 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-fade-up">
+                <div className="absolute bottom-6 right-6 bg-card border-2 border-brand text-brand-to px-5 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-fade-up">
                   <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
-                    <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
-                    <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
+                    <div className="w-2 h-2 bg-brand rounded-full animate-pulse" />
+                    <div className="w-2 h-2 bg-brand rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+                    <div className="w-2 h-2 bg-brand rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
                   </div>
-                  <span className="text-sm font-bold">Scanning page content</span>
+                  <span className="ui-subtitle font-semibold">Scanning page content</span>
                 </div>
               )}
             </div>
           </div>
-        ) : viewMode === 'search' && !showScreenshot ? (
-          <div className="h-full bg-white dark:bg-gray-900 flex flex-col">
+        ) : (viewMode === 'search' || viewMode === 'history') && !showScreenshot ? (
+          <div className="flex h-full flex-col bg-background">
             {/* Google-style search header - always show when we have results */}
             {(query || results.length > 0) && (
-              <div className="border-b border-gray-200 dark:border-gray-700 px-3 lg:px-6 py-2 lg:py-3 bg-white dark:bg-gray-900">
+              <div className="border-b border-border bg-background px-3 py-2 lg:px-6 lg:py-3">
                 <div className="flex items-center gap-3 lg:gap-8">
-                  {/* Firecrawl logo */}
-                  <img 
-                    src="/firecrawl-logo-with-fire.png" 
-                    alt="Firecrawl" 
-                    className="h-6 lg:h-8 w-auto flex-shrink-0"
-                  />
+                  {/* Brand wordmark for the mock results page */}
+                  <span className="flex flex-shrink-0 items-center gap-2 text-[15px] font-semibold lg:text-base">
+                    <span className="grid h-6 w-6 place-items-center rounded-md bg-foreground text-background lg:h-7 lg:w-7">
+                      <Scale className="h-3.5 w-3.5" />
+                    </span>
+                    Open Researcher
+                  </span>
                   
                   {/* Search box */}
                   <div className="flex-1 max-w-[400px]">
-                    <div className="flex items-center bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-full px-3 lg:px-5 py-2 lg:py-2.5 shadow-sm hover:shadow-md transition-shadow">
-                      <span className="text-gray-700 dark:text-gray-300 flex-1 text-sm font-normal truncate">
+                    <div className="flex items-center rounded-full border border-border bg-card px-3 py-2 shadow-sm transition-shadow hover:shadow-md lg:px-5 lg:py-2.5">
+                      <span className="ui-body min-w-0 flex-1 truncate text-foreground/90">
                         <span className="lg:hidden">{query ? (query.length > 30 ? query.substring(0, 30) + '...' : query) : 'Search...'}</span>
                         <span className="hidden lg:inline">{query || 'Search...'}</span>
                       </span>
                       <div className="ml-2 lg:ml-3 p-1 flex-shrink-0">
-                        <Search className="h-4 w-4 lg:h-5 lg:w-5 text-blue-600" />
+                        <Search className="h-4 w-4 lg:h-5 lg:w-5 text-brand-to" />
                       </div>
                     </div>
                   </div>
@@ -337,7 +340,7 @@ export function SearchResultsDisplay({
               <div className="max-w-[500px] py-4">
                 {/* Results count */}
                 {query && results.length > 0 && !isActive && (
-                  <div className="mb-3 text-sm text-gray-600 dark:text-gray-400">
+                  <div className="ui-caption mb-3">
                     About {results.length} results
                   </div>
                 )}
@@ -345,13 +348,21 @@ export function SearchResultsDisplay({
                 {/* Search results */}
                 <div className="space-y-6">
                 {results.map((result, index) => {
-                  const hostname = new URL(result.url).hostname
-                  const urlPath = result.url.split('/').slice(3).filter(Boolean).join(' › ')
+                  // Corpus hits cite a statute rather than a page, so there is
+                  // no URL to parse — the citation itself is the identifier.
+                  let hostname = 'California corpus'
+                  let urlPath = ''
+                  try {
+                    hostname = new URL(result.url).hostname
+                    urlPath = result.url.split('/').slice(3).filter(Boolean).join(' › ')
+                  } catch {
+                    hostname = (result.title || 'California corpus').split('—')[0].trim()
+                  }
                   
                   return (
                     <div key={index} className="group">
                       {/* Site info - simple text without logo */}
-                      <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                      <div className="ui-caption mb-1 truncate">
                         <cite className="not-italic">
                           {hostname}
                           {urlPath && <span> › {urlPath}</span>}
@@ -360,28 +371,28 @@ export function SearchResultsDisplay({
 
                       {/* Title */}
                       <h3 className="mb-1">
-                        <a 
-                          href={result.url} 
-                          target="_blank" 
+                        <a
+                          href={result.url}
+                          target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xl text-blue-700 dark:text-blue-400 hover:underline visited:text-purple-700 dark:visited:text-purple-400"
+                          className="ui-title block text-blue-700 underline-offset-2 hover:underline visited:text-purple-700 dark:text-blue-400 dark:visited:text-purple-400"
                         >
                           {result.title}
                         </a>
                       </h3>
 
                       {/* Date and description */}
-                      <div className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                      <div className="ui-body text-foreground/80">
                         {result.dateFound && (
-                          <span className="text-gray-500 dark:text-gray-400">{result.dateFound} — </span>
+                          <span className="text-muted-foreground">{result.dateFound} — </span>
                         )}
-                        <span>{result.description}</span>
+                        <span className="[text-wrap:pretty]">{result.description}</span>
                       </div>
 
                       {/* Scraping indicator */}
                       {activeResultIndex === index && (
-                        <div className="mt-2 inline-flex items-center gap-2 text-sm text-green-600 dark:text-green-400 border-2 border-dashed border-green-500 rounded px-3 py-1 animate-selection-pulse-green">
-                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                        <div className="ui-caption mt-2 inline-flex items-center gap-2 rounded border-2 border-dashed border-brand px-3 py-1 text-brand-to animate-selection-pulse-green">
+                          <div className="w-2 h-2 bg-brand rounded-full animate-pulse" />
                           <span>Analyzing this page...</span>
                         </div>
                       )}
@@ -392,12 +403,12 @@ export function SearchResultsDisplay({
                 {/* No results message */}
                 {results.length === 0 && query && !isActive && (
                   <div className="py-8">
-                    <p className="text-base text-gray-700 dark:text-gray-300">
-                      Your search - <span className="font-medium">{query}</span> - did not match any documents.
+                    <p className="ui-body">
+                      Your search - <span className="font-medium text-foreground">{query}</span> - did not match any documents.
                     </p>
-                    <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-                      <p className="font-medium mb-2">Suggestions:</p>
-                      <ul className="list-disc list-inside space-y-1">
+                    <div className="mt-4">
+                      <p className="ui-subtitle mb-2">Suggestions:</p>
+                      <ul className="ui-body list-outside list-disc space-y-1 pl-5 text-muted-foreground">
                         <li>Make sure all words are spelled correctly.</li>
                         <li>Try different keywords.</li>
                         <li>Try more general keywords.</li>
@@ -414,7 +425,7 @@ export function SearchResultsDisplay({
         ) : viewMode === 'screenshots' && !isActive ? (
           <div className="h-full overflow-hidden flex flex-col">
             {/* Screenshot viewer */}
-            <div className="flex-1 bg-white dark:bg-gray-900 overflow-hidden">
+            <div className="flex-1 overflow-hidden bg-background">
               {screenshots.length > 0 && screenshots[selectedScreenshotIndex]?.screenshot ? (
                 <img 
                   src={screenshots[selectedScreenshotIndex].screenshot} 
@@ -422,16 +433,16 @@ export function SearchResultsDisplay({
                   className="w-full h-full object-contain"
                 />
               ) : (
-                <div className="text-gray-500 dark:text-gray-400">
-                  <Image className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No screenshots available</p>
+                <div className="text-center text-muted-foreground">
+                  <Image className="mx-auto mb-4 h-12 w-12 opacity-50" />
+                  <p className="ui-body">No screenshots available</p>
                 </div>
               )}
             </div>
             
             {/* Screenshot thumbnails */}
             {screenshots.length > 0 && (
-              <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+              <div className="border-t border-border bg-card p-4">
                 <div className="flex gap-2 overflow-x-auto">
                   {screenshots.map((screenshot, index) => (
                     <button
@@ -440,16 +451,16 @@ export function SearchResultsDisplay({
                       className={cn(
                         "flex-shrink-0 relative rounded-lg overflow-hidden transition-all",
                         selectedScreenshotIndex === index
-                          ? "ring-2 ring-orange-500 dark:ring-orange-400"
+                          ? "ring-2 ring-brand"
                           : "opacity-70 hover:opacity-100"
                       )}
                     >
                       <img 
                         src={screenshot.screenshot || ''} 
                         alt={`Thumbnail ${index + 1}`}
-                        className="w-24 h-16 object-contain bg-gray-100 dark:bg-gray-800"
+                        className="h-16 w-24 object-contain bg-muted"
                       />
-                      <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs px-1 py-0.5 truncate">
+                      <div className="ui-caption absolute inset-x-0 bottom-0 truncate bg-black/60 px-1 py-0.5 text-white">
                         {new URL(screenshot.url).hostname}
                       </div>
                     </button>

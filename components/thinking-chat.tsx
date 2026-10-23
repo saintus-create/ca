@@ -1,11 +1,14 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { ChevronDown, Loader2, Send, Copy, Volume2, VolumeX } from 'lucide-react'
+import { ChevronDown, Loader2, Send, Copy } from 'lucide-react'
 import { SearchResultsDisplay } from '@/components/search-results-display'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
-import { CitationTooltip } from '@/components/citation-tooltip'
 import { cn } from '@/lib/utils'
+import { MicButton } from '@/components/mic-button'
+import { SpeakButton } from '@/components/speak-button'
+import { SpotlightCard } from '@/components/velora/spotlight-card'
+import { TracingBeam } from '@/components/velora/tracing-beam'
 
 // Import the ThinkingEvent type from thinking-display
 import type { ThinkingEvent } from '@/components/thinking-display'
@@ -32,56 +35,11 @@ interface ThinkingChatProps {
   hasFirecrawlKey?: boolean
   onApiKeyRequired?: () => void
   onBrowserClose?: () => void
+  /** Render the voice controls. Only true when Cartesia is configured. */
+  voiceEnabled?: boolean
 }
 
-function plainTextForSpeech(content: string): string {
-  return content
-    .replace(/```[\s\S]*?```/g, ' Code block omitted. ')
-    .replace(/`([^`]+)`/g, '$1')
-    .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
-    .replace(/^#{1,6}\s+/gm, '')
-    .replace(/^\s{0,3}>\s?/gm, '')
-    .replace(/^\s*[-*+]\s+/gm, '')
-    .replace(/^\s*\d+\.\s+/gm, '')
-    .replace(/[*_~]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-function splitSpeechText(text: string, maxLength = 950): string[] {
-  const sentences = text.match(/[^.!?]+(?:[.!?]+["')\]]*|$)/g) ?? [text]
-  const chunks: string[] = []
-  let current = ''
-
-  const pushCurrent = () => {
-    if (current.trim()) chunks.push(current.trim())
-    current = ''
-  }
-
-  for (const rawSentence of sentences) {
-    const sentence = rawSentence.trim()
-    if (!sentence) continue
-
-    if (sentence.length > maxLength) {
-      pushCurrent()
-      const words = sentence.split(/\s+/)
-      for (const word of words) {
-        if ((current + ' ' + word).trim().length > maxLength) pushCurrent()
-        current = current ? `${current} ${word}` : word
-      }
-      continue
-    }
-
-    if ((current + ' ' + sentence).trim().length > maxLength) pushCurrent()
-    current = current ? `${current} ${sentence}` : sentence
-  }
-
-  pushCurrent()
-  return chunks
-}
-
-export function ThinkingChat({ onMessagesChange }: ThinkingChatProps) {
+export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiKeyRequired, voiceEnabled = false }: ThinkingChatProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isSearching, setIsSearching] = useState(false)
@@ -93,105 +51,8 @@ export function ThinkingChat({ onMessagesChange }: ThinkingChatProps) {
   const [screenshots, setScreenshots] = useState<Array<{ url: string; screenshot?: string }>>([])
   const [showFullWidth, setShowFullWidth] = useState(false)
   const [hasAnimatedSuggestions, setHasAnimatedSuggestions] = useState(false)
-  const [speech, setSpeech] = useState<{ id: string; status: 'loading' | 'playing' } | null>(null)
-  const [speechErrors, setSpeechErrors] = useState<Record<string, string>>({})
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
-  const audioUrlRef = useRef<string | null>(null)
-  const playbackIdRef = useRef(0)
-
-  const stopSpeech = () => {
-    playbackIdRef.current += 1
-    const audio = audioRef.current
-    if (audio) {
-      audio.pause()
-      audio.src = ''
-      audio.load()
-      audioRef.current = null
-    }
-    if (audioUrlRef.current) {
-      URL.revokeObjectURL(audioUrlRef.current)
-      audioUrlRef.current = null
-    }
-    setSpeech(null)
-  }
-
-  // Stop any in-flight speech when the chat unmounts.
-  useEffect(() => {
-    return () => {
-      playbackIdRef.current += 1
-      audioRef.current?.pause()
-      if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current)
-    }
-  }, [])
-
-  const handleListen = async (message: Message) => {
-    if (speech?.id === message.id) {
-      stopSpeech()
-      return
-    }
-
-    stopSpeech()
-    const playbackId = playbackIdRef.current
-    const text = plainTextForSpeech(message.content)
-
-    if (!text) {
-      setSpeechErrors(prev => ({ ...prev, [message.id]: 'There is no readable text to play.' }))
-      return
-    }
-
-    setSpeechErrors(prev => {
-      const next = { ...prev }
-      delete next[message.id]
-      return next
-    })
-    setSpeech({ id: message.id, status: 'loading' })
-
-    try {
-      for (const chunk of splitSpeechText(text)) {
-        if (playbackIdRef.current !== playbackId) return
-
-        const response = await fetch('/api/tts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: chunk }),
-        })
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ error: 'Speech generation failed.' }))
-          throw new Error(errorData.error || 'Speech generation failed.')
-        }
-
-        if (playbackIdRef.current !== playbackId) return
-
-        const audioUrl = URL.createObjectURL(await response.blob())
-        audioUrlRef.current = audioUrl
-        const audio = new Audio(audioUrl)
-        audioRef.current = audio
-        setSpeech({ id: message.id, status: 'playing' })
-
-        await new Promise<void>((resolve, reject) => {
-          audio.onended = () => resolve()
-          audio.onerror = () => reject(new Error('Audio playback failed.'))
-          audio.play().catch(reject)
-        })
-
-        URL.revokeObjectURL(audioUrl)
-        if (audioUrlRef.current === audioUrl) audioUrlRef.current = null
-        if (audioRef.current === audio) audioRef.current = null
-      }
-    } catch (error) {
-      if (playbackIdRef.current !== playbackId) return
-      setSpeechErrors(prev => ({
-        ...prev,
-        [message.id]:
-          error instanceof Error ? error.message : 'Speech generation failed. Please try again.',
-      }))
-    } finally {
-      if (playbackIdRef.current === playbackId) setSpeech(null)
-    }
-  }
 
   // Auto-scroll to bottom when new messages are added
   useEffect(() => {
@@ -217,8 +78,6 @@ export function ThinkingChat({ onMessagesChange }: ThinkingChatProps) {
   const handleSearch = async (query: string) => {
     if (!query.trim() || isSearching) return
 
-    // Firecrawl is optional: without a key, corpus research still runs and
-    // only the web tools report that they are unavailable.
     // Start transition animation
     setIsTransitioning(true)
     
@@ -299,10 +158,13 @@ export function ThinkingChat({ onMessagesChange }: ThinkingChatProps) {
                 events.push(data.event)
                 
                 // Parse search results from tool results
-                if (data.event.type === 'tool_result' && data.event.tool === 'web_search') {
+                if (
+                  data.event.type === 'tool_result' &&
+                  (data.event.tool === 'web_search' || data.event.tool === 'search_california_law')
+                ) {
                   const resultText = data.event.result
                   const parsedResults = parseSearchResults(resultText)
-                  setSearchResults(parsedResults)
+                  if (parsedResults.length > 0) setSearchResults(parsedResults)
                   
                   // Extract screenshots if available
                   if (data.event.screenshots) {
@@ -384,12 +246,14 @@ export function ThinkingChat({ onMessagesChange }: ThinkingChatProps) {
       let errorMessage = 'Sorry, an error occurred while searching. Please try again.'
       
       if (error instanceof Error) {
-        if (error.message.includes('SARVAM_API_KEY') || error.message.includes('VENICE_API_KEY') || error.message.includes('ANTHROPIC_API_KEY')) {
-          errorMessage = 'The AI model API key is not configured. Please contact the site administrator.'
+        // The server already names the variable that is missing, and that is
+        // the only actionable part, so show it rather than a generic apology.
+        if (error.message.includes('SARVAM_API_KEY') || error.message.includes('ANTHROPIC_API_KEY')) {
+          errorMessage = `The language model key is not configured on this deployment. ${error.message}`
         } else if (error.message.includes('FIRECRAWL_API_KEY')) {
-          errorMessage = 'The Firecrawl API key is not configured. Please contact the site administrator.'
+          errorMessage = `Web search is not configured on this deployment. ${error.message} The California corpus still works.`
         } else if (error.message.includes('model')) {
-          errorMessage = 'The required AI model is not available for this API key. Please contact the site administrator.'
+          errorMessage = `The configured model is not available for this API key. ${error.message}`
         } else {
           errorMessage = `Error: ${error.message}`
         }
@@ -426,7 +290,9 @@ export function ThinkingChat({ onMessagesChange }: ThinkingChatProps) {
       // Match result entries like "[1] Title"
       const titleMatch = line.match(/^\[(\d+)\]\s+(.+)$/)
       if (titleMatch) {
-        if (currentResult && currentResult.url && currentResult.title) {
+        // Corpus hits cite a statute and carry no URL, so a URL cannot be a
+        // requirement for keeping a result.
+        if (currentResult && currentResult.title) {
           results.push(currentResult as { url: string; title: string; description?: string })
         }
         currentResult = {
@@ -440,6 +306,12 @@ export function ThinkingChat({ onMessagesChange }: ThinkingChatProps) {
       // Match URL lines
       if (line.startsWith('URL: ') && currentResult) {
         currentResult.url = line.substring(5)
+        continue
+      }
+
+      // Corpus hits cite the statute rather than a page URL
+      if (line.startsWith('Source: ') && currentResult) {
+        currentResult.url = line.substring(8).trim()
         continue
       }
       
@@ -460,10 +332,22 @@ export function ThinkingChat({ onMessagesChange }: ThinkingChatProps) {
         currentResult.markdown = line.substring(17)
         continue
       }
+
+      // Corpus snippets arrive as a bare line beneath the citation, with no
+      // "Key: " prefix to match on.
+      if (
+        currentResult &&
+        !currentResult.description &&
+        line.trim().length > 40 &&
+        !/^[A-Za-z][A-Za-z ]{0,12}: /.test(line)
+      ) {
+        currentResult.description = line.trim()
+        continue
+      }
     }
     
     // Don't forget the last result
-    if (currentResult && currentResult.url && currentResult.title) {
+    if (currentResult && currentResult.title) {
       results.push(currentResult as { url: string; title: string; description?: string })
     }
     
@@ -488,13 +372,24 @@ export function ThinkingChat({ onMessagesChange }: ThinkingChatProps) {
               onFocus={() => setShowSuggestions(true)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
               placeholder="Enter query..."
-              className="w-full h-12 rounded-full border border-zinc-200 bg-white pl-5 pr-14 text-base text-zinc-900 dark:text-zinc-100 ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-950 dark:ring-offset-zinc-950 dark:placeholder:text-zinc-400 dark:focus-visible:ring-orange-400 shadow-sm"
+              className="ui-control w-full h-12 rounded-full border border-border bg-background pl-5 pr-14 text-base text-foreground shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={isSearching}
             />
+            {voiceEnabled && (
+              <span className="absolute right-12 top-2">
+                <MicButton
+                  disabled={isSearching}
+                  onTranscript={(text) => {
+                    setInput(text)
+                    inputRef.current?.focus()
+                  }}
+                />
+              </span>
+            )}
             <button
               type="submit"
               disabled={isSearching || !input.trim()}
-              className="absolute right-2 top-2 h-8 w-8 bg-orange-500 hover:bg-orange-600 text-white rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center"
+              className="absolute right-2 top-2 h-8 w-8 bg-primary text-primary-foreground rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-opacity duration-200 flex items-center justify-center hover:opacity-90"
             >
               {isSearching ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -504,10 +399,20 @@ export function ThinkingChat({ onMessagesChange }: ThinkingChatProps) {
             </button>
           </form>
 
+          {!hasFirecrawlKey && (
+            <button
+              type="button"
+              onClick={() => onApiKeyRequired?.()}
+              className="ui-caption mx-auto flex items-center gap-1.5 text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Web search is off — searching the corpus only. Add a Firecrawl key
+            </button>
+          )}
+
           {showSuggestions && !isSearching && (
             <div className="space-y-2">
               <div className={cn(
-                "flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400",
+                "ui-caption flex items-center gap-2",
                 !hasAnimatedSuggestions && "animate-fade-up"
               )} style={{ 
                 animationDelay: !hasAnimatedSuggestions ? '200ms' : '0ms',
@@ -525,7 +430,7 @@ export function ThinkingChat({ onMessagesChange }: ThinkingChatProps) {
                     key={idx}
                     onClick={() => handleSuggestionClick(suggestion)}
                     className={cn(
-                      "w-full text-left p-3 rounded-lg bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 transition-all duration-300 text-sm text-gray-700 dark:text-gray-300 hover:shadow-sm",
+                      "ui-body w-full rounded-lg border border-border/70 bg-muted/60 px-3.5 py-3 text-left transition-all duration-300 hover:border-border hover:bg-muted hover:shadow-sm",
                       !hasAnimatedSuggestions && "animate-fade-up"
                     )}
                     style={{ 
@@ -549,8 +454,8 @@ export function ThinkingChat({ onMessagesChange }: ThinkingChatProps) {
   return (
     <div className="flex flex-col-reverse lg:flex-row gap-2 lg:gap-4 h-[calc(100vh-120px)] lg:h-[calc(100vh-200px)] animate-slide-up pt-2 lg:pt-5">
       {/* Chat interface - Bottom on mobile, Left on desktop */}
-      <div className={cn(
-        "flex flex-col bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden transition-all duration-700 ease-out",
+      <SpotlightCard className={cn(
+        "flex flex-col transition-all duration-700 ease-out",
         showFullWidth ? "h-full w-full" : "h-[45vh] lg:h-full lg:w-1/2" // Full height on mobile when browser closed
       )}>
         {/* Messages area */}
@@ -564,28 +469,29 @@ export function ThinkingChat({ onMessagesChange }: ThinkingChatProps) {
               )}
             >
               {message.role === 'user' ? (
-                <div className="max-w-[85%] lg:max-w-[80%] bg-orange-500 text-white px-3 lg:px-4 py-2 lg:py-3 rounded-lg shadow-sm text-sm">
+                <div className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl bg-primary px-3 py-2 text-sm leading-relaxed text-primary-foreground shadow-sm lg:max-w-[80%] lg:px-4 lg:py-3">
                   {message.content}
                 </div>
               ) : (
                 <div className="max-w-[90%] space-y-3">
                   {/* Show thinking events if available */}
                   {message.searchData?.events && message.searchData.events.length > 0 && (
+                    <TracingBeam className="pl-5">
                     <div className="space-y-2">
                       {message.searchData.events.map((event, idx) => {
-                        const colorClass = "bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700"
-                        const textColorClass = "text-gray-700 dark:text-gray-300"
+                        const colorClass = "border-border bg-muted/50"
+                        const textColorClass = "text-foreground/90"
                           
                         if (event.type === 'thinking') {
                           return (
                             <div key={idx} className={`px-3 lg:px-4 py-2 lg:py-3 rounded-lg border ${colorClass} max-w-[90%] lg:max-w-[80%]`}>
                               <div className="flex items-start gap-2">
-                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 flex-shrink-0" />
+                                <div className="w-1.5 h-1.5 rounded-full bg-brand-to mt-1.5 flex-shrink-0" />
                                 <div className="flex-1">
-                                  <div className={`text-sm font-medium ${textColorClass} mb-1`}>
+                                  <div className={`ui-subtitle ${textColorClass} mb-1`}>
                                     Thinking Block #{event.number}
                                   </div>
-                                  <div className={`text-sm ${textColorClass} whitespace-pre-wrap`}>
+                                  <div className={`ui-body whitespace-pre-wrap ${textColorClass}`}>
                                     {event.content || ''}
                                   </div>
                                 </div>
@@ -599,15 +505,15 @@ export function ThinkingChat({ onMessagesChange }: ThinkingChatProps) {
                           return (
                             <div key={idx} className={`px-3 lg:px-4 py-2 rounded-lg border ${colorClass} max-w-[90%] lg:max-w-[80%]`}>
                               <div className="flex items-start gap-2">
-                                <div className={`w-1.5 h-1.5 rounded-full ${isWebSearch ? 'bg-purple-500' : isDeepScrape ? 'bg-orange-500' : 'bg-gray-500'} mt-1.5 flex-shrink-0`} />
+                                <div className={`w-1.5 h-1.5 rounded-full ${isWebSearch ? 'bg-brand-via' : isDeepScrape ? 'bg-brand' : 'bg-muted-foreground'} mt-1.5 flex-shrink-0`} />
                                 <div className="flex-1">
-                                  <div className="text-sm">
-                                    <span className={`font-medium ${textColorClass}`}>
+                                  <div className="ui-subtitle">
+                                    <span className={textColorClass}>
                                       {isWebSearch ? 'Web Search' : isDeepScrape ? 'Deep Scrape' : event.tool}
                                     </span>
                                   </div>
                                   {(event as { parameters?: { query?: string } }).parameters?.query && (
-                                    <div className={`text-sm ${textColorClass} opacity-80 mt-1`}>
+                                    <div className="ui-body mt-1 text-muted-foreground">
                                       &quot;{(event as { parameters?: { query?: string } }).parameters?.query}&quot;
                                     </div>
                                   )}
@@ -621,17 +527,17 @@ export function ThinkingChat({ onMessagesChange }: ThinkingChatProps) {
                           return (
                             <div key={idx} className={`px-3 lg:px-4 py-2 rounded-lg border ${colorClass} max-w-[90%] lg:max-w-[80%]`}>
                               <div className="flex items-start gap-2">
-                                <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5 flex-shrink-0" />
+                                <div className="w-1.5 h-1.5 rounded-full bg-brand-to mt-1.5 flex-shrink-0" />
                                 <div className="flex-1">
-                                  <div className="flex items-center justify-between text-sm">
-                                    <span className={`font-medium ${textColorClass}`}>
+                                  <div className="flex items-baseline justify-between gap-3">
+                                    <span className={`ui-subtitle ${textColorClass}`}>
                                       Results Received
                                     </span>
-                                    <span className={`text-xs ${textColorClass} opacity-80`}>
+                                    <span className="ui-caption shrink-0 tabular-nums">
                                       {event.duration ? `${(event.duration / 1000).toFixed(1)}s` : ''}
                                     </span>
                                   </div>
-                                  <div className={`text-xs ${textColorClass} opacity-80 mt-1 line-clamp-2`}>
+                                  <div className="ui-caption mt-1 line-clamp-2 break-words">
                                     {resultPreview}...
                                   </div>
                                 </div>
@@ -642,24 +548,29 @@ export function ThinkingChat({ onMessagesChange }: ThinkingChatProps) {
                         return null
                       })}
                     </div>
+                    </TracingBeam>
                   )}
                   
                   {/* Show final response */}
                   {message.content ? (
-                    <div className="bg-gray-100 dark:bg-gray-800 px-4 py-3 rounded-lg">
-                      <div className="text-sm text-gray-700 dark:text-gray-300">
-                        <MarkdownRenderer 
-                          content={message.content} 
-                          sources={message.sources || []}
-                        />
-                        <CitationTooltip sources={message.sources || []} />
-                      </div>
+                    <div
+                      className={cn(
+                        "rounded-lg border px-4 py-3",
+                        message.searchData?.status === 'error'
+                          ? "border-destructive/40 bg-destructive/5 text-destructive"
+                          : "border-border bg-muted/50"
+                      )}
+                    >
+                      <MarkdownRenderer
+                        content={message.content}
+                        sources={message.sources || []}
+                      />
                     </div>
                   ) : isSearching && message.searchData?.status === 'searching' ? (
-                    <div className="bg-gray-100 dark:bg-gray-800 px-4 py-3 rounded-lg animate-fade-in" style={{ animationDelay: '200ms', opacity: 0 }}>
+                    <div className="rounded-lg border border-border bg-muted/50 px-4 py-3 animate-fade-in" style={{ animationDelay: '200ms', opacity: 0 }}>
                       <div className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                        <Loader2 className="h-4 w-4 animate-spin text-brand-to" />
+                        <span className="ui-body text-muted-foreground">
                           Researching...
                         </span>
                       </div>
@@ -668,38 +579,19 @@ export function ThinkingChat({ onMessagesChange }: ThinkingChatProps) {
                   
                   {/* Action buttons for completed responses */}
                   {message.role === 'assistant' && message.content && message.searchData?.status === 'complete' && (
-                    <div className="mt-3">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => void handleListen(message)}
-                          className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
-                          title={speech?.id === message.id ? 'Stop listening' : 'Listen to this answer'}
-                        >
-                          {speech?.id === message.id ? (
-                            speech.status === 'loading' ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <VolumeX className="h-3.5 w-3.5" />
-                            )
-                          ) : (
-                            <Volume2 className="h-3.5 w-3.5" />
-                          )}
-                        </button>
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(message.content)
-                          }}
-                          className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
-                          title="Copy to clipboard"
-                        >
-                          <Copy className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                      {speechErrors[message.id] && (
-                        <p className="mt-1 text-right text-xs text-red-600 dark:text-red-400">
-                          {speechErrors[message.id]}
-                        </p>
+                    <div className="mt-3 flex items-center justify-end gap-1">
+                      {voiceEnabled && (
+                        <SpeakButton id={message.id} text={message.content} />
                       )}
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(message.content)
+                        }}
+                        className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                        title="Copy to clipboard"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </button>
                     </div>
                   )}
                   
@@ -711,7 +603,7 @@ export function ThinkingChat({ onMessagesChange }: ThinkingChatProps) {
         </div>
 
         {/* Input area with firesearch style */}
-        <div className="p-2 lg:p-3 border-t border-gray-200 dark:border-gray-700">
+        <div className="border-t border-border p-2 lg:p-3">
           <form onSubmit={handleSubmit}>
             <div className="relative">
               <input
@@ -719,13 +611,13 @@ export function ThinkingChat({ onMessagesChange }: ThinkingChatProps) {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Enter query..."
-                className="w-full h-12 rounded-full border border-zinc-200 bg-white pl-5 pr-14 text-base text-zinc-900 dark:text-zinc-100 ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-950 dark:ring-offset-zinc-950 dark:placeholder:text-zinc-400 dark:focus-visible:ring-orange-400 shadow-sm"
+                className="ui-control w-full h-12 rounded-full border border-border bg-background pl-5 pr-14 text-base text-foreground shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={isSearching}
               />
               <button
                 type="submit"
                 disabled={isSearching || !input.trim()}
-                className="absolute right-2 top-2 h-8 w-8 bg-orange-500 hover:bg-orange-600 text-white rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center"
+                className="absolute right-2 top-2 h-8 w-8 bg-primary text-primary-foreground rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-opacity duration-200 flex items-center justify-center hover:opacity-90"
               >
                 {isSearching ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -736,7 +628,7 @@ export function ThinkingChat({ onMessagesChange }: ThinkingChatProps) {
             </div>
           </form>
         </div>
-      </div>
+      </SpotlightCard>
 
       {/* Browser/Search Results - Top on mobile, Right on desktop */}
       <div className={cn(

@@ -34,7 +34,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const app = new FirecrawlApp({ apiKey });
+    const apiUrl = process.env.FIRECRAWL_BASE_URL?.replace(/\/+$/, '') || undefined;
+    const app = new FirecrawlApp({ apiKey, apiUrl });
     const body = await request.json() as ScrapeRequestBody;
     const { url, urls, ...params } = body;
 

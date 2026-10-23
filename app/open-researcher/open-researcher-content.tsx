@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Github, ExternalLink, Loader2 } from 'lucide-react'
+import { Github, ExternalLink, Loader2, Scale } from 'lucide-react'
 import { ThinkingChat } from '@/components/thinking-chat'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Dialog,
   DialogContent,
@@ -15,8 +16,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
+import { SpeechProvider } from '@/components/speech-provider'
 
-export default function OpenResearcherContent() {
+export default function OpenResearcherContent({ voiceEnabled = false }: { voiceEnabled?: boolean }) {
   const [hasMessages, setHasMessages] = useState(false)
   const [showApiKeyModal, setShowApiKeyModal] = useState(false)
   const [firecrawlApiKey, setFirecrawlApiKey] = useState('')
@@ -88,32 +90,28 @@ export default function OpenResearcherContent() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="py-4">
+      <header className="py-4 lg:py-5">
         <div className={`px-4 sm:px-6 lg:px-8 transition-all duration-700 ease-in-out ${hasMessages ? 'max-w-[1400px]' : 'max-w-4xl'
           } mx-auto`}>
           <div className="flex items-center justify-between">
-            <Link href="https://firecrawl.dev" target="_blank" rel="noopener noreferrer">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/firecrawl-logo-with-fire.png"
-                alt="Firecrawl Logo"
-                width={113}
-                height={24}
-                className="w-[113px] h-auto"
-              />
+            <Link href="/" className="flex items-center gap-2 text-[15px] font-semibold">
+              <span className="grid h-7 w-7 place-items-center rounded-lg bg-foreground text-background">
+                <Scale className="h-4 w-4" />
+              </span>
+              Open Researcher
             </Link>
             <Button
               variant="code"
               asChild
             >
               <Link
-                href="https://github.com/mendableai/open-researcher"
+                href="https://github.com/saintus-create/ca"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2"
               >
                 <Github className="h-4 w-4" />
-                Use this template
+                GitHub
               </Link>
             </Button>
           </div>
@@ -121,18 +119,16 @@ export default function OpenResearcherContent() {
       </header>
 
       {/* Hero Section */}
-      <div className={`px-4 sm:px-6 lg:px-8 transition-all duration-700 ease-in-out ${hasMessages
+      <div className={`relative overflow-hidden px-4 sm:px-6 lg:px-8 transition-all duration-700 ease-in-out ${hasMessages
           ? 'pt-0 pb-0 opacity-0 max-h-0 overflow-hidden'
           : 'pt-8 pb-2 opacity-100 max-h-96'
         }`}>
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-[2.5rem] lg:text-[3.8rem] text-[#36322F] dark:text-white font-semibold tracking-tight leading-[1.1] opacity-0 animate-fade-up [animation-duration:500ms] [animation-delay:200ms] [animation-fill-mode:forwards]">
-            <span className="relative px-1 text-transparent bg-clip-text bg-gradient-to-tr from-red-600 to-yellow-500 inline-flex justify-center items-center">
-              Open Researcher
-            </span>
+        <div className="relative z-10 max-w-4xl mx-auto text-center">
+          <h1 className="ui-display opacity-0 animate-fade-up [animation-duration:500ms] [animation-delay:200ms] [animation-fill-mode:forwards]">
+            Open Researcher
           </h1>
-          <p className="mt-6 text-lg text-zinc-600 dark:text-zinc-400 opacity-0 animate-fade-up [animation-duration:500ms] [animation-delay:600ms] [animation-fill-mode:forwards]">
-            Firecrawl-powered search, scrape, and agentic reasoning
+          <p className="ui-lede mx-auto mt-5 max-w-xl opacity-0 animate-fade-up [animation-duration:500ms] [animation-delay:600ms] [animation-fill-mode:forwards]">
+            California law research with real-time thinking and citations
           </p>
         </div>
       </div>
@@ -140,22 +136,33 @@ export default function OpenResearcherContent() {
       {/* Main Content - Full width split layout */}
       <div className="flex-1 px-4 sm:px-6 lg:px-8">
         <div className="h-full max-w-[1400px] mx-auto">
-          <ThinkingChat
-            onMessagesChange={setHasMessages}
-            hasFirecrawlKey={hasFirecrawlKey}
-            onApiKeyRequired={() => setShowApiKeyModal(true)}
-          />
+          {voiceEnabled ? (
+            <SpeechProvider>
+              <ThinkingChat
+                onMessagesChange={setHasMessages}
+                hasFirecrawlKey={hasFirecrawlKey}
+                onApiKeyRequired={() => setShowApiKeyModal(true)}
+                voiceEnabled
+              />
+            </SpeechProvider>
+          ) : (
+            <ThinkingChat
+              onMessagesChange={setHasMessages}
+              hasFirecrawlKey={hasFirecrawlKey}
+              onApiKeyRequired={() => setShowApiKeyModal(true)}
+            />
+          )}
         </div>
       </div>
 
       {/* Footer */}
       <footer className="px-4 sm:px-6 lg:px-8 py-8 mt-auto">
         <div className="max-w-4xl mx-auto text-center">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="ui-caption">
             Powered by{' '}
             <Link
               href="https://firecrawl.dev"
-              className="text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 font-medium"
+              className="ui-caption font-medium text-brand-to underline-offset-2 hover:underline"
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -184,9 +191,9 @@ export default function OpenResearcherContent() {
               Get Firecrawl API Key
             </Button>
             <div className="flex flex-col gap-2">
-              <label htmlFor="firecrawl-key" className="text-sm font-medium">
+              <Label htmlFor="firecrawl-key" className="ui-label">
                 Firecrawl API Key
-              </label>
+              </Label>
               <Input
                 id="firecrawl-key"
                 type="password"

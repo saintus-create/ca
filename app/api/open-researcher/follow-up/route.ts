@@ -42,7 +42,9 @@ Only return the JSON array, nothing else.`
     // so use the concatenated text rather than the first block.
     const text = result.text
     if (!text) {
-      throw new Error('Unexpected response type')
+      // A reasoning model can answer with thinking only, or refuse. Follow-up
+      // chips are a nicety: degrade to none rather than failing the panel.
+      return NextResponse.json({ questions: [] })
     }
 
     // Parse the JSON response (tolerating a Markdown code fence)
