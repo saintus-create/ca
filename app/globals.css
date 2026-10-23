@@ -775,3 +775,171 @@
 @keyframes aurora-2 { 0% { transform: translate(12%, 10%) scale(1.1); } 50% { transform: translate(-14%, -6%) scale(0.9); } 100% { transform: translate(8%, -12%) scale(1.2); } }
 @keyframes aurora-3 { 0% { transform: translate(0%, 16%) scale(0.95); } 50% { transform: translate(10%, -10%) scale(1.15); } 100% { transform: translate(-12%, 4%) scale(1); } }
 @keyframes meteor { 0% { transform: rotate(var(--meteor-angle, 215deg)) translateX(0); opacity: 1; } 70% { opacity: 1; } 100% { transform: rotate(var(--meteor-angle, 215deg)) translateX(-600px); opacity: 0; } }
+
+
+/* --------------------------------------------------------------------------
+   California Law / Velora chat polish
+   One visual language for the working research experience.
+--------------------------------------------------------------------------- */
+@layer components {
+  /* The conversation is a workspace, not a card nested inside another card. */
+  [data-slot="spotlight-card"] {
+    min-width: 0;
+    min-height: 0;
+    border-color: transparent;
+    border-radius: 1.25rem;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  /* SpotlightCard wraps children. This wrapper must participate in the flex
+     layout for the transcript to scroll and the composer to stay at the foot. */
+  [data-slot="spotlight-card"] > .relative.z-10 {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+  }
+
+  [data-slot="spotlight-card"] > .pointer-events-none {
+    display: none;
+  }
+
+  [data-slot="spotlight-card"] .flex-1.overflow-y-auto {
+    min-height: 0;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    padding: clamp(.75rem, 2vw, 1.25rem);
+    scroll-behavior: smooth;
+  }
+
+  [data-slot="spotlight-card"] .justify-end > div {
+    max-width: min(84%, 48rem);
+    border-radius: 1.15rem 1.15rem .35rem 1.15rem;
+    background: var(--color-brand);
+    color: var(--color-brand-foreground);
+    box-shadow: 0 1px 2px color-mix(in oklab, var(--color-brand) 12%, transparent);
+  }
+
+  [data-slot="spotlight-card"] .justify-start > div {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  [data-slot="spotlight-card"] .justify-start > div > .rounded-lg.border.px-4.py-3 {
+    border-color: transparent;
+    border-radius: .75rem;
+    background: transparent;
+    padding: .25rem 0;
+    box-shadow: none;
+  }
+
+  [data-slot="spotlight-card"] .rounded-lg.border.bg-muted\/50 {
+    border-color: color-mix(in oklab, var(--color-border) 75%, transparent);
+    border-radius: .8rem;
+    background: color-mix(in oklab, var(--color-muted) 45%, transparent);
+  }
+
+  [data-slot="spotlight-card"] .border-t.border-border {
+    border-color: color-mix(in oklab, var(--color-border) 75%, transparent);
+    background: color-mix(in oklab, var(--color-background) 94%, transparent);
+    padding: .75rem clamp(.75rem, 2vw, 1.25rem);
+  }
+
+  [data-slot="spotlight-card"] form input[type="text"] {
+    min-height: 3rem;
+    border-color: var(--color-border);
+    border-radius: .9rem;
+    background: var(--color-background);
+    padding-right: 3.5rem;
+    box-shadow: 0 1px 2px rgb(15 23 42 / 4%);
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+  }
+
+  [data-slot="spotlight-card"] form input[type="text"]:focus-visible {
+    border-color: var(--color-brand);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-brand) 16%, transparent);
+    outline: none;
+  }
+
+  [data-slot="spotlight-card"] form button[type="submit"] {
+    top: .5rem;
+    right: .5rem;
+    width: 2rem;
+    height: 2rem;
+    border-radius: .65rem;
+    background: var(--color-brand);
+    color: var(--color-brand-foreground);
+    transition: transform 160ms ease, opacity 160ms ease;
+  }
+
+  [data-slot="spotlight-card"] form button[type="submit"]:not(:disabled):hover {
+    opacity: .9;
+    transform: translateY(-1px);
+  }
+
+  [data-slot="spotlight-card"] form button[type="submit"]:focus-visible,
+  [data-slot="spotlight-card"] button:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 3px;
+  }
+
+  /* Remove the legacy orange/blue split in rendered legal answers. */
+  .markdown-content a,
+  .markdown-content sup.citation,
+  .dark .markdown-content a,
+  .dark .markdown-content sup.citation {
+    color: var(--color-brand);
+  }
+
+  .markdown-content a {
+    text-decoration-color: color-mix(in oklab, var(--color-brand) 45%, transparent);
+    text-underline-offset: 3px;
+  }
+
+  .markdown-content a:hover {
+    text-decoration-color: currentColor;
+  }
+
+  [data-slot="spotlight-card"] .space-y-2 > button {
+    border-radius: .8rem;
+    border-color: color-mix(in oklab, var(--color-border) 80%, transparent);
+    background: color-mix(in oklab, var(--color-muted) 38%, transparent);
+    transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease;
+  }
+
+  [data-slot="spotlight-card"] .space-y-2 > button:hover {
+    border-color: color-mix(in oklab, var(--color-brand) 35%, var(--color-border));
+    background: color-mix(in oklab, var(--color-brand) 5%, var(--color-background));
+    transform: translateY(-1px);
+  }
+}
+
+/* Short, intentional transitions feel responsive without making research wait. */
+.animate-fade-in {
+  animation-duration: 220ms;
+  animation-timing-function: ease-out;
+}
+.animate-slide-up {
+  animation-duration: 280ms;
+  animation-timing-function: cubic-bezier(.2, .75, .25, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:focus-within {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+    transition-delay: 0ms !important;
+  }
+}
