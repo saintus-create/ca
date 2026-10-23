@@ -393,10 +393,10 @@ export function ResearchChat({
 
   const scopeStrip = (
     <div className="flex w-full flex-wrap items-center justify-between gap-2 border-b border-black/[0.06] px-3.5 py-2 dark:border-white/[0.07]">
-      <span className="flex items-center gap-2">
+      <span className="flex min-w-0 flex-1 items-center gap-2">
         <label
           htmlFor="corpus-scope"
-          className="text-[12.5px] text-neutral-400 dark:text-neutral-500"
+          className="shrink-0 whitespace-nowrap text-[12.5px] text-neutral-400 dark:text-neutral-500"
         >
           Search in
         </label>
@@ -404,7 +404,7 @@ export function ResearchChat({
           id="corpus-scope"
           value={scope}
           onChange={(e) => setScope(e.target.value)}
-          className="max-w-[240px] rounded-full border border-black/[0.08] bg-white px-3 py-1 text-[12.5px] text-neutral-700 outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400 dark:border-white/[0.09] dark:bg-[#0B0B0D] dark:text-neutral-200"
+          className="min-w-0 flex-1 rounded-full border border-black/[0.08] bg-white px-3 py-1 text-[12.5px] text-neutral-700 outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400 dark:border-white/[0.09] dark:bg-[#0B0B0D] dark:text-neutral-200"
         >
         <option value="">All California law</option>
         {groupDatasets(datasets).map(({ group, items }) => (
@@ -487,6 +487,8 @@ export function ResearchChat({
             placeholder="Ask anything about California law"
             isGenerating={isSearching}
             onSend={(text) => handleSearch(text)}
+            variant="Minimal"
+            maxLength={8000}
             className="max-w-none rounded-none border-0 bg-transparent shadow-none"
           />
         </div>
@@ -565,6 +567,8 @@ export function ResearchChat({
             placeholder="Ask a follow-up"
             isGenerating={isSearching}
             onSend={(text) => handleSearch(text)}
+            variant="Minimal"
+            maxLength={8000}
             className="max-w-none rounded-none border-0 bg-transparent shadow-none"
           />
         </div>
