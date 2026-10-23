@@ -16,6 +16,22 @@ interface MicButtonProps {
 // been left running by accident.
 const MAX_RECORDING_MS = 60_000
 
+type BrowserSpeechRecognition = {
+  lang: string
+  continuous: boolean
+  interimResults: boolean
+  start: () => void
+  stop: () => void
+  abort: () => void
+  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>>; resultIndex?: number }) => void) | null
+  onerror: ((event: { error: string }) => void) | null
+  onend: (() => void) | null
+}
+type SpeechWindow = Window & {
+  SpeechRecognition?: new () => BrowserSpeechRecognition
+  webkitSpeechRecognition?: new () => BrowserSpeechRecognition
+}
+
 function pickMimeType(): string | undefined {
   if (typeof MediaRecorder === 'undefined') return undefined
   const candidates = [
@@ -32,6 +48,7 @@ export function MicButton({ onTranscript, disabled, className }: MicButtonProps)
   const [isTranscribing, setIsTranscribing] = useState(false)
 
   const recorderRef = useRef<MediaRecorder | null>(null)
+  const recognitionRef = useRef<BrowserSpeechRecognition | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const streamRef = useRef<MediaStream | null>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -76,17 +93,60 @@ export function MicButton({ onTranscript, disabled, className }: MicButtonProps)
   )
 
   const stopRecording = useCallback(() => {
-    const recorder = recorderRef.current
-    if (recorder && recorder.state !== 'inactive') {
-      recorder.stop()
+    const recognition = recognitionRef.current
+    if (recognition) {
+      recognition.stop()
+      setIsRecording(false)
+      return
     }
+    const recorder = recorderRef.current
+    if (recorder && recorder.state !== 'inactive') recorder.stop()
     setIsRecording(false)
     releaseStream()
   }, [releaseStream])
 
   const startRecording = useCallback(async () => {
+    // Prefer the browser's built-in speech recognition. It works immediately
+    // and does not require a separately configured transcription API.
+    if (typeof window !== 'undefined') {
+      const browserWindow = window as SpeechWindow
+      const Recognition = browserWindow.SpeechRecognition || browserWindow.webkitSpeechRecognition
+      if (Recognition) {
+        try {
+          const recognition = new Recognition()
+          recognition.lang = 'en-US'
+          recognition.continuous = false
+          recognition.interimResults = false
+          recognition.onresult = (event) => {
+            const firstIndex = event.resultIndex ?? 0
+            const transcript = event.results[firstIndex]?.[0]?.transcript?.trim()
+            if (transcript) onTranscript(transcript)
+          }
+          recognition.onerror = (event) => {
+            if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+              toast.error('Microphone access was blocked. Allow it in your browser settings.')
+            } else if (event.error !== 'aborted' && event.error !== 'no-speech') {
+              toast.error('Voice input failed. Please try again.')
+            }
+            setIsRecording(false)
+          }
+          recognition.onend = () => {
+            setIsRecording(false)
+            if (recognitionRef.current === recognition) recognitionRef.current = null
+          }
+          recognitionRef.current = recognition
+          recognition.start()
+          setIsRecording(true)
+          return
+        } catch {
+          recognitionRef.current = null
+          setIsRecording(false)
+        }
+      }
+    }
+
     if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
-      toast.error('This browser does not support microphone recording.')
+      toast.error('Voice input is not supported by this browser. Try a browser with speech recognition.')
       return
     }
 
@@ -128,10 +188,13 @@ export function MicButton({ onTranscript, disabled, className }: MicButtonProps)
         toast.error('Could not start recording.')
       }
     }
-  }, [releaseStream, stopRecording, transcribe])
+  }, [onTranscript, releaseStream, stopRecording, transcribe])
 
   useEffect(() => {
     return () => {
+      const recognition = recognitionRef.current
+      if (recognition) recognition.abort()
+      recognitionRef.current = null
       const recorder = recorderRef.current
       if (recorder && recorder.state !== 'inactive') recorder.stop()
       releaseStream()
