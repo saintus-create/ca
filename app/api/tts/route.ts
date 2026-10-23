@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 const CARTESIA_TTS_URL = 'https://api.cartesia.ai/tts/bytes'
 const DEFAULT_MODEL = 'sonic-3.6'
-const DEFAULT_VOICE_ID = 'db6b0ed5-d5d3-463d-ae85-518a07d3c2b4' // Skylar — Friendly Guide
+const DEFAULT_VOICE_ID = 'db6b0ed5-d5d3-463d-ae85-518a07d3c2b4' // Skylar, the Friendly Guide voice
 const DEFAULT_VERSION = '2026-08-14'
 const MAX_TEXT_LENGTH = 5000
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Globe, Search, FileText, Image, Scale } from 'lucide-react'
+import { Globe, Search, FileText, Image, Scale, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { AnimatedCursor } from './animated-cursor'
 import { BorderBeam } from '@/components/velora/border-beam'
@@ -300,7 +300,7 @@ export function SearchResultsDisplay({
                     <div className="w-2 h-2 bg-brand rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
                     <div className="w-2 h-2 bg-brand rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
                   </div>
-                  <span className="ui-subtitle font-semibold">Scanning page content</span>
+                  <span className="ui-subtitle font-medium">Scanning page content</span>
                 </div>
               )}
             </div>
@@ -312,7 +312,7 @@ export function SearchResultsDisplay({
               <div className="border-b border-border bg-background px-3 py-2 lg:px-6 lg:py-3">
                 <div className="flex items-center gap-3 lg:gap-8">
                   {/* Brand wordmark for the mock results page */}
-                  <span className="flex flex-shrink-0 items-center gap-2 text-[15px] font-semibold lg:text-base">
+                  <span className="flex flex-shrink-0 items-center gap-2 text-[15px] font-medium lg:text-base">
                     <span className="grid h-6 w-6 place-items-center rounded-md bg-foreground text-background lg:h-7 lg:w-7">
                       <Scale className="h-3.5 w-3.5" />
                     </span>
@@ -384,7 +384,7 @@ export function SearchResultsDisplay({
                       {/* Date and description */}
                       <div className="ui-body text-foreground/80">
                         {result.dateFound && (
-                          <span className="text-muted-foreground">{result.dateFound} — </span>
+                          <span className="text-muted-foreground">{result.dateFound} · </span>
                         )}
                         <span className="[text-wrap:pretty]">{result.description}</span>
                       </div>
@@ -408,11 +408,14 @@ export function SearchResultsDisplay({
                     </p>
                     <div className="mt-4">
                       <p className="ui-subtitle mb-2">Suggestions:</p>
-                      <ul className="ui-body list-outside list-disc space-y-1 pl-5 text-muted-foreground">
-                        <li>Make sure all words are spelled correctly.</li>
-                        <li>Try different keywords.</li>
-                        <li>Try more general keywords.</li>
-                      </ul>
+                      <div className="ui-body space-y-1 text-muted-foreground">
+                        {['Make sure all words are spelled correctly.', 'Try different keywords.', 'Try more general keywords.'].map((suggestion) => (
+                          <div key={suggestion} className="flex items-start gap-1.5">
+                            <ChevronRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-orange-600 dark:text-orange-400" />
+                            <span>{suggestion}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}

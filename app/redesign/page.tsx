@@ -19,7 +19,7 @@ import { FooterColumns } from "@/components/velora/blocks/footer-columns";
 export const metadata = {
   title: "California Law",
   description:
-    "California law, researched in seconds — corpus plus web, every claim cited.",
+    "California law, researched in seconds. Corpus plus web, every claim cited.",
 };
 
 export default function RedesignPage() {

@@ -57,7 +57,8 @@ const toolNames: Record<string, string> = {
   firecrawl_search: 'Web Search',
   deep_scrape: 'Deep Web Scrape',
   firecrawl_scrape: 'Deep Web Scrape',
-  analyze_content: 'Content Analysis'
+  analyze_content: 'Content Analysis',
+  search_california_law: 'California Law Corpus'
 }
 
 const getEventIcon = (event: ThinkingEvent) => {
@@ -81,7 +82,7 @@ const getEventTitle = (event: ThinkingEvent) => {
     case 'thinking':
       return `Thinking Block #${event.number || 1}`
     case 'tool_call':
-      return toolNames[event.tool || ''] || event.tool || 'Tool Call'
+      return toolNames[event.tool || ''] || 'Research Step'
     case 'tool_result':
       return 'Results Received'
     case 'response':

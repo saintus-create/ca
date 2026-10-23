@@ -48,14 +48,14 @@ export function TweetCard({
         ) : (
           <span
             aria-hidden
-            className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-from to-brand-to text-sm font-semibold text-brand-foreground"
+            className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-from to-brand-to text-sm font-medium text-brand-foreground"
           >
             {name.charAt(0)}
           </span>
         )}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1">
-            <span className="truncate text-sm font-semibold">{name}</span>
+            <span className="truncate text-sm font-medium">{name}</span>
             {verified && (
               <svg
                 viewBox="0 0 24 24"

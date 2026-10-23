@@ -174,9 +174,9 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
                   }
                   
                   // Check if results mention scraping is happening
-                  if (resultText.includes('(SCRAPED)')) {
+                  if (resultText.includes('(scraped)')) {
                     // Find first scraped URL
-                    const scrapedMatch = resultText.match(/URL: (https?:\/\/[^\s]+).*?\(SCRAPED\)/)
+                    const scrapedMatch = resultText.match(/URL: (https?:\/\/[^\s]+).*?\(scraped\)/)
                     if (scrapedMatch) {
                       setTimeout(() => {
                         setCurrentScrapingUrl(scrapedMatch[1])
@@ -299,8 +299,8 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
         }
         currentResult = {
           index: parseInt(titleMatch[1]),
-          title: titleMatch[2].replace(' (SCRAPED)', ''),
-          scraped: line.includes('(SCRAPED)')
+          title: titleMatch[2].replace(' (scraped)', ''),
+          scraped: line.includes('(scraped)')
         }
         continue
       }
@@ -407,7 +407,7 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
               onClick={() => onApiKeyRequired?.()}
               className="ui-caption mx-auto flex items-center gap-1.5 text-muted-foreground transition-colors hover:text-foreground"
             >
-              Web search is off — searching the corpus only. Add a Firecrawl key
+              Web search is off. Searching the corpus only. Add a Firecrawl key
             </button>
           )}
 
@@ -511,7 +511,7 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
                                 <div className="flex-1">
                                   <div className="ui-subtitle">
                                     <span className={textColorClass}>
-                                      {isWebSearch ? 'Web Search' : isDeepScrape ? 'Deep Scrape' : event.tool}
+                                      {isWebSearch ? 'Web Search' : isDeepScrape ? 'Deep Scrape' : event.tool === 'search_california_law' ? 'California Law Corpus' : event.tool === 'analyze_content' ? 'Content Analysis' : 'Research Step'}
                                     </span>
                                   </div>
                                   {(event as { parameters?: { query?: string } }).parameters?.query && (

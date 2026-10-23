@@ -170,7 +170,7 @@ const tools: ToolDefinition[] = [
   },
   {
     name: "search_california_law",
-    description: "Search the local California Legislative Information corpus: the full text of California codes (Penal, Civil, Family, Evidence, Health & Safety, Government, and all other codes), California Rules of Court, judicial forms, legislation, and case law annotations held on this site. Use this for any question about California law, and use it alongside web_search — for the actual statutory text, this corpus is the primary source. Optionally pass a dataset code (e.g. PEN, CIV, FAM, EVID, CCP, GOV, HSC, WIC, BPC, VEH) to search one code.",
+    description: "Search the local California Legislative Information corpus: the full text of the California codes, including Penal, Civil, Family, Evidence, Health and Safety, and Government, plus the California Rules of Court, judicial forms, legislation, and case law annotations held on this site. Use this for any question about California law, and use it alongside web_search. For the actual statutory text, this corpus is the primary source. Optionally pass a dataset code such as PEN, CIV, FAM, EVID, CCP, GOV, HSC, WIC, BPC, or VEH to search one code.",
     input_schema: {
       type: "object",
       properties: {
@@ -306,7 +306,7 @@ async function executeWebSearch(query: string, limit: number = 5, scrapeContent:
         const scrapedResults = await getFirecrawlClient().search(query, scrapeOptions) as FirecrawlSearchResult;
         
         // Add scraped content to output
-        output += `\n--- SCRAPED CONTENT ---\n\n`;
+        output += `\nScraped content:\n\n`;
         
         // Process scraped results
         const scrapedWithMetadata = [];
@@ -386,7 +386,7 @@ async function executeWebSearch(query: string, limit: number = 5, scrapeContent:
         
         // Display the results
         for (const result of scrapedWithMetadata) {
-          output += `[${result.index}] ${result.title} (SCRAPED)\n`;
+          output += `[${result.index}] ${result.title} (scraped)\n`;
           output += `URL: ${result.url}\n`;
           if (result.dateFound) {
             output += `Date: ${result.dateFound}\n`;
@@ -433,10 +433,10 @@ async function analyzeContent(content: string, analysisType: string, context?: s
                        negativeMatches.length > positiveMatches.length ? 'Negative' : 'Neutral';
       
       return `Sentiment Analysis:\n` +
-             `- Overall: ${sentiment}\n` +
-             `- Positive indicators: ${positiveMatches.join(', ') || 'none'}\n` +
-             `- Negative indicators: ${negativeMatches.join(', ') || 'none'}\n` +
-             `- Context considered: ${context || 'general analysis'}`;
+             `Overall: ${sentiment}\n` +
+             `Positive indicators: ${positiveMatches.join(', ') || 'none'}\n` +
+             `Negative indicators: ${negativeMatches.join(', ') || 'none'}\n` +
+             `Context considered: ${context || 'general analysis'}`;
 
     case 'key_facts':
       // Extract sentences with numbers, percentages, or key terms
@@ -465,9 +465,9 @@ async function analyzeContent(content: string, analysisType: string, context?: s
       }
       
       return `Trend Analysis:\n` +
-             `- Identified trends: ${identifiedTrends.join(', ') || 'No clear trends'}\n` +
-             `- Market direction: ${identifiedTrends.includes('Growth') ? 'Positive' : 'Mixed'}\n` +
-             `- Innovation signals: ${identifiedTrends.includes('Innovation') ? 'Strong' : 'Limited'}`;
+             `Identified trends: ${identifiedTrends.join(', ') || 'No clear trends'}\n` +
+             `Market direction: ${identifiedTrends.includes('Growth') ? 'Positive' : 'Mixed'}\n` +
+             `Innovation signals: ${identifiedTrends.includes('Innovation') ? 'Strong' : 'Limited'}`;
 
     case 'summary':
       // Extract most important sentences
@@ -491,9 +491,9 @@ async function analyzeContent(content: string, analysisType: string, context?: s
       
       return `Credibility Assessment:\n` +
              Object.entries(credibilityFactors).map(([factor, present]) => 
-               `- ${factor}: ${present ? '✓' : '✗'}`
+               `${factor}: ${present ? 'yes' : 'no'}`
              ).join('\n') +
-             `\n- Credibility score: ${credibilityScore}/4`;
+             `\nCredibility score: ${credibilityScore}/4`;
 
     default:
       return `Analysis type "${analysisType}" completed.`;
@@ -623,7 +623,7 @@ async function executeDeepScrape(
         output += `Description: ${result.description}\n`;
         output += `Content preview: ${result.content}...\n`;
         if (result.hasScreenshot) {
-          output += `Screenshot: ✓ Captured\n`;
+          output += `Screenshot captured.\n`;
         }
         if (maxDepth > 1 && result.links > 0) {
           output += `Sub-links available: ${result.links} (depth ${maxDepth - 1} remaining)\n`;
@@ -707,7 +707,9 @@ How to work:
 - Cite the section you relied on for every substantive claim, in the form "CIV § 1950.5", and quote the operative language where it matters.
 - If the corpus does not answer the question, say so plainly rather than guessing.
 
-Say that this is not legal advice when a question turns on someone's specific circumstances. Answer directly: lead with the answer, then the authority behind it.`;
+Say that this is not legal advice when a question turns on someone's specific circumstances. Answer directly: lead with the answer, then the authority behind it.
+
+Writing style: use plain, modern typography. Do not use bold or italic markdown. Do not use all caps for emphasis. Do not use em dashes; write plain sentences instead. Keep parentheses rare. Do not use bullet points; when you need to enumerate, use numbered items or write the items as separate sentences. Never mention internal tool or function names and never use underscore names; refer to your sources in plain words, for example the California Legislative Information corpus or the web. Use a short heading only when it genuinely helps the reader, and quote statutory text exactly as the corpus gives it.`;
 
 type ResearchEvent = { type: string; [key: string]: unknown };
 

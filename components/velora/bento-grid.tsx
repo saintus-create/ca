@@ -69,7 +69,7 @@ export function BentoCard({
         {icon && (
           <div className="mb-2 w-fit text-primary [&_svg]:size-8">{icon}</div>
         )}
-        <h3 className="text-lg font-semibold text-card-foreground">{name}</h3>
+        <h3 className="text-lg font-medium text-card-foreground">{name}</h3>
         <p className="text-sm text-muted-foreground">{description}</p>
       </div>
       {href && (

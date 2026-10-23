@@ -37,7 +37,7 @@ export function CtaSplitImage() {
 
         <div className="flex flex-col justify-center px-6 py-14 sm:px-12 sm:py-16 lg:py-20">
           <p className="text-sm font-medium text-primary">{EYEBROW}</p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+          <h2 className="mt-3 text-3xl font-medium tracking-tight text-balance sm:text-4xl">
             {TITLE}
           </h2>
           <p className="mt-5 text-base text-pretty text-muted-foreground sm:text-lg">{COPY}</p>
@@ -101,7 +101,7 @@ function DashboardMock() {
           {STATS.map((stat) => (
             <div key={stat.label} className="rounded-xl border bg-card p-3">
               <p className="text-xs text-muted-foreground">{stat.label}</p>
-              <p className="mt-1 text-xl font-semibold tabular-nums">{stat.value}</p>
+              <p className="mt-1 text-xl font-medium tabular-nums">{stat.value}</p>
               <p className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-primary">
                 <TrendingUpIcon className="size-3.5" />
                 {stat.delta}

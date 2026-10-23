@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 const LOGOS: { name: string; wordmark: string; mark: React.ReactNode }[] = [
   {
     name: "leginfo",
-    wordmark: "font-bold uppercase tracking-[0.2em] text-lg",
+    wordmark: "font-medium text-lg",
     mark: (
       <>
         <path d="M12 3 21.5 20h-19z" fill="var(--brand-from)" />
@@ -19,7 +19,7 @@ const LOGOS: { name: string; wordmark: string; mark: React.ReactNode }[] = [
   },
   {
     name: "courts.ca.gov",
-    wordmark: "font-semibold tracking-tight",
+    wordmark: "font-medium tracking-tight",
     mark: (
       <>
         <rect x="3" y="13" width="4.5" height="8" rx="1" fill="var(--brand-to)" />
@@ -45,7 +45,7 @@ const LOGOS: { name: string; wordmark: string; mark: React.ReactNode }[] = [
   },
   {
     name: "Firecrawl",
-    wordmark: "font-mono font-semibold lowercase",
+    wordmark: "font-mono font-medium lowercase",
     mark: (
       <>
         <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="2" opacity=".35" />
@@ -66,7 +66,7 @@ const LOGOS: { name: string; wordmark: string; mark: React.ReactNode }[] = [
   },
   {
     name: "California Codes",
-    wordmark: "font-extrabold tracking-tighter",
+    wordmark: "font-medium tracking-tighter",
     mark: (
       <>
         <path d="M12 2 22 12 12 22 2 12z" fill="var(--brand-via)" />
@@ -76,7 +76,7 @@ const LOGOS: { name: string; wordmark: string; mark: React.ReactNode }[] = [
   },
   {
     name: "Rules of Court",
-    wordmark: "font-semibold uppercase tracking-widest text-sm",
+    wordmark: "font-medium text-sm",
     mark: (
       <>
         <path d="M12 2 20.7 7v10L12 22l-8.7-5V7z" fill="var(--brand-from)" />
@@ -86,7 +86,7 @@ const LOGOS: { name: string; wordmark: string; mark: React.ReactNode }[] = [
   },
   {
     name: "Judicial Forms",
-    wordmark: "font-semibold tracking-tight",
+    wordmark: "font-medium tracking-tight",
     mark: (
       <path
         d="M2 9c2.5-2.7 5-2.7 7.5 0s5 2.7 7.5 0 3.6-2 5-1M2 16c2.5-2.7 5-2.7 7.5 0s5 2.7 7.5 0 3.6-2 5-1"
@@ -110,7 +110,7 @@ const LOGOS: { name: string; wordmark: string; mark: React.ReactNode }[] = [
   },
   {
     name: "Legislation",
-    wordmark: "font-light uppercase tracking-[0.3em] text-sm",
+    wordmark: "font-light text-sm",
     mark: (
       <>
         <circle cx="12" cy="12" r="9" fill="none" stroke="var(--brand-via)" strokeWidth="2" />
@@ -133,7 +133,7 @@ export function LogosMarquee() {
       <div className="mx-auto max-w-5xl">
         <h2 className="text-center text-sm font-medium text-balance text-muted-foreground sm:text-base"
         >
-          Grounded in the sources California actually cites —{" "}
+          Grounded in the sources California actually cites.{" "}
           <span className="text-foreground">36 datasets</span>, from the Penal
           Code to the Judicial Council forms
         </h2>

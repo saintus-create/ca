@@ -32,7 +32,7 @@ const HEADING = {
   eyebrow: "The corpus",
   title: "A research assistant that knows California law",
   description:
-    "California Law searches 73 MB of statute text and the live web, then reasons over both — and shows the exact section behind every answer.",
+    "California Law searches 73 MB of statute text and the live web, then reasons over both and shows the exact section behind every answer.",
 };
 
 const CARDS = {
@@ -53,7 +53,7 @@ const CARDS = {
   },
   search: {
     name: "Find anything instantly",
-    description: "One search across 36 datasets — by keyword, or by citation like \u201cPEN 459\u201d.",
+    description: "One search across 36 datasets, by keyword or by citation like \u201cPEN 459\u201d.",
     cta: "Try a search",
   },
   edge: {
@@ -110,8 +110,8 @@ export function FeaturesBento() {
       <div className="mx-auto max-w-7xl">
         <BlurFade>
           <div className="mx-auto max-w-2xl text-center">
-            <p className="text-sm font-semibold text-primary">{HEADING.eyebrow}</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-balance sm:text-5xl">
+            <p className="text-sm font-medium text-primary">{HEADING.eyebrow}</p>
+            <h2 className="mt-3 text-3xl font-medium tracking-tight text-balance sm:text-5xl">
               {HEADING.title}
             </h2>
             <p className="mt-5 text-lg text-pretty text-muted-foreground">
@@ -293,7 +293,7 @@ function AnalyticsVisual() {
       <div className="flex items-start justify-between">
         <div>
           <p className="text-xs font-medium text-muted-foreground">Sections indexed</p>
-          <p className="mt-1 text-3xl font-semibold tracking-tight">
+          <p className="mt-1 text-3xl font-medium tracking-tight">
             <NumberTicker value={12000} suffix="+" />
           </p>
         </div>

@@ -15,7 +15,7 @@ const FAQS = [
   {
     question: "What does it actually search?",
     answer:
-      "Two sources. A 73 MB California corpus held on the site — all 36 code datasets, the Rules of Court, Judicial Council forms and case annotations — and the live web via Firecrawl.",
+      "Two sources. A 73 MB California corpus held on the site, covering all 36 code datasets, the Rules of Court, Judicial Council forms and case annotations, and the live web via Firecrawl.",
   },
   {
     question: "Do I need an API key?",
@@ -35,7 +35,7 @@ const FAQS = [
   {
     question: "Can I trust the citations?",
     answer:
-      "Every claim links to the section it came from, with the snippet highlighted in place. You should still check anything you intend to rely on — that is what the link is for.",
+      "Every claim links to the section it came from, with the snippet highlighted in place. You should still check anything you intend to rely on. That is what the link is for.",
   },
   {
     question: "Does it work offline?",
@@ -45,7 +45,7 @@ const FAQS = [
   {
     question: "Can I deploy it myself?",
     answer:
-      "Yes. It is a Next.js app under the MIT licence. Clone it, add a key and ship it to Vercel — the corpus is already in the repo as static assets.",
+      "Yes. It is a Next.js app under the MIT licence. Clone it, add a key and ship it to Vercel. The corpus is already in the repo as static assets.",
   },
   {
     question: "Is my data stored?",
@@ -71,7 +71,7 @@ export function FaqAccordion() {
       <div className="mx-auto max-w-3xl">
         <BlurFade className="text-center">
           <p className="text-sm font-medium text-primary">FAQ</p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-balance sm:text-5xl">
+          <h2 className="mt-3 text-3xl font-medium tracking-tight text-balance sm:text-5xl">
             Questions, answered
           </h2>
           <p className="mx-auto mt-5 max-w-xl text-lg text-pretty text-muted-foreground">
@@ -109,7 +109,7 @@ export function FaqAccordion() {
               className="shrink-0"
             />
             <div className="flex-1">
-              <h3 className="font-semibold">Still have questions?</h3>
+              <h3 className="font-medium">Still have questions?</h3>
               <p className="mt-1 text-sm text-pretty text-muted-foreground">
                 Questions, bugs and dataset requests are welcome on the
                 GitHub repo.

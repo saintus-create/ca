@@ -94,7 +94,7 @@ export default function OpenResearcherContent({ voiceEnabled = false }: { voiceE
         <div className={`px-4 sm:px-6 lg:px-8 transition-all duration-700 ease-in-out ${hasMessages ? 'max-w-[1400px]' : 'max-w-4xl'
           } mx-auto`}>
           <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2 text-[15px] font-semibold">
+            <Link href="/" className="flex items-center gap-2 text-[15px] font-medium">
               <span className="grid h-7 w-7 place-items-center rounded-lg bg-foreground text-background">
                 <Scale className="h-4 w-4" />
               </span>

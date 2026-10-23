@@ -77,7 +77,7 @@ const POSTS: Post[] = [
     time: "Jan 28",
     verified: true,
     avatar: photo("1534528741775-53994a69daeb"),
-    text: "It cites the section and shows the snippet. That is the whole thing — I can verify an answer in seconds.",
+    text: "It cites the section and shows the snippet. That is the whole thing. I can verify an answer in seconds.",
   },
   {
     kind: "quote",
@@ -146,7 +146,7 @@ function Person({
     <figcaption className="flex items-center gap-3">
       <Avatar size="lg" className={size === "lg" ? "size-12" : undefined}>
         {avatar && <AvatarImage src={avatar} alt="" />}
-        <AvatarFallback className="bg-gradient-to-br from-brand-from to-brand-to text-xs font-semibold text-brand-foreground">
+        <AvatarFallback className="bg-gradient-to-br from-brand-from to-brand-to text-xs font-medium text-brand-foreground">
           {initials(name)}
         </AvatarFallback>
       </Avatar>
@@ -169,8 +169,8 @@ export function TestimonialsGrid() {
       <div className="mx-auto max-w-7xl">
         <BlurFade className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
-            <p className="text-sm font-semibold text-brand">In use</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-balance sm:text-5xl">
+            <p className="text-sm font-medium text-brand">In use</p>
+            <h2 className="mt-3 text-3xl font-medium tracking-tight text-balance sm:text-5xl">
               Built for people who have to be right
             </h2>
             <p className="mt-5 text-lg text-pretty text-muted-foreground">
@@ -206,7 +206,7 @@ export function TestimonialsGrid() {
             />
           </figure>
           <div className="relative flex flex-col justify-center gap-2 border-t bg-muted/40 p-6 sm:p-10 lg:border-t-0 lg:border-l">
-            <p className="bg-gradient-to-br from-brand-from via-brand-via to-brand-to bg-clip-text text-6xl font-semibold tracking-tight text-transparent sm:text-7xl">
+            <p className="bg-gradient-to-br from-brand-from via-brand-via to-brand-to bg-clip-text text-6xl font-medium tracking-tight text-transparent sm:text-7xl">
               {FEATURED.metric}
             </p>
             <p className="text-base font-medium">{FEATURED.metricLabel}</p>

@@ -17,7 +17,7 @@ function Logo() {
   return (
     <a
       href="#"
-      className="flex items-center gap-2 rounded-full pr-1 text-[0.95rem] font-semibold tracking-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="flex items-center gap-2 rounded-full pr-1 text-[0.95rem] font-medium tracking-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <span
         aria-hidden

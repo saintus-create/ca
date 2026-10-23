@@ -53,7 +53,8 @@ function inline(text: string): string {
     '<sup class="citation">[$1]</sup>'
   );
 
-  out = out.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  // Bold markers are stripped: answers render in one plain weight.
+  out = out.replace(/\*\*([^*]+)\*\*/g, '$1');
   out = out.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>');
 
   out = out.replace(

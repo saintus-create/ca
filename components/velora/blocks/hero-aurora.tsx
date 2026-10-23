@@ -30,14 +30,14 @@ export function HeroAurora() {
           </a>
         </BlurFade>
 
-        <h1 className="mt-8 text-4xl font-semibold tracking-tight text-balance sm:text-6xl">
+        <h1 className="mt-8 text-4xl font-medium tracking-tight text-balance sm:text-6xl">
           The whole of California law,{" "}
           <span className="text-muted-foreground">one search away</span>
         </h1>
 
         <p className="mx-auto mt-6 max-w-xl text-lg text-pretty text-muted-foreground">
           California Law reads every California code, the Rules of Court and
-          the Judicial Council forms — then reasons over them live and cites the
+          the Judicial Council forms, then reasons over them live and cites the
           exact section behind each answer.
         </p>
 

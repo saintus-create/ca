@@ -89,7 +89,7 @@ export function AnimatedTestimonials({
                 className="size-full object-cover"
               />
             ) : (
-              <span className="flex size-full items-center justify-center bg-gradient-to-br from-brand-from to-brand-to text-2xl font-semibold text-brand-foreground">
+              <span className="flex size-full items-center justify-center bg-gradient-to-br from-brand-from to-brand-to text-2xl font-medium text-brand-foreground">
                 {initials(active.name)}
               </span>
             )}
@@ -111,7 +111,7 @@ export function AnimatedTestimonials({
             </p>
             <footer className="mt-3 text-sm text-muted-foreground">
               <span className="font-medium text-foreground">{active.name}</span>
-              {" — "}
+              {" · "}
               {active.role}
             </footer>
           </motion.blockquote>

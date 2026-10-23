@@ -2,7 +2,7 @@ import { Badge } from "@/components/velora/ui/badge";
 
 const BRAND = "California Law";
 const TAGLINE =
-  "California law, researched in seconds — corpus plus web, every claim cited.";
+  "California law, researched in seconds. Corpus plus web, every claim cited.";
 
 const COLUMNS = [
   {
@@ -65,7 +65,7 @@ export function FooterColumns() {
       <div className="mx-auto max-w-7xl">
         <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:gap-16">
           <div className="max-w-xs">
-            <a href="#" className={`inline-flex items-center gap-2.5 text-lg font-semibold tracking-tight ${focusRing}`}>
+            <a href="#" className={`inline-flex items-center gap-2.5 text-lg font-medium tracking-tight ${focusRing}`}>
               <span aria-hidden className="grid size-8 place-items-center rounded-[0.6rem] bg-linear-to-br from-brand-from to-brand-to text-brand-foreground">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="size-4.5">
                   <path d="M5 20 12 4l7 16M8 14h8" />
@@ -94,7 +94,7 @@ export function FooterColumns() {
           <nav aria-label="Footer" className="grid grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-4">
             {COLUMNS.map((column) => (
               <div key={column.title}>
-                <h3 className="text-sm font-semibold">{column.title}</h3>
+                <h3 className="text-sm font-medium">{column.title}</h3>
                 <ul className="mt-4 space-y-3 text-sm">
                   {column.links.map((link) => (
                     <li key={link.label} className="flex items-center gap-2">

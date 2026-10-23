@@ -18,7 +18,7 @@ const HEADING = {
   eyebrow: "How it works",
   title: "From question to citation",
   description:
-    "No query language, no boolean strings. Ask the way you would ask a colleague — the corpus does the rest.",
+    "No query language, no boolean strings. Ask the way you would ask a colleague. The corpus does the rest.",
 };
 
 const STEPS = [
@@ -29,7 +29,7 @@ const STEPS = [
   },
   {
     title: "Point it at the corpus",
-    description: "36 datasets, already indexed and shipped as static assets — there is no ingest step.",
+    description: "36 datasets, already indexed and shipped as static assets. There is no ingest step.",
     visual: ImportVisual,
   },
   {
@@ -55,8 +55,8 @@ export function FeaturesSteps() {
       <div className="mx-auto max-w-7xl">
         <BlurFade>
           <div className="mx-auto max-w-2xl text-center">
-            <p className="text-sm font-semibold text-primary">{HEADING.eyebrow}</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-balance sm:text-5xl">
+            <p className="text-sm font-medium text-primary">{HEADING.eyebrow}</p>
+            <h2 className="mt-3 text-3xl font-medium tracking-tight text-balance sm:text-5xl">
               {HEADING.title}
             </h2>
             <p className="mt-5 text-lg text-pretty text-muted-foreground">
@@ -75,7 +75,7 @@ export function FeaturesSteps() {
                 />
               )}
               <BlurFade delay={0.1 * i}>
-                <span className="relative grid size-10 place-items-center rounded-full border bg-background text-sm font-semibold shadow-sm">
+                <span className="relative grid size-10 place-items-center rounded-full border bg-background text-sm font-medium shadow-sm">
                   <span className="absolute inset-0 rounded-full bg-gradient-to-br from-brand-from/15 to-brand-to/15" />
                   <span className="relative bg-gradient-to-br from-brand-from to-brand-to bg-clip-text text-transparent">
                     {String(i + 1).padStart(2, "0")}
@@ -88,7 +88,7 @@ export function FeaturesSteps() {
                   {i === STEPS.length - 1 && <BorderBeam size={80} duration={8} />}
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold tracking-tight">{title}</h3>
+                  <h3 className="text-lg font-medium tracking-tight">{title}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-pretty text-muted-foreground">
                     {description}
                   </p>

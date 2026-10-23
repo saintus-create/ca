@@ -39,7 +39,7 @@ export function AvatarCircles({
             key={name}
             title={name}
             className={cn(
-              "relative flex size-10 items-center justify-center rounded-full text-xs font-semibold text-white ring-2 ring-background",
+              "relative flex size-10 items-center justify-center rounded-full text-xs font-medium text-white ring-2 ring-background",
               tones[i % tones.length]
             )}
           >
@@ -49,7 +49,7 @@ export function AvatarCircles({
         );
       })}
       {extra ? (
-        <span className="relative flex size-10 items-center justify-center rounded-full bg-muted text-xs font-semibold ring-2 ring-background">
+        <span className="relative flex size-10 items-center justify-center rounded-full bg-muted text-xs font-medium ring-2 ring-background">
           <span aria-hidden>
             +{extra >= 1000 ? `${Math.floor(extra / 1000)}k` : extra}
           </span>

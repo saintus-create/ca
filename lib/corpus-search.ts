@@ -223,7 +223,7 @@ export async function executeCorpusSearch(
     }
     const lines = hits.map(
       (h, i) =>
-        `[${i + 1}] ${h.citation || h.title} (${h.dataset})${h.title && h.citation ? ` — ${h.title}` : ''}${
+        `[${i + 1}] ${h.citation || h.title}, ${h.dataset}${h.title && h.citation ? `: ${h.title}` : ''}${
           h.url ? `\nSource: ${h.url}` : ''
         }\n${h.snippet}`
     );

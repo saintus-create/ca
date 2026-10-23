@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 
 interface LogoCloudProps extends React.HTMLAttributes<HTMLDivElement> {
-  /** One entry per logo — pass SVGs, `img` elements or plain wordmarks */
+  /** One entry per logo. Pass SVGs, `img` elements or plain wordmarks */
   logos: { name: string; logo: React.ReactNode }[];
   /** Show logos muted until hovered */
   dimUntilHover?: boolean;
