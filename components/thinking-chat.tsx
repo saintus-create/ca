@@ -27,9 +27,7 @@ interface Message {
 const SUGGESTED_QUERIES = [
   "How many days does a landlord have to return a security deposit after a tenant moves out?",
   "What is the statute of limitations for breach of a written contract in California?",
-  "When can an officer search a car without a warrant?",
-  "What does Penal Code 459 require for burglary?",
-  "How does Family Code 7600 define community property?"
+  "When can an officer search a car without a warrant?"
 ]
 
 interface ThinkingChatProps {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Github, ExternalLink, Loader2, Scale } from 'lucide-react'
+import { ExternalLink, Loader2, Scale } from 'lucide-react'
 import { ThinkingChat } from '@/components/thinking-chat'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -93,27 +93,13 @@ export default function OpenResearcherContent({ voiceEnabled = false }: { voiceE
       <header className="py-4 lg:py-5">
         <div className={`px-4 sm:px-6 lg:px-8 transition-all duration-700 ease-in-out ${hasMessages ? 'max-w-[1400px]' : 'max-w-4xl'
           } mx-auto`}>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center">
             <Link href="/" className="flex items-center gap-2 text-[15px] font-medium">
               <span className="grid h-7 w-7 place-items-center rounded-lg bg-foreground text-background">
                 <Scale className="h-4 w-4" />
               </span>
               California Law
             </Link>
-            <Button
-              variant="code"
-              asChild
-            >
-              <Link
-                href="https://github.com/saintus-create/ca"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2"
-              >
-                <Github className="h-4 w-4" />
-                GitHub
-              </Link>
-            </Button>
           </div>
         </div>
       </header>
@@ -124,11 +110,8 @@ export default function OpenResearcherContent({ voiceEnabled = false }: { voiceE
           : 'pt-8 pb-2 opacity-100 max-h-96'
         }`}>
         <div className="relative z-10 max-w-4xl mx-auto text-center">
-          <h1 className="ui-display opacity-0 animate-fade-up [animation-duration:500ms] [animation-delay:200ms] [animation-fill-mode:forwards]">
-            California Law
-          </h1>
-          <p className="ui-lede mx-auto mt-5 max-w-xl opacity-0 animate-fade-up [animation-duration:500ms] [animation-delay:600ms] [animation-fill-mode:forwards]">
-            California law research with real-time thinking and citations
+          <p className="ui-lede mx-auto max-w-xl opacity-0 animate-fade-up [animation-duration:500ms] [animation-delay:200ms] [animation-fill-mode:forwards]">
+            California statutes, rules and forms, researched and cited.
           </p>
         </div>
       </div>
@@ -154,23 +137,6 @@ export default function OpenResearcherContent({ voiceEnabled = false }: { voiceE
           )}
         </div>
       </div>
-
-      {/* Footer */}
-      <footer className="px-4 sm:px-6 lg:px-8 py-8 mt-auto">
-        <div className="max-w-4xl mx-auto text-center">
-          <p className="ui-caption">
-            Powered by{' '}
-            <Link
-              href="https://firecrawl.dev"
-              className="ui-caption font-medium text-brand-to underline-offset-2 hover:underline"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Firecrawl
-            </Link>
-          </p>
-        </div>
-      </footer>
 
       {/* API Key Modal */}
       <Dialog open={showApiKeyModal} onOpenChange={setShowApiKeyModal}>
