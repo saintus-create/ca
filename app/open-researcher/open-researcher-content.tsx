@@ -113,20 +113,30 @@ export default function OpenResearcherContent({ voiceEnabled = false }: { voiceE
         </div>
       </header>
 
-      {/* Hero Section */}
-      <div className={`relative overflow-hidden px-4 sm:px-6 lg:px-8 transition-all duration-700 ease-in-out ${hasMessages
-          ? 'pt-0 pb-0 opacity-0 max-h-0 overflow-hidden'
-          : 'pt-8 pb-2 opacity-100 max-h-96'
-        }`}>
-        <div className="relative z-10 max-w-4xl mx-auto text-center">
-          <p className="ui-lede mx-auto max-w-xl opacity-0 animate-fade-up [animation-duration:500ms] [animation-delay:200ms] [animation-fill-mode:forwards]">
-            California statutes, rules and forms, researched and cited.
+      {/* Velora hero */}
+      <section className={`relative isolate overflow-hidden px-4 sm:px-6 lg:px-8 transition-[max-height,opacity,padding] duration-300 ${hasMessages ? 'max-h-0 overflow-hidden py-0 opacity-0' : 'max-h-[520px] py-10 sm:py-14 lg:py-16'}`}>
+        <AuroraBackground intensity="subtle" className="z-[-1]" />
+        <div className="relative z-10 mx-auto max-w-4xl text-center">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#002868]/10 bg-white/75 px-3.5 py-1.5 text-xs font-medium tracking-wide text-[#244d83] shadow-sm backdrop-blur dark:bg-slate-950/60 dark:text-blue-200">
+            <span className="size-1.5 rounded-full bg-emerald-500" />
+            CALIFORNIA LEGAL RESEARCH
+          </div>
+          <h1 className="mx-auto mt-6 max-w-4xl text-balance text-4xl font-semibold leading-[1.06] tracking-[-0.045em] text-foreground sm:text-5xl lg:text-6xl">
+            Find the law.<br className="hidden sm:block" /> <AnimatedGradientText className="motion-reduce:animate-none">Follow the authority.</AnimatedGradientText>
+          </h1>
+          <p className="mx-auto mt-5 max-w-2xl text-pretty text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">
+            Search California statutes, court rules, and judicial forms. Get a focused research trail with source links, not a wall of untraceable answers.
           </p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-background/70 px-3 py-1.5 backdrop-blur"><BookOpen className="size-3.5 text-[#315b9a]" /> California Codes</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-background/70 px-3 py-1.5 backdrop-blur"><Landmark className="size-3.5 text-[#315b9a]" /> Legislation</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-background/70 px-3 py-1.5 backdrop-blur"><FileText className="size-3.5 text-[#315b9a]" /> Court Rules & Forms</span>
+          </div>
         </div>
-      </div>
+      </section>
 
       {/* Main Content - Full width split layout */}
-      <div className="flex-1 px-4 sm:px-6 lg:px-8">
+      <div className="relative z-10 flex-1 px-4 sm:px-6 lg:px-8">
         <div className="h-full max-w-[1400px] mx-auto">
           {voiceEnabled ? (
             <SpeechProvider>
