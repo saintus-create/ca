@@ -439,7 +439,7 @@ export function ThinkingChat({ onMessagesChange, hasFirecrawlKey = false, onApiK
   return (
     <div className="flex flex-col-reverse lg:flex-row gap-2 lg:gap-4 h-[calc(100vh-120px)] lg:h-[calc(100vh-200px)] animate-slide-up pt-2 lg:pt-5">
       {/* Chat interface - Bottom on mobile, Left on desktop */}
-      <SpotlightCard className={cn(
+      <SpotlightCard color="color-mix(in oklab, #315b9a 16%, transparent)" className={cn(
         "flex flex-col rounded-3xl border-border/70 bg-white/85 shadow-[0_20px_60px_rgba(20,40,90,0.08)] backdrop-blur-2xl transition-[width,height,box-shadow] duration-300 ease-out dark:bg-card/85",
         showFullWidth ? "h-full w-full" : "h-[45vh] lg:h-full lg:w-1/2" // Full height on mobile when browser closed
       )}>
