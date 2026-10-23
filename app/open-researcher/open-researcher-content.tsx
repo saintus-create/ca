@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { ExternalLink, Loader2 } from 'lucide-react'
-import { ThinkingChat } from '@/components/thinking-chat'
+import { ResearchChat } from '@/components/research-chat'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -93,14 +93,10 @@ export default function OpenResearcherContent({ voiceEnabled = false }: { voiceE
 
   return (
     <section id="research" className="px-4 pb-24 sm:px-6 lg:px-8">
-      <div
-        className={`mx-auto transition-all duration-700 ease-in-out ${
-          hasMessages ? 'max-w-[1400px]' : 'max-w-4xl'
-        }`}
-      >
+      <div className="mx-auto max-w-4xl">
         {voiceEnabled ? (
           <SpeechProvider>
-            <ThinkingChat
+            <ResearchChat
               onMessagesChange={setHasMessages}
               hasFirecrawlKey={hasFirecrawlKey}
               onApiKeyRequired={() => setShowApiKeyModal(true)}
@@ -108,7 +104,7 @@ export default function OpenResearcherContent({ voiceEnabled = false }: { voiceE
             />
           </SpeechProvider>
         ) : (
-          <ThinkingChat
+          <ResearchChat
             onMessagesChange={setHasMessages}
             hasFirecrawlKey={hasFirecrawlKey}
             onApiKeyRequired={() => setShowApiKeyModal(true)}
