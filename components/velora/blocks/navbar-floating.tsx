@@ -3,7 +3,7 @@ import { ArrowRightIcon } from "lucide-react";
 import { Button } from "@/components/velora/ui/button";
 import { ResizableNavbar } from "@/components/velora/resizable-navbar";
 
-const BRAND = "Open Researcher";
+const BRAND = "California Law";
 
 const LINKS = [
   { label: "Corpus", href: "#corpus" },

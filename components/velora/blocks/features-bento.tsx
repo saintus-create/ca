@@ -32,7 +32,7 @@ const HEADING = {
   eyebrow: "The corpus",
   title: "A research assistant that knows California law",
   description:
-    "Open Researcher searches 73 MB of statute text and the live web, then reasons over both — and shows the exact section behind every answer.",
+    "California Law searches 73 MB of statute text and the live web, then reasons over both — and shows the exact section behind every answer.",
 };
 
 const CARDS = {
@@ -389,7 +389,7 @@ function EdgeVisual() {
         arcs={ARCS}
         center={[30, -20]}
         className="w-72 sm:w-80"
-        label="Globe showing Open Researcher regions in Los Angeles, San Francisco, Sacramento, San Diego and Fresno"
+        label="Globe showing California Law regions in Los Angeles, San Francisco, Sacramento, San Diego and Fresno"
       />
     </div>
   );

@@ -36,7 +36,7 @@ export function HeroAurora() {
         </h1>
 
         <p className="mx-auto mt-6 max-w-xl text-lg text-pretty text-muted-foreground">
-          Open Researcher reads every California code, the Rules of Court and
+          California Law reads every California code, the Rules of Court and
           the Judicial Council forms — then reasons over them live and cites the
           exact section behind each answer.
         </p>

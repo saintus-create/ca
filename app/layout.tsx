@@ -9,7 +9,7 @@ import { Toaster } from "sonner";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Open Researcher",
+  title: "California Law",
   description: "California law research with real-time thinking and citations",
 };
 

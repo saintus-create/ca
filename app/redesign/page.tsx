@@ -17,7 +17,7 @@ import { CtaSplitImage } from "@/components/velora/blocks/cta-split-image";
 import { FooterColumns } from "@/components/velora/blocks/footer-columns";
 
 export const metadata = {
-  title: "Open Researcher",
+  title: "California Law",
   description:
     "California law, researched in seconds — corpus plus web, every claim cited.",
 };

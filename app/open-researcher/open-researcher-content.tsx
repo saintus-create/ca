@@ -98,7 +98,7 @@ export default function OpenResearcherContent({ voiceEnabled = false }: { voiceE
               <span className="grid h-7 w-7 place-items-center rounded-lg bg-foreground text-background">
                 <Scale className="h-4 w-4" />
               </span>
-              Open Researcher
+              California Law
             </Link>
             <Button
               variant="code"
@@ -125,7 +125,7 @@ export default function OpenResearcherContent({ voiceEnabled = false }: { voiceE
         }`}>
         <div className="relative z-10 max-w-4xl mx-auto text-center">
           <h1 className="ui-display opacity-0 animate-fade-up [animation-duration:500ms] [animation-delay:200ms] [animation-fill-mode:forwards]">
-            Open Researcher
+            California Law
           </h1>
           <p className="ui-lede mx-auto mt-5 max-w-xl opacity-0 animate-fade-up [animation-duration:500ms] [animation-delay:600ms] [animation-fill-mode:forwards]">
             California law research with real-time thinking and citations

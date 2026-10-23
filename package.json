@@ -1,5 +1,5 @@
 {
-  "name": "open-research",
+  "name": "california-law",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -75,5 +75,6 @@
     "eslint-config-next": "^15.5.28",
     "tailwindcss": "^4",
     "typescript": "^5"
-  }
+  },
+  "description": "California legal research over the full text of the California codes, Rules of Court and Judicial Council forms, with citations."
 }

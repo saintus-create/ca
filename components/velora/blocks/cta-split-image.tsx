@@ -86,7 +86,7 @@ function DashboardMock() {
   return (
     <div
       role="img"
-      aria-label="Open Researcher dashboard: 36 datasets indexed and over 12,000 sections searchable, with a rising twelve-week bar chart."
+      aria-label="California Law dashboard: 36 datasets indexed and over 12,000 sections searchable, with a rising twelve-week bar chart."
       className="relative mx-auto w-full max-w-md"
     >
       <div className="rounded-2xl border bg-background/90 shadow-xl shadow-brand/10 backdrop-blur">

@@ -8,8 +8,8 @@ import { isSpeechConfigured } from '@/lib/cartesia'
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  title: 'Open Researcher',
-  description: 'Firecrawl-powered search, scrape, and agentic reasoning',
+  title: 'California Law',
+  description: 'California statutes, rules and forms, researched and cited',
 }
 
 export default function OpenResearcherPage() {

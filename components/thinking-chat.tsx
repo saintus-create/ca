@@ -25,9 +25,11 @@ interface Message {
 }
 
 const SUGGESTED_QUERIES = [
-  "What are the latest AI breakthroughs in 2025 and how do they compare to previous years?",
-  "Find me the 2nd sentence of the 3rd and 5th blog post on firecrawl.dev and analyze their content",
-  "Compare the latest features and pricing between Samsung Galaxy S24 Ultra and iPhone 15 Pro Max, including camera specs and AI capabilities"
+  "How many days does a landlord have to return a security deposit after a tenant moves out?",
+  "What is the statute of limitations for breach of a written contract in California?",
+  "When can an officer search a car without a warrant?",
+  "What does Penal Code 459 require for burglary?",
+  "How does Family Code 7600 define community property?"
 ]
 
 interface ThinkingChatProps {

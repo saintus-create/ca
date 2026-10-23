@@ -5,7 +5,7 @@
 // whose "assets" map lists the file(s) for each dataset; large datasets
 // are split into .b64.partNNN chunks of one base64 stream). Datasets are
 // decoded and cached on first use. This module is the data side of the
-// Open Researcher template: the agent reaches the corpus through the
+// California Law template: the agent reaches the corpus through the
 // search_california_law tool, exactly the way it reaches the web
 // through Firecrawl.
 

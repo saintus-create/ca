@@ -1,6 +1,6 @@
 import { Badge } from "@/components/velora/ui/badge";
 
-const BRAND = "Open Researcher";
+const BRAND = "California Law";
 const TAGLINE =
   "California law, researched in seconds — corpus plus web, every claim cited.";
 
