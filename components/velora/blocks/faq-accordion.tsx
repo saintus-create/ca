@@ -20,7 +20,7 @@ const FAQS = [
   {
     question: "Do I need an API key?",
     answer:
-      "Yes. Bring your own Anthropic key; Firecrawl is optional and can be added in the interface. Neither is stored server-side.",
+      "No. The site runs on keys set up by its operator, so there is nothing to bring and nothing to paste in. Web search is included whenever it is switched on for the deployment.",
   },
   {
     question: "Does the corpus get bundled into the serverless function?",
@@ -30,7 +30,7 @@ const FAQS = [
   {
     question: "Which model does it use?",
     answer:
-      "Anthropic's Claude, with interleaved thinking enabled so the reasoning streams in as it works. The key and the model choice are yours.",
+      "The model the operator configured for the site, Sarvam by default, with Venice as an alternative. Answers stream in as the research runs, step by step.",
   },
   {
     question: "Can I trust the citations?",
@@ -50,7 +50,7 @@ const FAQS = [
   {
     question: "Is my data stored?",
     answer:
-      "No. Requests are stateless, and your API key lives in your browser or your environment variables.",
+      "No. Requests are stateless and questions are not kept. The one exception is an optional web search key you can add in the interface, and that stays in your browser.",
   },
 ];
 
