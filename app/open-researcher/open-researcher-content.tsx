@@ -4,8 +4,8 @@ import { AssistantChat } from '@/components/assistant-chat/chat-store'
 
 /**
  * The chat application: threads in a sidebar plus the assistant-ui thread.
- * Voice returns in a follow-up pass; its controls only render when the
- * Cartesia key is configured, and no deployment currently has one.
+ * Voice returns in a follow-up pass, browser-native like the old site, so it
+ * needs no key; Cartesia stays optional, never required.
  */
 export default function OpenResearcherContent() {
   return <AssistantChat />

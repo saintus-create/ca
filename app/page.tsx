@@ -8,7 +8,7 @@ import { SiteHeader } from '@/components/site-header'
 
 export const metadata: Metadata = {
   title: 'California Legislative Information',
-  description: 'The California codes, the Rules of Court and the Judicial Council forms, with answers cited to the section',
+  description: 'The California codes, the Rules of Court and the Judicial Council forms, with answers cited to the section.',
 }
 
 export default function Home() {

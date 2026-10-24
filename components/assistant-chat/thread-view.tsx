@@ -9,9 +9,8 @@ import {
   type ThreadMessageLike,
 } from '@assistant-ui/react'
 import { ArrowUp, PanelLeft, Square } from 'lucide-react'
-import Link from 'next/link'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
-import { ThinkingDots } from '@/components/spectrum/ai-assistants/thinking-dots'
+import { ThinkingDots } from './thinking-dots'
 import type { ChatMessage, ChatMessagePart, ChatSource, ChatThread } from './types'
 import { groupDatasets, type DatasetInfo } from '@/components/corpus/datasets'
 
@@ -68,7 +67,7 @@ function UserMessageView({ message }: { message: ChatMessage }) {
     .join('')
   return (
     <div className="flex justify-end">
-      <div className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-neutral-900 px-4 py-2.5 text-[13.5px] leading-relaxed text-white dark:bg-neutral-100 dark:text-neutral-900">
+      <div className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-brand px-4 py-2.5 text-[13.5px] leading-relaxed text-white">
         {text}
       </div>
     </div>
@@ -111,7 +110,7 @@ function AssistantMessageView({
         <button
           type="button"
           onClick={onRetry}
-          className="rounded-full bg-neutral-900 px-4 py-1.5 text-[13px] text-white transition-opacity hover:opacity-90 dark:bg-neutral-100 dark:text-neutral-900"
+          className="rounded-full bg-brand px-4 py-1.5 text-[13px] text-white transition-opacity hover:opacity-90"
         >
           Try again
         </button>
@@ -140,7 +139,7 @@ function AssistantMessageView({
             className={`size-2 shrink-0 rounded-full ${
               call.result !== undefined
                 ? 'bg-neutral-400'
-                : 'animate-pulse bg-neutral-900 dark:bg-neutral-100'
+                : 'animate-pulse bg-brand'
             }`}
           />
           {call.toolName}
@@ -231,21 +230,23 @@ export function ThreadView({
       <ThreadPrimitive.Root className="flex min-h-0 flex-1 flex-col">
         <ThreadPrimitive.Viewport className="min-h-0 flex-1 overflow-y-auto">
           {isEmpty ? (
-            <div className="flex h-full flex-col items-center justify-center gap-6 px-4">
-              <h2 className="text-center text-[28px] font-medium leading-tight tracking-[-0.5px] text-neutral-900 dark:text-neutral-50">
-                Ask about California law
-              </h2>
-              <div className="flex flex-wrap justify-center gap-2">
-                {SUGGESTED.map((s) => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => onSendText(s.prompt)}
-                    className="rounded-full border border-black/[0.08] bg-white px-4 py-2 text-sm text-neutral-600 shadow-xs transition-colors hover:text-neutral-900 dark:border-white/[0.09] dark:bg-[#0B0B0D] dark:text-neutral-300 dark:hover:text-neutral-50"
-                  >
+            <div className="flex h-full flex-col justify-center px-4">
+              <div className="mx-auto w-full max-w-[560px] space-y-6">
+                <h2 className="text-left text-[28px] font-medium leading-tight tracking-[-0.5px] text-neutral-900 dark:text-neutral-50">
+                  Ask about California law
+                </h2>
+                <div className="flex flex-wrap justify-start gap-2">
+                  {SUGGESTED.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => onSendText(s.prompt)}
+                      className="rounded-full border border-black/[0.08] bg-white px-4 py-2 text-left text-sm text-neutral-600 shadow-xs transition-colors hover:text-neutral-900 dark:border-white/[0.09] dark:bg-[#0B0B0D] dark:text-neutral-300 dark:hover:text-neutral-50"
+                    >
                     {s.label}
                   </button>
                 ))}
+                </div>
               </div>
             </div>
           ) : (
@@ -305,12 +306,6 @@ export function ThreadView({
                     ))}
                   </select>
                 </span>
-                <Link
-                  href="/corpus"
-                  className="text-[12.5px] text-neutral-500 underline decoration-neutral-300 underline-offset-4 transition-colors hover:text-neutral-800 dark:text-neutral-400 dark:decoration-neutral-600 dark:hover:text-neutral-100"
-                >
-                  California Law
-                </Link>
               </div>
               <ComposerPrimitive.Input
                 placeholder={isEmpty ? 'Ask anything about California law' : 'Ask a follow-up'}
@@ -322,7 +317,7 @@ export function ThreadView({
                     <button
                       type="button"
                       aria-label="Stop"
-                      className="grid size-8 shrink-0 place-items-center rounded-full bg-neutral-900 text-white transition-opacity hover:opacity-90 dark:bg-neutral-100 dark:text-neutral-900"
+                      className="grid size-8 shrink-0 place-items-center rounded-full bg-brand text-white transition-opacity hover:opacity-90"
                     >
                       <Square className="size-3.5 fill-current" />
                     </button>
@@ -332,7 +327,7 @@ export function ThreadView({
                     <button
                       type="button"
                       aria-label="Send"
-                      className="grid size-8 shrink-0 place-items-center rounded-full bg-neutral-900 text-white transition-opacity hover:opacity-90 disabled:opacity-40 dark:bg-neutral-100 dark:text-neutral-900"
+                      className="grid size-8 shrink-0 place-items-center rounded-full bg-brand text-white transition-opacity hover:opacity-90 disabled:opacity-40"
                     >
                       <ArrowUp className="size-4" />
                     </button>

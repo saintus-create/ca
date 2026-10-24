@@ -2,7 +2,7 @@
 
 /* ---------------------------------------------------------------------------
    Typography tokens
-   Geist is self-hosted (see app/layout.tsx). These are the families that
+   Public Sans is self-hosted (see app/layout.tsx). These are the families that
    Tailwind's `font-sans` / `font-mono` utilities resolve to. Previously
    tailwind.config.ts pointed `sans` at `--font-inter`, which nothing defines,
    and Tailwind v4 never loads that config anyway - so every glyph in the app
@@ -65,17 +65,6 @@
      with the chroma kept low so the site stays neutral. */
   --color-brand: #22364a;
   --color-brand-foreground: oklch(0.985 0 0);
-  --color-brand-from: #1d2f42;
-  --color-brand-via: #2b435c;
-  --color-brand-to: #3d5a76;
-  --animate-marquee: marquee var(--duration, 40s) linear infinite;
-  --animate-marquee-vertical: marquee-vertical var(--duration, 40s) linear infinite;
-  --animate-shimmer: shimmer 2.5s linear infinite;
-  --animate-gradient: gradient 6s ease infinite;
-  --animate-aurora-1: aurora-1 14s ease-in-out infinite alternate;
-  --animate-aurora-2: aurora-2 18s ease-in-out infinite alternate;
-  --animate-aurora-3: aurora-3 22s ease-in-out infinite alternate;
-  --animate-meteor: meteor 5s linear infinite;
 }
 
 @layer utilities {
@@ -126,9 +115,6 @@
     /* Brand ramp (dark): the same charcoal blue, lifted a step for dark surfaces. */
     --color-brand: #33506b;
     --color-brand-foreground: oklch(0.985 0 0);
-    --color-brand-from: #2b435c;
-    --color-brand-via: #3d5a76;
-    --color-brand-to: #557691;
   }
 }
 
@@ -426,11 +412,9 @@
     border-bottom: 1px solid var(--color-border);
     background-color: color-mix(in oklab, var(--color-muted) 70%, transparent);
     text-align: left;
-    font-size: 0.6875rem;
-    line-height: 1rem;
+    font-size: 0.8125rem;
+    line-height: 1.5rem;
     font-weight: 500;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
     color: var(--color-muted-foreground);
     white-space: nowrap;
   }
@@ -457,289 +441,6 @@
   .dark .markdown-content sup.citation { color: #d3ab55; }
 }
 
-/* Custom animation utilities */
-@layer utilities {
-  /* CSS Variables for animation */
-  :root {
-    /* Durations */
-    --d-1: 150ms;
-    --d-2: 300ms;
-    --d-3: 500ms;
-    --d-4: 700ms;
-    --d-5: 1000ms;
-    
-    /* Timings (delays) */
-    --t-1: 100ms;
-    --t-2: 200ms;
-    --t-3: 300ms;
-    --t-4: 400ms;
-    --t-5: 500ms;
-  }
-
-  /* Fade up animation */
-  @keyframes fade-up {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .animate-fade-up {
-    animation: fade-up 500ms ease-out forwards;
-  }
-
-  /* Fade in animation */
-  @keyframes fade-in {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
-  .animate-fade-in {
-    animation: fade-in 500ms ease-out forwards;
-  }
-
-  /* Slide in from right */
-  @keyframes slide-in-right {
-    from {
-      opacity: 0;
-      transform: translateX(100px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
-
-  .animate-slide-in-right {
-    animation: slide-in-right 500ms ease-out forwards;
-  }
-
-  /* Scale in content animation */
-  @keyframes scale-in-content {
-    from {
-      opacity: 0;
-      transform: scale(0.95);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-
-  .animate-scale-in-content {
-    animation: scale-in-content 500ms ease-out forwards;
-  }
-
-  /* Slide up animation */
-  @keyframes slide-up {
-    from {
-      opacity: 0;
-      transform: translateY(40px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .animate-slide-up {
-    animation: slide-up 700ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  }
-
-  /* Number transition effect */
-  .number-transition {
-    transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  /* Scanning animations */
-  @keyframes scan {
-    from {
-      top: 0%;
-    }
-    to {
-      top: 100%;
-    }
-  }
-
-  .animate-scan {
-    animation: scan 3s linear infinite;
-  }
-
-  /* Scanner effect for screenshot scanning */
-  @keyframes scanner {
-    0% {
-      top: 0;
-    }
-    100% {
-      top: 100%;
-    }
-  }
-
-  .scanner-line {
-    position: absolute;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(
-      to bottom,
-      transparent,
-      rgba(251, 146, 60, 0.8),
-      transparent
-    );
-    box-shadow: 0 0 10px rgba(251, 146, 60, 0.8);
-    animation: scanner 2s linear infinite;
-  }
-
-  .scanner-line::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    height: 20px;
-    background: linear-gradient(
-      to bottom,
-      transparent,
-      rgba(251, 146, 60, 0.1),
-      transparent
-    );
-    top: -10px;
-  }
-
-  /* Synchronized scrolling for long screenshots */
-  @keyframes screenshot-scroll {
-    0% {
-      transform: translateY(0);
-    }
-    100% {
-      transform: translateY(calc(-100% + 100vh));
-    }
-  }
-
-  .screenshot-scroll-container {
-    will-change: transform;
-  }
-
-  /* Apply animation only when marked as tall */
-  .animate-screenshot-scroll {
-    animation: screenshot-scroll 4s linear infinite;
-  }
-  
-  /* Scanner moves fast at 2s, screenshot scrolls very slowly at 20s */
-  .scanner-line {
-    animation-duration: 2s;
-  }
-  
-  .animate-screenshot-scroll {
-    animation-duration: 40s; /* 20x slower than scanner - very slow scrolling */
-  }
-
-  /* Animated cursor styles */
-  @keyframes cursor-click {
-    0% { transform: scale(1); }
-    50% { transform: scale(0.8); }
-    100% { transform: scale(1); }
-  }
-
-  /* Selection pulse animation */
-  @keyframes selection-pulse {
-    0%, 100% {
-      border-color: rgba(251, 146, 60, 1);
-      box-shadow: 0 0 0 0 rgba(251, 146, 60, 0.4);
-    }
-    50% {
-      border-color: rgba(251, 146, 60, 0.7);
-      box-shadow: 0 0 0 8px rgba(251, 146, 60, 0);
-    }
-  }
-
-  .animate-selection-pulse {
-    animation: selection-pulse 1.5s ease-in-out infinite;
-  }
-
-  /* Green selection pulse animation */
-  @keyframes selection-pulse-green {
-    0%, 100% {
-      border-color: rgba(34, 197, 94, 1);
-      box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
-      background-color: rgba(34, 197, 94, 0.05);
-    }
-    50% {
-      border-color: rgba(34, 197, 94, 0.7);
-      box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);
-      background-color: rgba(34, 197, 94, 0.1);
-    }
-  }
-
-  .animate-selection-pulse-green {
-    animation: selection-pulse-green 1.5s ease-in-out infinite;
-  }
-
-  /* Button press animation */
-  @keyframes button-press {
-    0% { transform: scale(1); }
-    50% { transform: scale(0.8); background-color: rgb(220 38 38); }
-    100% { transform: scale(1); background-color: rgb(239 68 68); }
-  }
-
-  .animate-button-press {
-    animation: button-press 0.3s ease-out;
-    animation-delay: 1.5s; /* Wait for cursor to reach button */
-  }
-
-  @keyframes scan-vertical {
-    0% {
-      transform: translateY(-100%);
-    }
-    50% {
-      transform: translateY(100%);
-    }
-    100% {
-      transform: translateY(-100%);
-    }
-  }
-
-  .animate-scan-vertical {
-    animation: scan-vertical 4s ease-in-out infinite;
-  }
-
-  @keyframes scan-horizontal {
-    0% {
-      transform: translateX(-100%);
-    }
-    50% {
-      transform: translateX(100%);
-    }
-    100% {
-      transform: translateX(-100%);
-    }
-  }
-
-  .animate-scan-horizontal {
-    animation: scan-horizontal 3s ease-in-out infinite;
-  }
-
-  /* Pulse animation for grid */
-  @keyframes grid-pulse {
-    0%, 100% {
-      opacity: 0.1;
-    }
-    50% {
-      opacity: 0.3;
-    }
-  }
-
-  .animate-grid-pulse {
-    animation: grid-pulse 2s ease-in-out infinite;
-  }
-}
 
 /* Custom scrollbar styles */
 @layer components {
@@ -783,15 +484,3 @@
     background: #6b7280;
   }
 }
-/* ---------------------------------------------------------------------------
-   Velora UI keyframes (MIT) — the animations the copied components reference
-   via --animate-* theme vars above.
---------------------------------------------------------------------------- */
-@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(calc(-100% - var(--gap))); } }
-@keyframes marquee-vertical { from { transform: translateY(0); } to { transform: translateY(calc(-100% - var(--gap))); } }
-@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
-@keyframes gradient { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
-@keyframes aurora-1 { 0% { transform: translate(-10%, -12%) scale(1); } 50% { transform: translate(12%, 8%) scale(1.25); } 100% { transform: translate(-6%, 14%) scale(0.95); } }
-@keyframes aurora-2 { 0% { transform: translate(12%, 10%) scale(1.1); } 50% { transform: translate(-14%, -6%) scale(0.9); } 100% { transform: translate(8%, -12%) scale(1.2); } }
-@keyframes aurora-3 { 0% { transform: translate(0%, 16%) scale(0.95); } 50% { transform: translate(10%, -10%) scale(1.15); } 100% { transform: translate(-12%, 4%) scale(1); } }
-@keyframes meteor { 0% { transform: rotate(var(--meteor-angle, 215deg)) translateX(0); opacity: 1; } 70% { opacity: 1; } 100% { transform: rotate(var(--meteor-angle, 215deg)) translateX(-600px); opacity: 0; } }

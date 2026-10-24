@@ -89,7 +89,7 @@ function friendlyError(error: unknown): string {
       return 'The research service is not set up on this deployment yet. The operator needs to add the language model key before questions can be answered.'
     }
     if (error.message.includes('FIRECRAWL_API_KEY')) {
-      return 'Web search is not configured on this deployment. The California corpus still works.'
+      return 'Web search is not configured on this deployment. California law search still works.'
     }
     if (error.message.includes('model')) {
       return 'The configured model is not available for this API key.'
@@ -162,7 +162,9 @@ function ThreadList({
                 type="button"
                 aria-label="Delete thread"
                 onClick={() => onDelete(t.id)}
-                className="absolute right-2 top-1/2 hidden -translate-y-1/2 rounded-full p-1 text-neutral-400 hover:text-neutral-900 group-hover:block dark:hover:text-neutral-50"
+                className={`absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-50 ${
+                  t.id === currentId ? 'block' : 'hidden group-hover:block'
+                }`}
               >
                 <X className="size-3.5" />
               </button>
