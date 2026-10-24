@@ -81,7 +81,7 @@ export function CorpusBrowser() {
       <div className="mt-8 space-y-6">
         {groupDatasets(datasets).map(({ group, items }) => (
           <div key={group}>
-            <p className="text-[12px] font-medium uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
+            <p className="text-[13px] font-medium text-neutral-500 dark:text-neutral-400">
               {group}
             </p>
             <div className="mt-2 flex flex-wrap gap-1.5">

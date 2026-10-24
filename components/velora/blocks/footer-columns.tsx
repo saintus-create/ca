@@ -2,7 +2,7 @@ import { Badge } from "@/components/velora/ui/badge";
 
 const BRAND = "California Legislative Information";
 const TAGLINE =
-  "California law, researched in seconds. Corpus plus web, every claim cited.";
+  "California law, researched and cited to the section.";
 
 const COLUMNS: {
   title: string;

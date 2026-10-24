@@ -1,16 +1,19 @@
 import type { Metadata } from "next";
-// Self-hosted Geist (from the `geist` package) instead of `next/font/google`:
+// Self-hosted type (fontsource packages) instead of next/font/google:
 // fetching fonts.googleapis.com at build time made `next build` fail outright
-// on any network-restricted builder (offline CI, air-gapped runners, some
-// container/build caches).
-import { GeistSans } from "geist/font/sans";
-import { GeistMono } from "geist/font/mono";
+// on any network-restricted builder. Public Sans is the typeface of the
+// California state design system; Source Serif 4 carries quoted statutory
+// text. Both are wired to the --font-sans and --font-serif tokens in
+// globals.css, so the tokens are the single place the site's type is set.
+import "@fontsource-variable/public-sans";
+import "@fontsource/source-serif-4/400.css";
+import "@fontsource/source-serif-4/400-italic.css";
 import { Toaster } from "sonner";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "California Legislative Information",
-  description: "California law research with real-time thinking and citations",
+  description: "The California codes, the Rules of Court and the Judicial Council forms, with answers cited to the section.",
 };
 
 export default function RootLayout({
@@ -20,9 +23,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${GeistSans.variable} ${GeistMono.variable} font-sans antialiased`}
-      >
+      <body className="font-sans antialiased">
         {children}
         <Toaster />
       </body>

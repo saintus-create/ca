@@ -22,9 +22,9 @@ export default function CorpusPage() {
             Browse the corpus
           </h1>
           <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-muted-foreground">
-            The full text held on this site: the California codes, the Rules of
-            Court and the Judicial Council forms. Pick a dataset to look inside
-            it, or search across all of them at once.
+            The California codes, the Rules of Court and the Judicial Council
+            forms held on this site. Pick a dataset to search inside it, or
+            search across all of them at once.
           </p>
         </div>
         <div className="pt-10">

@@ -1,21 +1,16 @@
-import { MessageCircleIcon } from "lucide-react";
-
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/velora/ui/accordion";
-import { Button } from "@/components/velora/ui/button";
-import { AvatarCircles } from "@/components/velora/avatar-circles";
 import { BlurFade } from "@/components/velora/blur-fade";
-import { DotPattern } from "@/components/velora/grid-pattern";
 
 const FAQS = [
   {
     question: "What does it actually search?",
     answer:
-      "Two sources. A 73 MB California corpus held on the site, covering all 36 code datasets, the Rules of Court, Judicial Council forms and case annotations, and the live web via Firecrawl.",
+      "The California codes, the Rules of Court, the Judicial Council forms and case law annotations held on this site, and the live web.",
   },
   {
     question: "Do I need an API key?",
@@ -39,31 +34,18 @@ const FAQS = [
   },
 ];
 
-const SUPPORT_TEAM = ["D. Rivera", "M. Kaur", "J. Tan"];
-
 /**
  * Centered FAQ: a single-open accordion of common questions, then a
  * contact row for anything the list doesn't answer.
  */
 export function FaqAccordion() {
   return (
-    <section className="relative isolate overflow-hidden px-6 py-24 sm:py-32 lg:px-8">
-      <DotPattern
-        aria-hidden
-        className="absolute inset-0 -z-10 size-full fill-foreground/10 [mask-image:radial-gradient(ellipse_at_top,black,transparent_55%)]"
-      />
-
+    <section className="relative isolate overflow-hidden px-6 py-16 sm:py-20 lg:px-8">
       <div className="mx-auto max-w-3xl">
-        <BlurFade className="text-center">
-          <p className="text-sm font-medium text-primary">FAQ</p>
-          <h2 className="mt-3 text-3xl font-medium tracking-tight text-balance sm:text-5xl">
-            Questions, answered
+        <BlurFade>
+          <h2 className="text-3xl font-medium tracking-tight text-balance sm:text-4xl">
+            Common questions
           </h2>
-          <p className="mx-auto mt-5 max-w-xl text-lg text-pretty text-muted-foreground">
-            Everything you need to know about the corpus, the API keys and
-            your data. Can&apos;t find what you&apos;re looking for? We&apos;re a
-            message away.
-          </p>
         </BlurFade>
 
         <BlurFade delay={0.1} className="mt-14">
@@ -86,32 +68,6 @@ export function FaqAccordion() {
           </Accordion>
         </BlurFade>
 
-        <BlurFade delay={0.2} className="mt-10">
-          <div className="flex flex-col items-center gap-6 rounded-2xl border border-dashed bg-muted/40 p-6 text-center sm:flex-row sm:p-8 sm:text-left">
-            <AvatarCircles
-              people={SUPPORT_TEAM}
-              aria-hidden
-              className="shrink-0"
-            />
-            <div className="flex-1">
-              <h3 className="font-medium">Still have questions?</h3>
-              <p className="mt-1 text-sm text-pretty text-muted-foreground">
-                Questions, bugs and dataset requests are welcome on the
-                GitHub repo.
-              </p>
-            </div>
-            <Button
-              asChild
-              size="lg"
-              className="h-10 shrink-0 rounded-full px-5"
-            >
-              <a href="https://github.com/saintus-create/ca/issues">
-                <MessageCircleIcon aria-hidden />
-                Open an issue
-              </a>
-            </Button>
-          </div>
-        </BlurFade>
       </div>
     </section>
   );
