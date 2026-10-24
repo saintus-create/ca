@@ -9,8 +9,8 @@ import { FooterColumns } from '@/components/velora/blocks/footer-columns'
 import { CorpusBrowser } from '@/components/corpus-browser'
 
 export const metadata: Metadata = {
-  title: 'Browse the corpus, California Legislative Information',
-  description: 'Every California code, the Rules of Court and the Judicial Council forms held on this site, searchable directly.',
+  title: 'California Law, California Legislative Information',
+  description: 'The California codes, the Rules of Court and the Judicial Council forms, searchable directly.',
 }
 
 export default function CorpusPage() {

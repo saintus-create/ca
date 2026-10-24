@@ -10,8 +10,8 @@ const COLUMNS: {
     title: "Sections",
     links: [
       { label: "Research", href: "/#research" },
-      { label: "Browse the corpus", href: "/corpus" },
-      { label: "Common questions", href: "/#docs" },
+      { label: "California Law", href: "/corpus" },
+      { label: "Frequently asked questions", href: "/#faq" },
       { label: "Back to top", href: "/#top" },
     ],
   },

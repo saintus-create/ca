@@ -435,7 +435,7 @@ export function ResearchChat({
         href="/corpus"
         className="text-[12.5px] text-neutral-500 underline decoration-neutral-300 underline-offset-4 transition-colors hover:text-neutral-800 dark:text-neutral-400 dark:decoration-neutral-600 dark:hover:text-neutral-100"
       >
-        Browse the corpus
+        California Law
       </a>
     </div>
   )

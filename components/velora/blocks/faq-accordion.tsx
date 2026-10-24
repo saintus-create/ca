@@ -44,7 +44,7 @@ export function FaqAccordion() {
       <div className="mx-auto max-w-3xl">
         <BlurFade>
           <h2 className="text-3xl font-medium tracking-tight text-balance sm:text-4xl">
-            Common questions
+            Frequently asked questions
           </h2>
         </BlurFade>
 

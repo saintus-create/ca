@@ -21,7 +21,7 @@ interface CorpusHit {
 }
 
 /**
- * Browse the corpus directly, no agent involved. Built in the chat's own
+ * California Law directly, no agent involved. Built in the chat's own
  * visual language: the same white card on the charcoal band, the same chips
  * as the chat's suggestions, the same type sizes as its answers, so search
  * and chat read as one tool. Dataset names and source titles are shown in
@@ -68,7 +68,7 @@ export function CorpusBrowser() {
       <section className="px-6 pb-16 pt-16 sm:pt-20 lg:px-8">
         <div className="mx-auto max-w-3xl">
           <h1 className="text-3xl font-medium tracking-tight text-neutral-900 dark:text-neutral-50 sm:text-4xl">
-            Browse the corpus
+            California Law
           </h1>
           <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-neutral-500 dark:text-neutral-400">
             The California codes, the Rules of Court and the Judicial Council
@@ -88,14 +88,14 @@ export function CorpusBrowser() {
                 placeholder={
                   selectedInfo
                     ? `Search the ${selectedInfo.name}`
-                    : 'Search every dataset, for example: security deposit'
+                    : 'Search California law, for example: security deposit'
                 }
                 className="min-w-0 flex-1 bg-transparent px-1.5 text-[15px] text-neutral-900 outline-hidden placeholder:text-neutral-400 dark:text-neutral-100"
               />
               <button
                 type="submit"
                 disabled={isLoading || !query.trim()}
-                aria-label="Search the corpus"
+                aria-label="Search California Law"
                 className="grid size-8 shrink-0 place-items-center rounded-full bg-neutral-900 text-white transition-opacity hover:opacity-90 disabled:opacity-40 dark:bg-neutral-100 dark:text-neutral-900"
               >
                 {isLoading ? (

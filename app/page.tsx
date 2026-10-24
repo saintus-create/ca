@@ -27,7 +27,7 @@ export default function Home() {
       <div className="py-14 sm:py-16">
         <OpenResearcherContent voiceEnabled={isSpeechConfigured()} />
       </div>
-      <div id="docs" className="scroll-mt-24 bg-[#8a6d1a]/[0.05] dark:bg-white/[0.02]"><FaqAccordion /></div>
+      <div id="faq" className="scroll-mt-24 bg-[#8a6d1a]/[0.05] dark:bg-white/[0.02]"><FaqAccordion /></div>
       <FooterColumns />
     </div>
   )
