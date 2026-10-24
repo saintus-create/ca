@@ -321,12 +321,12 @@ export function ResearchChat({
       } catch (error) {
         let errorMessage = 'Sorry, an error occurred while searching. Please try again.'
         if (error instanceof Error) {
-          if (error.message.includes('SARVAM_API_KEY') || error.message.includes('ANTHROPIC_API_KEY')) {
-            errorMessage = `The language model key is not configured on this deployment. ${error.message}`
+          if (error.message.includes('SARVAM_API_KEY') || error.message.includes('ANTHROPIC_API_KEY') || error.message.includes('not configured')) {
+            errorMessage = 'The research service is not set up on this deployment yet. The operator needs to add the language model key before questions can be answered.'
           } else if (error.message.includes('FIRECRAWL_API_KEY')) {
-            errorMessage = `Web search is not configured on this deployment. ${error.message} The California corpus still works.`
+            errorMessage = 'Web search is not configured on this deployment. The California corpus still works.'
           } else if (error.message.includes('model')) {
-            errorMessage = `The configured model is not available for this API key. ${error.message}`
+            errorMessage = 'The configured model is not available for this API key.'
           } else {
             errorMessage = `Error: ${error.message}`
           }
@@ -518,7 +518,7 @@ export function ResearchChat({
   }
 
   return (
-    <div className="mx-auto flex h-[72vh] w-full max-w-[760px] flex-col overflow-hidden rounded-2xl border border-black/[0.08] bg-white shadow-xs dark:border-white/[0.09] dark:bg-[#0B0B0D]">
+    <div className="mx-auto flex max-h-[72vh] w-full max-w-[760px] flex-col overflow-hidden rounded-2xl border border-black/[0.08] bg-white shadow-xs dark:border-white/[0.09] dark:bg-[#0B0B0D]">
       <div className="flex-1 space-y-6 overflow-y-auto px-4 py-5 sm:px-6">
         {messages.map((message, messageIdx) => {
           if (message.role === 'user') {
@@ -550,7 +550,11 @@ export function ResearchChat({
               {status === 'error' ? (
                 <ErrorState
                   variant="Inline"
-                  title="That search did not finish"
+                  title={
+                    message.content.includes('not set up on this deployment')
+                      ? 'The research service is not set up yet'
+                      : 'That search did not finish'
+                  }
                   message={message.content}
                   retryLabel="Try again"
                   onRetry={() => precedingUser && handleSearch(precedingUser.content)}
