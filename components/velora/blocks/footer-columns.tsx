@@ -101,7 +101,7 @@ export function FooterColumns() {
 
         <div className="mt-16 flex flex-col-reverse gap-4 border-t pt-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <p>
-            © 2026 {BRAND}. An independent research tool, not an official
+            © 2026{' '}{BRAND}. An independent research tool, not an official
             website of the State of California.
           </p>
           <nav aria-label="Legal">
