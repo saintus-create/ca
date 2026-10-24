@@ -1,6 +1,5 @@
 'use client';
 
-import { Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { SuggestedPrompt } from './types';
 
@@ -39,16 +38,14 @@ export function ChatEmptyState({
     >
       <style dangerouslySetInnerHTML={{ __html: KEYFRAMES }} />
 
-      <div className="grid size-9 place-items-center rounded-xl border border-black/[0.07] bg-black/[0.02] dark:border-white/[0.08] dark:bg-white/[0.04]">
-        <Sparkles className="size-4 text-neutral-500 dark:text-neutral-400" />
-      </div>
-
-      <h3 className="mt-4 text-[16px] font-semibold tracking-[-0.2px] text-neutral-900 dark:text-neutral-50">
+      <h3 className="text-[28px] font-medium leading-tight tracking-[-0.5px] text-neutral-900 dark:text-neutral-50">
         {title}
       </h3>
-      <p className="mt-1.5 text-[13px] leading-[1.6] text-neutral-500 dark:text-neutral-400">
-        {subtitle}
-      </p>
+      {subtitle ? (
+        <p className="mt-1.5 text-[13px] leading-[1.6] text-neutral-500 dark:text-neutral-400">
+          {subtitle}
+        </p>
+      ) : null}
 
       {prompts.length > 0 && (
         <div

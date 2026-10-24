@@ -1,24 +1,23 @@
 import { Badge } from "@/components/velora/ui/badge";
 
 const BRAND = "California Legislative Information";
-const TAGLINE =
-  "California law, researched and cited to the section.";
 
 const COLUMNS: {
   title: string;
   links: { label: string; href: string; badge?: string }[];
 }[] = [
   {
-    title: "Product",
+    title: "Sections",
     links: [
       { label: "Research", href: "/#research" },
       { label: "Browse the corpus", href: "/corpus" },
+      { label: "Common questions", href: "/#docs" },
+      { label: "Back to top", href: "/#top" },
     ],
   },
   {
     title: "Resources",
     links: [
-      { label: "FAQ", href: "/#docs" },
       { label: "GitHub repository", href: "https://github.com/saintus-create/ca" },
       { label: "Report an issue", href: "https://github.com/saintus-create/ca/issues" },
     ],
@@ -58,7 +57,6 @@ export function FooterColumns() {
               </span>
               {BRAND}
             </a>
-            <p className="mt-5 text-sm leading-relaxed text-pretty text-muted-foreground">{TAGLINE}</p>
             <ul className="mt-6 flex gap-2">
               {SOCIAL.map(({ label, path, href }) => (
                 <li key={label}>

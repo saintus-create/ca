@@ -65,14 +65,14 @@ export function CorpusBrowser() {
 
   return (
     <>
-      <section className="bg-[#22364a] px-6 pb-16 pt-16 dark:bg-[#141f2b] sm:pt-20 lg:px-8">
+      <section className="px-6 pb-16 pt-16 sm:pt-20 lg:px-8">
         <div className="mx-auto max-w-3xl">
-          <h1 className="text-3xl font-medium tracking-tight text-white sm:text-4xl">
+          <h1 className="text-3xl font-medium tracking-tight text-neutral-900 dark:text-neutral-50 sm:text-4xl">
             Browse the corpus
           </h1>
-          <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-neutral-300">
+          <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-neutral-500 dark:text-neutral-400">
             The California codes, the Rules of Court and the Judicial Council
-            forms held on this site. Pick a dataset to search inside it, or
+            forms, by code. Pick one to search inside it, or
             search across all of them at once.
           </p>
 

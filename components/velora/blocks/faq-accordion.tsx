@@ -10,27 +10,27 @@ const FAQS = [
   {
     question: "What does it actually search?",
     answer:
-      "The California codes, the Rules of Court, the Judicial Council forms and case law annotations held on this site, and the live web.",
+      "The California codes, the Rules of Court, the Judicial Council forms and case law annotations, and the live web.",
   },
   {
     question: "Do I need an API key?",
     answer:
-      "No. The site runs on keys set up by its operator, so there is nothing to bring and nothing to paste in. Web search is included whenever it is switched on for the deployment.",
+      "No.",
   },
   {
     question: "Which model does it use?",
     answer:
-      "The model the operator configured for the site, Sarvam by default, with Venice as an alternative. Answers stream in as the research runs, step by step.",
+      "Sarvam by default, with Venice as an alternative.",
   },
   {
     question: "Can I trust the citations?",
     answer:
-      "Every claim links to the section it came from, with the snippet highlighted in place. You should still check anything you intend to rely on. That is what the link is for.",
+      "Citations link to the section they came from.",
   },
   {
     question: "Is my data stored?",
     answer:
-      "No. Requests are stateless and questions are not kept. The one exception is an optional web search key you can add in the interface, and that stays in your browser.",
+      "No. Questions are not kept.",
   },
 ];
 

@@ -23,7 +23,7 @@ export default function OpenResearcherPage() {
   return (
     <div id="top" className="min-h-screen bg-background font-sans text-foreground">
       <NavbarFloating />
-      <div className="bg-[#22364a] py-14 dark:bg-[#141f2b] sm:py-16">
+      <div className="py-14 sm:py-16">
         <OpenResearcherContent voiceEnabled={isSpeechConfigured()} />
       </div>
       <div id="docs" className="scroll-mt-24 bg-[#8a6d1a]/[0.05] dark:bg-white/[0.02]"><FaqAccordion /></div>

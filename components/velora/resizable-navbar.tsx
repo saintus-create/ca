@@ -17,39 +17,25 @@ interface ResizableNavbarProps extends React.HTMLAttributes<HTMLElement> {
   logo?: React.ReactNode;
   /** Call to action on the right (e.g. a sign-up link) */
   cta?: React.ReactNode;
-  /** Pixels scrolled before the bar shrinks into a floating pill */
-  threshold?: number;
-  /** Maximum width of the floating pill, in px */
-  compactWidth?: number;
-  /** Maximum width of the full bar, in px */
-  maxWidth?: number;
   /** href of the current page; that link gets aria-current="page" */
   activeHref?: string;
   /** Accessible name of the navigation landmark */
   label?: string;
-  /** Scrollable element to watch instead of the window */
-  container?: React.RefObject<HTMLElement | null>;
 }
 
 /**
- * Sticky navbar that shrinks into a centred, blurred pill once the page is
- * scrolled. A highlight glides between links on hover and focus; below a
- * 48rem container width the links move into a disclosure menu.
+ * Sticky flat top bar. A highlight glides between links on hover and focus;
+ * below a 48rem container width the links move into a disclosure menu.
  */
 export function ResizableNavbar({
   items,
   logo,
   cta,
-  threshold = 80,
-  compactWidth = 760,
-  maxWidth = 1152,
   activeHref,
   label = "Main",
-  container,
   className,
   ...props
 }: ResizableNavbarProps) {
-  const [compact, setCompact] = useState(false);
   const [hover, setHover] = useState({ left: 0, width: 0, on: false, moved: false });
   const [menuOpen, setMenuOpen] = useState(false);
   const reduce = useReducedMotion();
@@ -59,16 +45,6 @@ export function ResizableNavbar({
   const spring = reduce
     ? { duration: 0 }
     : { type: "spring" as const, stiffness: 300, damping: 30 };
-
-  useEffect(() => {
-    const el = container?.current;
-    const target = el ?? window;
-    // Same-value state updates bail out, so no throttling is needed.
-    const update = () => setCompact((el ? el.scrollTop : window.scrollY) > threshold);
-    update();
-    target.addEventListener("scroll", update, { passive: true });
-    return () => target.removeEventListener("scroll", update);
-  }, [container, threshold]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -113,19 +89,11 @@ export function ResizableNavbar({
         }
         props.onKeyDown?.(event);
       }}
-      className={cn("@container/navbar sticky top-0 z-50 w-full px-3", className)}
+      className={cn("@container/navbar sticky top-0 z-50 w-full bg-background px-3", className)}
     >
       <motion.nav
         aria-label={label}
-        initial={false}
-        animate={{ maxWidth: compact ? compactWidth : maxWidth, y: compact ? 12 : 0 }}
-        transition={spring}
-        className={cn(
-          "relative mx-auto flex h-14 items-center gap-4 rounded-full border px-4 transition-[background-color,border-color,box-shadow] duration-300 motion-reduce:transition-none",
-          compact || menuOpen
-            ? "border-border bg-background/75 shadow-lg shadow-foreground/5 backdrop-blur-md"
-            : "border-transparent"
-        )}
+        className="relative mx-auto flex h-16 w-full max-w-7xl items-center gap-4 border-b px-4 sm:px-6"
       >
         <div className="flex shrink-0 items-center">{logo}</div>
         <div className="hidden flex-1 justify-center @3xl/navbar:flex">

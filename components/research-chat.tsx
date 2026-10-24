@@ -120,16 +120,12 @@ function shapeEvents(events: ThinkingEvent[]) {
 
 interface ResearchChatProps {
   onMessagesChange?: (hasMessages: boolean) => void
-  hasFirecrawlKey?: boolean
-  onApiKeyRequired?: () => void
   /** Render the voice controls. Only true when Cartesia is configured. */
   voiceEnabled?: boolean
 }
 
 export function ResearchChat({
   onMessagesChange,
-  hasFirecrawlKey = false,
-  onApiKeyRequired,
   voiceEnabled = false,
 }: ResearchChatProps) {
   const [messages, setMessages] = useState<Message[]>([])
@@ -232,8 +228,6 @@ export function ResearchChat({
 
       try {
         const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-        const firecrawlKey = localStorage.getItem('firecrawl_api_key')
-        if (firecrawlKey) headers['X-Firecrawl-API-Key'] = firecrawlKey
 
         const response = await fetch('/api/open-researcher', {
           method: 'POST',
@@ -480,23 +474,13 @@ export function ResearchChat({
     </div>
   ) : null
 
-  const firecrawlNotice = !hasFirecrawlKey ? (
-    <button
-      type="button"
-      onClick={() => onApiKeyRequired?.()}
-      className="text-[12.5px] text-neutral-400 transition-colors hover:text-neutral-700 dark:text-neutral-500 dark:hover:text-neutral-200"
-    >
-      Web search is off. Searching the corpus only. Add a Firecrawl key
-    </button>
-  ) : null
-
   if (messages.length === 0) {
     return (
       <div className="mx-auto flex w-full max-w-[640px] flex-col items-center gap-6 rounded-2xl border border-black/[0.08] bg-white px-6 py-8 shadow-xs dark:border-white/[0.09] dark:bg-[#0B0B0D]">
         <ChatEmptyState
           variant="Centered"
           title="Ask about California law"
-          subtitle="Statutes, court rules and forms, researched live and cited to the section."
+          subtitle=""
           prompts={SUGGESTED_PROMPTS}
           onSelectPrompt={(p) => handleSearch(p.prompt || p.label)}
         />
@@ -512,7 +496,6 @@ export function ResearchChat({
           />
         </div>
         {voiceControls}
-        {firecrawlNotice}
       </div>
     )
   }
@@ -596,7 +579,6 @@ export function ResearchChat({
           />
         </div>
         {voiceControls}
-        <div className="text-center">{firecrawlNotice}</div>
       </div>
     </div>
   )
