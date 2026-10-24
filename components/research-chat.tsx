@@ -501,7 +501,7 @@ export function ResearchChat({
   }
 
   return (
-    <div className="mx-auto flex max-h-[72vh] w-full max-w-[760px] flex-col overflow-hidden rounded-2xl border border-black/[0.08] bg-white shadow-xs dark:border-white/[0.09] dark:bg-[#0B0B0D]">
+    <div className="mx-auto flex min-h-0 w-full max-w-[760px] flex-1 flex-col overflow-hidden rounded-2xl border border-black/[0.08] bg-white shadow-xs dark:border-white/[0.09] dark:bg-[#0B0B0D]">
       <div className="flex-1 space-y-6 overflow-y-auto px-4 py-5 sm:px-6">
         {messages.map((message, messageIdx) => {
           if (message.role === 'user') {

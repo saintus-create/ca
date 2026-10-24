@@ -1,14 +1,11 @@
 /**
- * The home page, assembled from Velora UI blocks in a running order, with
- * the research chat at the top. The blocks are
- * the design system as it ships; this file only sets the order.
+ * The home page is the chat application: a plain top bar and the research
+ * chat filling the viewport. No landing sections.
  */
 import { Metadata } from 'next'
 import OpenResearcherContent from './open-researcher/open-researcher-content'
 import { isSpeechConfigured } from '@/lib/cartesia'
-import { NavbarFloating } from '@/components/velora/blocks/navbar-floating'
-import { FaqAccordion } from '@/components/velora/blocks/faq-accordion'
-import { FooterColumns } from '@/components/velora/blocks/footer-columns'
+import { SiteHeader } from '@/components/site-header'
 
 // Voice availability comes from the environment, so this page is rendered per
 // request: a key added after a build must light up the controls without a
@@ -22,13 +19,9 @@ export const metadata: Metadata = {
 
 export default function Home() {
   return (
-    <div id="top" className="min-h-screen bg-background font-sans text-foreground">
-      <NavbarFloating />
-      <div className="py-14 sm:py-16">
-        <OpenResearcherContent voiceEnabled={isSpeechConfigured()} />
-      </div>
-      <div id="faq" className="scroll-mt-24 bg-[#8a6d1a]/[0.05] dark:bg-white/[0.02]"><FaqAccordion /></div>
-      <FooterColumns />
+    <div className="flex h-dvh flex-col bg-background font-sans text-foreground">
+      <SiteHeader />
+      <OpenResearcherContent voiceEnabled={isSpeechConfigured()} />
     </div>
   )
 }

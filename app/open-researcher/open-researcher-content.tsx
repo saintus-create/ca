@@ -5,16 +5,17 @@ import { ResearchChat } from '@/components/research-chat'
 import { SpeechProvider } from '@/components/speech-provider'
 
 /**
- * The interactive research section: the chat. Page composition (navbar,
- * sections, footer) lives in the page files, which assemble blocks around
- * this island.
+ * The chat, filling the page it sits on. Empty, it centers vertically; once
+ * a conversation starts, it fills the remaining height.
  */
 export default function OpenResearcherContent({ voiceEnabled = false }: { voiceEnabled?: boolean }) {
-  const [, setHasMessages] = useState(false)
+  const [hasMessages, setHasMessages] = useState(false)
 
   return (
-    <section id="research" className="px-4 pb-24 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-4xl">
+    <section id="research" className="flex min-h-0 flex-1 flex-col px-4 sm:px-6 lg:px-8">
+      <div
+        className={`mx-auto w-full max-w-4xl ${hasMessages ? 'flex min-h-0 flex-1 flex-col' : 'my-auto'}`}
+      >
         {voiceEnabled ? (
           <SpeechProvider>
             <ResearchChat
