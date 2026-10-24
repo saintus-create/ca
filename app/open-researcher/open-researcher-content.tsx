@@ -23,7 +23,7 @@ import { SpeechProvider } from '@/components/speech-provider'
  * which assemble Velora blocks around this island.
  */
 export default function OpenResearcherContent({ voiceEnabled = false }: { voiceEnabled?: boolean }) {
-  const [hasMessages, setHasMessages] = useState(false)
+  const [, setHasMessages] = useState(false)
   const [showApiKeyModal, setShowApiKeyModal] = useState(false)
   const [firecrawlApiKey, setFirecrawlApiKey] = useState('')
   const [isValidatingApiKey, setIsValidatingApiKey] = useState(false)

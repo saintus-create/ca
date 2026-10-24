@@ -12,8 +12,14 @@ import { Toaster } from "sonner";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://causgov.vercel.app"),
   title: "California Legislative Information",
   description: "The California codes, the Rules of Court and the Judicial Council forms, with answers cited to the section.",
+  openGraph: {
+    title: "California Legislative Information",
+    description: "The California codes, the Rules of Court and the Judicial Council forms, with answers cited to the section.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({

@@ -20,8 +20,27 @@ import type {
 } from '@/components/spectrum/ai-assistants/types'
 import { LiveWaveform } from '@/components/elevenlabs/live-waveform'
 import { BarVisualizer } from '@/components/elevenlabs/bar-visualizer'
-import type { ThinkingEvent } from '@/components/thinking-display'
 import { fetchDatasets, groupDatasets, type DatasetInfo } from '@/components/corpus/datasets'
+
+export interface ThinkingEvent {
+  type: 'start' | 'thinking' | 'tool_call' | 'tool_result' | 'response' | 'summary'
+  timestamp?: number
+  content?: string
+  number?: number
+  tool?: string
+  parameters?: Record<string, unknown>
+  result?: string
+  searchResults?: Array<{
+    url: string
+    title: string
+    description: string
+    markdown?: string
+  }>
+  screenshots?: Array<{ url: string; screenshot?: string }>
+  duration?: number
+  thinkingBlocks?: number
+  toolCalls?: number
+}
 
 interface Message {
   id: string
@@ -396,7 +415,7 @@ export function ResearchChat({
       <span className="flex min-w-0 flex-1 items-center gap-2">
         <label
           htmlFor="corpus-scope"
-          className="shrink-0 whitespace-nowrap text-[12.5px] text-neutral-400 dark:text-neutral-500"
+          className="shrink-0 whitespace-nowrap text-[12.5px] text-neutral-500 dark:text-neutral-400"
         >
           Search in
         </label>
@@ -420,7 +439,7 @@ export function ResearchChat({
       </span>
       <a
         href="/corpus"
-        className="text-[12.5px] text-neutral-400 underline decoration-neutral-300 underline-offset-4 transition-colors hover:text-neutral-700 dark:text-neutral-500 dark:decoration-neutral-600 dark:hover:text-neutral-200"
+        className="text-[12.5px] text-neutral-500 underline decoration-neutral-300 underline-offset-4 transition-colors hover:text-neutral-800 dark:text-neutral-400 dark:decoration-neutral-600 dark:hover:text-neutral-100"
       >
         Browse the corpus
       </a>

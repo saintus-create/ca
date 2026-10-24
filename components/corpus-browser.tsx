@@ -156,7 +156,7 @@ export function CorpusBrowser() {
 
           {hits !== null && !error && (
             <div className="pt-10">
-              <p className="text-[13px] text-neutral-400 dark:text-neutral-500">
+              <p className="text-[13px] text-neutral-500 dark:text-neutral-400">
                 {hits.length === 0
                   ? 'No matching records.'
                   : `${hits.length} result${hits.length === 1 ? '' : 's'}${selectedInfo ? ` in the ${selectedInfo.name}` : ''}`}
@@ -168,7 +168,7 @@ export function CorpusBrowser() {
                       <span className="text-[15px] font-medium text-neutral-900 dark:text-neutral-50">
                         {hit.citation || displayTitle(hit.title)}
                       </span>
-                      <span className="rounded bg-[#a5811f]/10 px-1.5 py-0.5 text-[11px] text-[#a5811f] dark:text-[#d3ab55]">
+                      <span className="rounded bg-[#8a6d1a]/10 px-1.5 py-0.5 text-[11px] text-[#8a6d1a] dark:text-[#d3ab55]">
                         {displayNameFor(hit.dataset)}
                       </span>
                     </div>
@@ -185,7 +185,7 @@ export function CorpusBrowser() {
                         href={hit.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="mt-1.5 inline-block text-[13px] text-[#a5811f] underline underline-offset-4 dark:text-[#d3ab55]"
+                        className="mt-1.5 inline-block text-[13px] text-[#8a6d1a] underline underline-offset-4 dark:text-[#d3ab55]"
                       >
                         {hit.url}
                       </a>

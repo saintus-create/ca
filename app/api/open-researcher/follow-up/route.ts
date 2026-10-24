@@ -61,7 +61,7 @@ Only return the JSON array, nothing else.`
       return NextResponse.json({ questions: [] })
     }
 
-  } catch (error) {
+  } catch {
     // Error generating follow-up questions
     return NextResponse.json(
       { error: 'Failed to generate follow-up questions' },

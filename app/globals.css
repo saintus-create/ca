@@ -327,7 +327,7 @@
 
   .markdown-content a {
     font-weight: 500;
-    color: #a5811f;
+    color: #8a6d1a;
     text-decoration-line: underline;
     text-decoration-thickness: 1px;
     text-underline-offset: 2px;
@@ -348,7 +348,7 @@
     top: 0.48em;
     width: 0.6rem;
     height: 0.6rem;
-    background-color: #a5811f;
+    background-color: #8a6d1a;
     -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14'/%3E%3Cpath d='m13 6 6 6-6 6'/%3E%3C/svg%3E") no-repeat center / contain;
     mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14'/%3E%3Cpath d='m13 6 6 6-6 6'/%3E%3C/svg%3E") no-repeat center / contain;
   }
@@ -450,7 +450,7 @@
     line-height: 0;
     font-weight: 500;
     font-variant-numeric: tabular-nums;
-    color: #a5811f;
+    color: #8a6d1a;
     cursor: pointer;
   }
   .markdown-content sup.citation:hover { text-decoration: underline; }
