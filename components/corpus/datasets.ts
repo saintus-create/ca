@@ -84,3 +84,22 @@ export function groupDatasets(datasets: DatasetInfo[]): Array<{ group: string; i
     .sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]))
     .map(([group, items]) => ({ group, items }))
 }
+
+const ACRONYMS = new Set(['DUI', 'DMV', 'DNA', 'HIV', 'AIDS', 'ADA', 'IRS', 'FBI', 'DOJ', 'OSHA', 'EPA', 'FTB', 'EDD', 'CHP'])
+
+/** Corpus source titles are stored in all caps. For display, a title that is
+ *  mostly uppercase is sentence cased; anything already mixed case is left
+ *  exactly as written. */
+export function displayTitle(title: string): string {
+  if (!title) return title
+  const letters = title.replace(/[^A-Za-z]/g, '')
+  if (letters.length < 8) return title
+  const upper = letters.replace(/[^A-Z]/g, '').length
+  if (upper / letters.length < 0.8) return title
+  const lowered = title.toLowerCase().replace(/\b([a-z])/, (m) => m.toUpperCase())
+  return lowered.replace(/\b([a-z]{2,})\b/g, (w) => (ACRONYMS.has(w.toUpperCase()) ? w.toUpperCase() : w))
+}
+
+export function displayNameFor(code: string): string {
+  return NAMES[code] || code
+}
