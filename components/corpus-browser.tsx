@@ -129,14 +129,6 @@ export function CorpusBrowser() {
                           )}
                         >
                           {d.name}
-                          <span
-                            className={cn(
-                              'ml-1.5 tabular-nums',
-                              active ? 'text-white/60' : 'text-neutral-400',
-                            )}
-                          >
-                            {d.rows.toLocaleString()}
-                          </span>
                         </button>
                       )
                     })}
@@ -156,11 +148,11 @@ export function CorpusBrowser() {
 
           {hits !== null && !error && (
             <div className="pt-10">
-              <p className="text-[13px] text-neutral-500 dark:text-neutral-400">
-                {hits.length === 0
-                  ? 'No matching records.'
-                  : `${hits.length} result${hits.length === 1 ? '' : 's'}${selectedInfo ? ` in the ${selectedInfo.name}` : ''}`}
-              </p>
+              {hits.length === 0 && (
+                <p className="text-[13px] text-neutral-500 dark:text-neutral-400">
+                  No matching records.
+                </p>
+              )}
               <ul className="mt-2 divide-y divide-black/[0.06] dark:divide-white/[0.07]">
                 {hits.map((hit, i) => (
                   <li key={`${hit.dataset}-${hit.citation}-${i}`} className="py-5">
