@@ -3,7 +3,7 @@ export type ChatMessagePart =
   | { type: 'reasoning'; text: string }
   | { type: 'tool-call'; toolCallId: string; toolName: string; args: Record<string, unknown>; result?: string }
 
-/** A message in ca's own shape; converted to assistant-ui's lenient form at the runtime boundary. */
+/** A message in ca's own shape; rendered by the plain React thread view. */
 export type ChatMessage = {
   id: string
   role: 'user' | 'assistant'

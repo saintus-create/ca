@@ -177,7 +177,7 @@ function ThreadList({
 }
 
 /**
- * The chat application: a sidebar of threads plus the assistant-ui thread.
+ * The chat application: a sidebar of threads plus the thread view.
  * The backend is unchanged: every send posts to /api/open-researcher and the
  * SSE events become reasoning, tool-call and text parts.
  */

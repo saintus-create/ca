@@ -3,7 +3,7 @@
 import { AssistantChat } from '@/components/assistant-chat/chat-store'
 
 /**
- * The chat application: threads in a sidebar plus the assistant-ui thread.
+ * The chat application: threads in a sidebar plus the thread view.
  * Voice returns in a follow-up pass, browser-native like the old site, so it
  * needs no key; Cartesia stays optional, never required.
  */
