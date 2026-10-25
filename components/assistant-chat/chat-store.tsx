@@ -483,8 +483,6 @@ export function AssistantChat() {
             onCancel={() => cancelRun(current.id)}
             onReload={() => reloadThread(current.id)}
             onScopeChange={(scope) => updateThread(current.id, (t) => ({ ...t, scope, updatedAt: Date.now() }))}
-            onSetMessages={(messages) => updateThread(current.id, (t) => ({ ...t, messages: [...messages] }))}
-            onOpenMobileNav={() => {}}
           />
         </SidebarInset>
       </div>
