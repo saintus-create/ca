@@ -12,7 +12,7 @@ export function SiteHeader() {
         <span className="hidden sm:inline">California Legislative Information</span>
       </Link>
       <nav className="flex shrink-0 items-center gap-3 text-xs text-neutral-500 dark:text-neutral-400 sm:gap-4 sm:text-sm">
-        <Link href="/corpus" className="transition-colors hover:text-neutral-900 dark:hover:text-neutral-50">
+        <Link href="/corpus" className="hidden transition-colors hover:text-neutral-900 dark:hover:text-neutral-50 sm:inline">
           California Law
         </Link>
         <Link href="/faq" className="transition-colors hover:text-neutral-900 dark:hover:text-neutral-50">

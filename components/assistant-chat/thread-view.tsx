@@ -312,6 +312,28 @@ export function ThreadView({
               )}
             </div>
           </form>
+          <details className="mt-2 px-1 text-xs text-neutral-500 dark:text-neutral-400">
+            <summary className="flex cursor-pointer list-none items-center gap-1.5 py-1.5 [&::-webkit-details-marker]:hidden">
+              <ChevronDown className="size-3.5" />
+              <span>{thread.scope ? `Search limited to ${datasets.find((d) => d.code === thread.scope)?.name ?? thread.scope}` : 'Limit search to a specific source (optional)'}</span>
+            </summary>
+            <label htmlFor="corpus-scope" className="sr-only">Limit search to a specific source</label>
+            <select
+              id="corpus-scope"
+              value={thread.scope}
+              onChange={(e) => onScopeChange(e.target.value)}
+              className="mb-2 w-full rounded-xl border border-black/[0.08] bg-white px-3 py-2.5 text-sm text-neutral-700 outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400 dark:border-white/[0.09] dark:bg-[#0B0B0D] dark:text-neutral-200"
+            >
+              <option value="">All California law (recommended)</option>
+              {groupDatasets(datasets).map(({ group, items }) => (
+                <optgroup key={group} label={group}>
+                  {items.map((d) => (
+                    <option key={d.code} value={d.code}>{d.name}</option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </details>
         </div>
       </div>
     </div>
