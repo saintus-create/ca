@@ -1,7 +1,9 @@
-export type ChatMessagePart =
-  | { type: 'text'; text: string }
-  | { type: 'reasoning'; text: string }
-  | { type: 'tool-call'; toolCallId: string; toolName: string; args: Record<string, unknown>; result?: string }
+import type { ChatMessagePart, ChatSource } from '@/lib/chat-stream'
+
+// The wire shape (parts, sources) lives beside the stream reducer in
+// lib/chat-stream.ts so it can be tested without a browser; the thread shape
+// below is this screen's own storage format.
+export type { ChatMessagePart, ChatSource }
 
 /** A message in ca's own shape; converted to assistant-ui's lenient form at the runtime boundary. */
 export type ChatMessage = {
@@ -10,8 +12,6 @@ export type ChatMessage = {
   content: ChatMessagePart[]
   createdAt: Date
 }
-
-export type ChatSource = { url: string; title: string; description?: string }
 
 /** One conversation: its messages, the sources behind each answer, and its scope. */
 export type ChatThread = {

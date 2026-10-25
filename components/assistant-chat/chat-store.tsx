@@ -3,9 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Plus, X } from 'lucide-react'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
-import { ThreadView } from './thread-view'
-import type { ChatMessage, ChatMessagePart, ChatSource, ChatThread } from './types'
+import { Toaster } from '@/components/ui/sonner'
+import { NO_VOICE, ThreadView, type VoiceAvailability } from './thread-view'
+import type { ChatMessage, ChatMessagePart, ChatThread } from './types'
 import { fetchDatasets, type DatasetInfo } from '@/components/corpus/datasets'
+import { readSse, parseSseFrame } from '@/lib/sse'
+import { applyResearchPayload, createResearchTurn, turnParts } from '@/lib/chat-stream'
+import { browserRecognitionConstructor } from '@/lib/voice/dictation-adapter'
 
 const STORAGE_KEY = 'california-law-threads-v1'
 
@@ -46,38 +50,6 @@ function threadTitle(text: string): string {
   return clean.length > 48 ? `${clean.slice(0, 48)}…` : clean
 }
 
-/** The same source parsing the old chat used: [n] title lines plus URL/Source/Description lines. */
-function parseSearchResults(resultText: string): ChatSource[] {
-  const results: ChatSource[] = []
-  let current: ChatSource | null = null
-  for (const line of resultText.split('\n')) {
-    const titleMatch = line.match(/^\[(\d+)\]\s+(.+)$/)
-    if (titleMatch) {
-      if (current && current.title) results.push(current)
-      current = { url: '', title: titleMatch[2].replace(' (scraped)', '') }
-      continue
-    }
-    if (line.startsWith('URL: ') && current) {
-      current.url = line.substring(5)
-      continue
-    }
-    if (line.startsWith('Source: ') && current) {
-      current.url = line.substring(8).trim()
-      continue
-    }
-    if (line.startsWith('Description: ') && current) {
-      current.description = line.substring(13)
-      continue
-    }
-    if (current && !current.description && line.trim().length > 40 && !/^[A-Za-z][A-Za-z ]{0,12}: /.test(line)) {
-      current.description = line.trim()
-      continue
-    }
-  }
-  if (current && current.title) results.push(current)
-  return results
-}
-
 /** Map raw route errors to the plain visitor-facing messages the old chat used. */
 function friendlyError(error: unknown): string {
   if (error instanceof Error) {
@@ -97,24 +69,6 @@ function friendlyError(error: unknown): string {
     return `Error: ${error.message}`
   }
   return 'Sorry, an error occurred while searching. Please try again.'
-}
-
-type ToolCallAcc = { id: string; name: string; args: Record<string, unknown>; result?: string }
-
-function buildParts(reasoning: string, toolCalls: ToolCallAcc[], text: string): ChatMessagePart[] {
-  const parts: ChatMessagePart[] = []
-  if (reasoning) parts.push({ type: 'reasoning', text: reasoning })
-  for (const tc of toolCalls) {
-    parts.push({
-      type: 'tool-call',
-      toolCallId: tc.id,
-      toolName: tc.name,
-      args: tc.args,
-      ...(tc.result !== undefined ? { result: tc.result } : {}),
-    })
-  }
-  if (text) parts.push({ type: 'text', text })
-  return parts
 }
 
 function ThreadList({
@@ -185,6 +139,7 @@ export function AssistantChat() {
   const [threads, setThreads] = useState<ChatThread[]>(() => [freshThread()])
   const [currentId, setCurrentId] = useState<string | null>(null)
   const [datasets, setDatasets] = useState<DatasetInfo[]>([])
+  const [voice, setVoice] = useState<VoiceAvailability>(NO_VOICE)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [loaded, setLoaded] = useState(false)
   const abortRefs = useRef(new Map<string, AbortController>())
@@ -200,6 +155,30 @@ export function AssistantChat() {
     fetchDatasets()
       .then(setDatasets)
       .catch(() => setDatasets([]))
+  }, [])
+
+  // What voice this deployment and browser can do. The chat decides from this
+  // whether Listen streams Cartesia (or falls back to browser speech), whether
+  // the voice picker is shown, and whether the composer offers a microphone.
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/voice/status')
+      .then((res) => (res.ok ? res.json() : {}))
+      .catch(() => ({}))
+      .then((data: { configured?: boolean } | undefined) => {
+        if (cancelled) return
+        const cartesia = Boolean(data?.configured)
+        const browserSpeech = typeof window !== 'undefined' && typeof window.speechSynthesis !== 'undefined'
+        const browserDictation = browserRecognitionConstructor() !== undefined
+        setVoice({
+          cartesia,
+          speech: cartesia || browserSpeech,
+          dictation: cartesia || browserDictation,
+        })
+      })
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   useEffect(() => {
@@ -272,14 +251,10 @@ export function AssistantChat() {
         updatedAt: Date.now(),
       }))
 
-      let reasoning = ''
-      let text = ''
-      let sources: ChatSource[] = []
-      const toolCalls: ToolCallAcc[] = []
-      let streamError: string | null = null
+      const turn = createResearchTurn()
 
       const applyParts = () => {
-        const parts = buildParts(reasoning, toolCalls, text)
+        const parts = turnParts(turn)
         updateThread(threadId, (t) => ({
           ...t,
           messages: t.messages.map((m) => (m.id === assistantId ? { ...m, content: parts } : m)),
@@ -301,55 +276,15 @@ export function AssistantChat() {
               'Search failed',
           )
         }
-        const reader = response.body?.getReader()
-        if (!reader) throw new Error('No response stream')
-        const decoder = new TextDecoder()
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-          const chunk = decoder.decode(value)
-          for (const line of chunk.split('\n')) {
-            if (!line.startsWith('data: ')) continue
-            try {
-              const data = JSON.parse(line.slice(6)) as {
-                type?: string
-                event?: { type?: string; tool?: string; parameters?: Record<string, unknown>; content?: string; result?: string }
-                content?: string
-                error?: string
-              }
-              if (data.type === 'event' && data.event) {
-                const event = data.event
-                if (event.type === 'thinking' && event.content) {
-                  reasoning += (reasoning ? '\n' : '') + event.content
-                } else if (event.type === 'tool_call') {
-                  toolCalls.push({
-                    id: `call-${toolCalls.length}`,
-                    name: toolLabel(event.tool),
-                    args: event.parameters ?? {},
-                  })
-                } else if (event.type === 'tool_result') {
-                  const open = [...toolCalls].reverse().find((c) => c.name === toolLabel(event.tool) && c.result === undefined)
-                  if (open && event.result) {
-                    open.result = event.result.length > 600 ? `${event.result.slice(0, 600)}...` : event.result
-                  }
-                  if ((event.tool === 'web_search' || event.tool === 'search_california_law') && event.result) {
-                    const parsed = parseSearchResults(event.result)
-                    if (parsed.length > 0) sources = parsed
-                  }
-                }
-                applyParts()
-              } else if (data.type === 'response') {
-                text = data.content ?? ''
-                applyParts()
-              } else if (data.type === 'error') {
-                streamError = data.error ?? 'The research request failed.'
-              }
-            } catch {
-              /* skip a malformed SSE line */
-            }
-          }
+        if (!response.body) throw new Error('No response stream')
+        // readSse buffers partial frames and multi-byte characters across
+        // network chunks; a frame must never be parsed before it is whole.
+        for await (const frame of readSse(response.body)) {
+          const payload = parseSseFrame(frame)
+          if (payload === null) continue
+          if (applyResearchPayload(turn, payload, toolLabel)) applyParts()
         }
-        if (streamError) throw new Error(streamError)
+        if (turn.error) throw new Error(turn.error)
       } catch (error) {
         if (controller.signal.aborted) {
           updateThread(threadId, (t) => ({ ...t, running: false, updatedAt: Date.now() }))
@@ -365,10 +300,11 @@ export function AssistantChat() {
         return
       }
 
+      abortRefs.current.delete(threadId)
       updateThread(threadId, (t) => ({
         ...t,
         running: false,
-        sources: { ...t.sources, [assistantId]: sources },
+        sources: { ...t.sources, [assistantId]: turn.sources },
         updatedAt: Date.now(),
       }))
     },
@@ -408,17 +344,24 @@ export function AssistantChat() {
   )
 
   const reloadThread = useCallback(
-    (threadId: string) => {
+    (threadId: string, parentId?: string | null) => {
       const thread = threadsRef.current.find((t) => t.id === threadId)
       if (!thread || thread.running) return
-      const lastUserIdx = [...thread.messages].reverse().findIndex((m) => m.role === 'user')
-      if (lastUserIdx === -1) return
-      const userMessage = thread.messages[thread.messages.length - 1 - lastUserIdx]
+      // assistant-ui names the message a run is being regenerated from; fall
+      // back to the last question when the call comes from the message's own
+      // Regenerate button, which has no parent to hand over.
+      let cut = parentId ? thread.messages.findIndex((m) => m.id === parentId) : -1
+      if (cut === -1) {
+        const lastUserIdx = [...thread.messages].reverse().findIndex((m) => m.role === 'user')
+        if (lastUserIdx === -1) return
+        cut = thread.messages.length - 1 - lastUserIdx
+      }
+      const userMessage = thread.messages[cut]
       const userText = userMessage.content
         .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
         .map((p) => p.text)
         .join('')
-      const removedIds = new Set(thread.messages.slice(thread.messages.length - lastUserIdx).map((m) => m.id))
+      const removedIds = new Set(thread.messages.slice(cut + 1).map((m) => m.id))
       updateThread(threadId, (t) => {
         const sources = { ...t.sources }
         const errors = { ...t.errors }
@@ -428,13 +371,55 @@ export function AssistantChat() {
         }
         return {
           ...t,
-          messages: t.messages.slice(0, thread.messages.length - lastUserIdx),
+          messages: t.messages.slice(0, cut + 1),
           sources,
           errors,
           updatedAt: Date.now(),
         }
       })
       runSearch(threadId, userText, thread.scope || undefined)
+    },
+    [runSearch, updateThread],
+  )
+
+  /**
+   * Saving an edited question: everything after the edited message is dropped
+   * and the thread is asked again from there, so the answer below it is
+   * replaced rather than appended to.
+   */
+  const editThread = useCallback(
+    (threadId: string, parentId: string | null, text: string) => {
+      const trimmed = text.trim()
+      if (!trimmed) return
+      const thread = threadsRef.current.find((t) => t.id === threadId)
+      if (!thread || thread.running) return
+
+      const anchor = parentId ? thread.messages.findIndex((m) => m.id === parentId) : -1
+      const cut = anchor === -1 ? 0 : anchor + 1
+      const removedIds = new Set(thread.messages.slice(cut).map((m) => m.id))
+      const edited: ChatMessage = {
+        id: newId(),
+        role: 'user',
+        content: [{ type: 'text', text: trimmed }],
+        createdAt: new Date(),
+      }
+
+      updateThread(threadId, (t) => {
+        const sources = { ...t.sources }
+        const errors = { ...t.errors }
+        for (const id of removedIds) {
+          delete sources[id]
+          delete errors[id]
+        }
+        return {
+          ...t,
+          messages: [...t.messages.slice(0, cut), edited],
+          sources,
+          errors,
+          updatedAt: Date.now(),
+        }
+      })
+      runSearch(threadId, trimmed, thread.scope || undefined)
     },
     [runSearch, updateThread],
   )
@@ -481,9 +466,11 @@ export function AssistantChat() {
           key={current.id}
           thread={current}
           datasets={datasets}
+          voice={voice}
           onSendText={(text) => sendText(current.id, text)}
           onCancel={() => cancelRun(current.id)}
-          onReload={() => reloadThread(current.id)}
+          onReload={(parentId) => reloadThread(current.id, parentId)}
+          onEdit={(parentId, text) => editThread(current.id, parentId, text)}
           onScopeChange={(scope) => updateThread(current.id, (t) => ({ ...t, scope, updatedAt: Date.now() }))}
           onSetMessages={(messages) => updateThread(current.id, (t) => ({ ...t, messages: [...messages] }))}
           onOpenMobileNav={() => setMobileNavOpen(true)}
@@ -495,6 +482,9 @@ export function AssistantChat() {
           <ThreadList {...sidebarProps} />
         </SheetContent>
       </Sheet>
+      {/* Voice and transcription failures are reported here rather than
+          swallowed: an answer that cannot be read aloud should say so. */}
+      <Toaster position="bottom-center" />
     </div>
   )
 }

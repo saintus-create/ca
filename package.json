@@ -6,13 +6,15 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "NEXT_DIST_DIR=.next-dev next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "smoke": "node --experimental-strip-types scripts/smoke.mjs",
     "test:sse": "node --experimental-strip-types scripts/test-sse.mjs",
-    "test": "npm run test:sse && npm run smoke"
+    "test": "npm run test:sse && npm run test:chat && npm run test:ui && npm run smoke",
+    "test:chat": "node --experimental-strip-types scripts/test-chat-stream.mjs",
+    "test:ui": "node scripts/test-chat-ui.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.54.0",
@@ -74,11 +76,14 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@types/jsdom": "^30.0.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "esbuild": "^0.25.12",
     "eslint": "^9",
     "eslint-config-next": "^15.5.28",
+    "jsdom": "^26.1.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   },

@@ -25,6 +25,15 @@ function readSpeed(): number {
   return SPEECH_SPEEDS.includes(raw as (typeof SPEECH_SPEEDS)[number]) ? raw : 1
 }
 
+/**
+ * The preference as a plain value, for code outside React (the speech adapter
+ * reads it at the moment a Listen button is pressed, so a voice picked in the
+ * header applies to the next answer without re-mounting the thread runtime).
+ */
+export function readVoicePreference(): { voiceId: string | null; speed: number } {
+  return { voiceId: readVoice(), speed: readSpeed() }
+}
+
 export function useVoicePreference() {
   const [voiceId, setVoiceIdState] = useState<string | null>(null)
   const [speed, setSpeedState] = useState<number>(1)

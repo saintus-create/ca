@@ -519,6 +519,20 @@ async function main() {
     console.log(`  ready on ${APP_PORT}`)
 
     // ---------------------------------------------------------------------
+    section('Chat screen (server render)')
+    const home = await fetch(`${APP}/`)
+    const homeHtml = await home.text()
+    check('home page 200', home.status === 200, String(home.status))
+    check('renders the empty state', homeHtml.includes('Ask about California law'))
+    check('renders the composer', homeHtml.includes('Ask anything about California law'))
+    check('renders the thread list', homeHtml.includes('New thread'))
+    check(
+      'ships the app bundle',
+      /\/_next\/static\/chunks\/[^"]+\.js/.test(homeHtml),
+      'no script tag found'
+    )
+
+    // ---------------------------------------------------------------------
     section('Research run (SSE)')
     const research = await postJson('/api/open-researcher', { query: 'elements of negligence in california' })
     check('status 200', research.status === 200, `got ${research.status}`)
@@ -636,6 +650,18 @@ async function main() {
 
     // ---------------------------------------------------------------------
     section('Voice')
+    const status = await fetch(`${APP}/api/voice/status`)
+    const statusBody = await status.json()
+    check('voice status 200', status.status === 200, String(status.status))
+    check('voice status reports Cartesia', statusBody.configured === true, JSON.stringify(statusBody))
+    check('voice status reports transcription', statusBody.transcription === true, JSON.stringify(statusBody))
+    check('voice status resolves the default voice', statusBody.defaultVoiceId === 'voice-aaa', String(statusBody.defaultVoiceId))
+    check(
+      'voice status does not leak the key',
+      !JSON.stringify(statusBody).toLowerCase().includes('sk_test') && !('apiKey' in statusBody),
+      JSON.stringify(statusBody)
+    )
+
     const voices = await fetch(`${APP}/api/voice/voices`)
     const voicesBody = await voices.json()
     check('voice list 200', voices.status === 200)

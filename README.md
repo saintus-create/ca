@@ -4,26 +4,28 @@
   <img src="https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExaGJncnpmamlzc3RnMzNpeXNwcGk1Z3kwemd6c2w1ZDdxcGZwdWJwdiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/hhNLykzY76wu7oGFU0/giphy.gif" alt="California Law Demo" width="100%">
 </p>
 
-A powerful AI-powered research tool that combines Firecrawl's web scraping capabilities with advanced AI reasoning to help you search, analyze, and understand web content.
+California legal research over the full text of the California codes, Rules of Court and Judicial Council forms, answered with citations to the section. The chat is built on [assistant-ui](https://www.assistant-ui.com/).
 
 ## Features
 
-- **AI-Powered Search**: Intelligently search and analyze web content
-- **Real-time Web Scraping**: Powered by Firecrawl for accurate, up-to-date information
-- **Thinking Display**: See the AI's reasoning process in real-time
-- **Smart Citations**: Automatic source tracking and citation generation
-- **Split View Interface**: Side-by-side view of chat and search results
-- **Voice Playback**: Listen to completed answers with Cartesia Sonic text-to-speech
+- **California law corpus**: Every code section, court rule and Judicial Council form, searched by the research agent before it answers
+- **Cited answers**: every substantive claim points at the section it relies on; citation markers open the source
+- **Research steps**: the model's thinking and each tool call are shown as they happen, not after the fact
+- **Streaming**: answers render as they arrive, through a parser that survives frames split across network chunks
+- **Threads**: several conversations, kept in the browser
+- **Listen**: answers read aloud with Cartesia Sonic, streaming so playback starts on the first sentence; the voice and speed are chosen in the composer
+- **Ask by voice**: dictation in the composer through the browser's recogniser, or Cartesia Ink on browsers without one
+- **Accessible**: assistant-ui primitives, keyboard-usable composer, live dictation status
 
 ## Prerequisites
 
-- Node.js 18+ and npm
+- Node.js 20+ and npm
 - API Keys (at least one model-provider key required):
   - `SARVAM_API_KEY` - For AI functionality (default model: `sarvam-105b`)
   - `VENICE_API_KEY` - Optional uncensored alternative provider
   - `ANTHROPIC_API_KEY` - Optional fallback provider (Claude)
   - `FIRECRAWL_API_KEY` - Optional for web search/scraping (can be added via UI); California corpus research works without it
-  - `CARTESIA_API_KEY` - Optional for voice playback of completed answers
+  - `CARTESIA_API_KEY` - Optional. Enables Cartesia voices for Listen and Cartesia Ink for dictation; without it Listen falls back to the browser's own voice
 
 ## Quick Start
 
@@ -45,8 +47,9 @@ A powerful AI-powered research tool that combines Firecrawl's web scraping capab
    
    Edit `.env.local` and add your API keys:
    ```
-   ANTHROPIC_API_KEY=your_anthropic_api_key
-   FIRECRAWL_API_KEY=your_firecrawl_api_key  # Optional, can be added via UI
+   SARVAM_API_KEY=your_sarvam_api_key
+   FIRECRAWL_API_KEY=your_firecrawl_api_key   # Optional, can be added via UI
+   CARTESIA_API_KEY=your_cartesia_api_key     # Optional, enables Cartesia voice
    ```
 
 4. **Run the development server**
@@ -71,8 +74,9 @@ A powerful AI-powered research tool that combines Firecrawl's web scraping capab
 | `VENICE_MODEL` | No | Venice model id (default `venice-uncensored-1-2`) |
 | `ANTHROPIC_API_KEY` | No | Fallback provider, used when no Sarvam key is set |
 | `ANTHROPIC_MODEL` | No | Default `claude-opus-4-8` |
-| `CARTESIA_API_KEY` | No | Cartesia key; enables the Listen button (Sonic TTS) |
-| `CARTESIA_MODEL` | No | Cartesia model id (default `sonic-3.6`) |
+| `CARTESIA_API_KEY` | No | Cartesia key; enables Cartesia voices for Listen and Ink for dictation |
+| `CARTESIA_TTS_MODEL` | No | Cartesia TTS model id (default `sonic-3.6`) |
+| `CARTESIA_STT_MODEL` | No | Cartesia STT model id (default `ink-whisper`) |
 | `CARTESIA_VOICE_ID` | No | Cartesia voice id (defaults to Skylar — Friendly Guide) |
 | `CARTESIA_VERSION` | No | Cartesia API version header (default `2026-08-14`) |
 
@@ -83,29 +87,35 @@ A powerful AI-powered research tool that combines Firecrawl's web scraping capab
 - **Sarvam API Key**: Visit [Sarvam AI dashboard](https://dashboard.sarvam.ai)
 - **Firecrawl API Key**: Visit [Firecrawl](https://www.firecrawl.dev/)
 - **Venice API Key** (optional uncensored provider): Visit [Venice API settings](https://venice.ai/settings/api)
-- **Cartesia API Key** (optional voice playback): Visit [Cartesia Playground](https://play.cartesia.ai/)
+- **Cartesia API Key** (optional voice): Visit [Cartesia Playground](https://play.cartesia.ai/)
 - **Anthropic API Key** (optional fallback): Visit [Anthropic Console](https://console.anthropic.com/)
 
 ## Usage
 
-1. **Basic Search**: Enter your query in the chat interface
-2. **Web Analysis**: The AI will automatically search and analyze relevant web content
-3. **Follow-up Questions**: Ask follow-up questions to dive deeper
-4. **View Sources**: Click on citations to see source information
+1. **Ask**: type a question (or press the microphone and speak it) and get an answer cited to the section
+2. **Scope**: restrict a thread to one code or dataset from the Search in menu
+3. **Sources**: hover a citation marker like [1] to see the page or section behind it
+4. **Listen**: press Listen under any answer to hear it with the Cartesia voice picked in the composer
+5. **Threads**: keep several lines of research; they survive a reload
 
 ## Project Structure
 
 ```
-open-research/
-├── app/
-│   ├── api/              # API routes
-│   ├── open-researcher/  # Main application page
-│   └── layout.tsx        # Root layout
-├── components/           # React components
-│   ├── ui/              # UI components
-│   └── thinking-chat.tsx # Main chat interface
-├── lib/                 # Utility functions
-└── public/              # Static assets
+app/
+├── api/                     # Route handlers (research, corpus, voice)
+├── page.tsx                 # The chat application
+└── layout.tsx               # Root layout
+components/
+├── assistant-chat/          # The assistant-ui chat: store, thread, messages, voice controls
+├── voice-picker.tsx         # Cartesia voice and speed
+└── ui/                      # shadcn/ui primitives
+lib/
+├── chat-stream.ts           # SSE payloads -> one assistant turn
+├── sse.ts                   # SSE frame reader
+├── voice/                   # Cartesia-backed assistant-ui speech + dictation adapters
+└── open-researcher-agent.ts # The research loop
+scripts/                     # SSE, chat-stream, UI (jsdom) and end-to-end tests
+public/corpus/               # The dataset (not in git)
 ```
 
 ## Development
@@ -122,11 +132,25 @@ npm start
 
 # Run linting
 npm run lint
+
+# Tests: SSE reader (8), chat stream reducer (12), the chat screen in a real
+# DOM via jsdom (21), then the built routes against local stand-ins (60).
+# `npm test` runs them in that order and needs `npm run build` first.
+npm test
+npm run test:sse
+npm run test:chat
+npm run test:ui
+npm run smoke
 ```
+
+See [docs/assistant-ui-verification.md](docs/assistant-ui-verification.md) for
+what the chat screen's tests cover and what they do not.
 
 ## Tech Stack
 
 - **Next.js 15** - React framework
+- **assistant-ui** - Chat primitives and the external-store runtime
+- **Cartesia** - Sonic text-to-speech and Ink speech-to-text
 - **TypeScript** - Type safety
 - **Tailwind CSS** - Styling
 - **Sarvam AI (`sarvam-105b`)** - AI model (OpenAI-compatible chat completions)
@@ -148,5 +172,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Acknowledgments
 
 - Built with [Firecrawl](https://www.firecrawl.dev/) for powerful web scraping
+- Chat UI built with [assistant-ui](https://www.assistant-ui.com/)
+- Voice by [Cartesia](https://cartesia.ai/) (Sonic and Ink)
 - Powered by [Anthropic's Claude](https://www.anthropic.com/) for AI capabilities
 - UI components from [Radix UI](https://www.radix-ui.com/) and [shadcn/ui](https://ui.shadcn.com/)
