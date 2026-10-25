@@ -795,3 +795,13 @@
 @keyframes aurora-2 { 0% { transform: translate(12%, 10%) scale(1.1); } 50% { transform: translate(-14%, -6%) scale(0.9); } 100% { transform: translate(8%, -12%) scale(1.2); } }
 @keyframes aurora-3 { 0% { transform: translate(0%, 16%) scale(0.95); } 50% { transform: translate(10%, -10%) scale(1.15); } 100% { transform: translate(-12%, 4%) scale(1); } }
 @keyframes meteor { 0% { transform: rotate(var(--meteor-angle, 215deg)) translateX(0); opacity: 1; } 70% { opacity: 1; } 100% { transform: rotate(var(--meteor-angle, 215deg)) translateX(-600px); opacity: 0; } }
+
+
+/* Mobile chat layout: fit the narrow viewport and respect iPhone safe areas. */
+@media (max-width: 640px) {
+  html { font-size: 16px; }
+  body { overflow-x: clip; }
+  textarea, select, input { max-width: 100%; }
+  .markdown-content { overflow-wrap: anywhere; }
+  .markdown-content pre { max-width: 100%; }
+}

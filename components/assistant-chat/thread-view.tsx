@@ -3,7 +3,7 @@
 // Plain React thread view: no assistant-ui runtime. The store owns threads,
 // messages and the send loop; this file only renders them and the composer.
 import { useEffect, useRef, useState } from 'react'
-import { ArrowUp, PanelLeft, Square } from 'lucide-react'
+import { ArrowUp, ChevronDown, PanelLeft, Square } from 'lucide-react'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
 import { ThinkingDots } from './thinking-dots'
 import type { ChatMessage, ChatMessagePart, ChatSource, ChatThread } from './types'
@@ -47,6 +47,28 @@ function UserMessageView({ message }: { message: ChatMessage }) {
     <div className="flex justify-end">
       <div className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-brand px-4 py-2.5 text-[13.5px] leading-relaxed text-white">
         {text}
+        <details className="mx-auto mt-2 w-full max-w-[760px] px-1 text-xs text-neutral-500 dark:text-neutral-400">
+          <summary className="flex cursor-pointer list-none items-center gap-1.5 py-1.5 [&::-webkit-details-marker]:hidden">
+            <ChevronDown className="size-3.5 transition-transform [[open]>&]:rotate-180" />
+            <span>{thread.scope ? `Search limited to ${datasets.find((d) => d.code === thread.scope)?.name ?? thread.scope}` : 'Limit search to a specific source (optional)'}</span>
+          </summary>
+          <label htmlFor="corpus-scope" className="sr-only">Limit search to a specific source</label>
+          <select
+            id="corpus-scope"
+            value={thread.scope}
+            onChange={(e) => onScopeChange(e.target.value)}
+            className="mb-2 w-full rounded-xl border border-black/[0.08] bg-white px-3 py-2.5 text-sm text-neutral-700 outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400 dark:border-white/[0.09] dark:bg-[#0B0B0D] dark:text-neutral-200"
+          >
+            <option value="">All California law (recommended)</option>
+            {groupDatasets(datasets).map(({ group, items }) => (
+              <optgroup key={group} label={group}>
+                {items.map((d) => (
+                  <option key={d.code} value={d.code}>{d.name}</option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </details>
       </div>
     </div>
   )
@@ -193,9 +215,9 @@ export function ThreadView({
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="min-h-0 flex-1 overflow-y-auto">
         {isEmpty ? (
-          <div className="flex h-full flex-col justify-center px-4">
-            <div className="mx-auto w-full max-w-[560px] space-y-6">
-              <h2 className="text-left text-[28px] font-medium leading-tight tracking-[-0.5px] text-neutral-900 dark:text-neutral-50">
+          <div className="flex min-h-full flex-col justify-center px-4 py-8 sm:px-6">
+            <div className="mx-auto w-full max-w-[560px] space-y-5 sm:space-y-6">
+              <h2 className="text-left text-[25px] font-medium leading-tight tracking-[-0.5px] text-neutral-900 dark:text-neutral-50 sm:text-[28px]">
                 Ask about California law
               </h2>
               <div className="flex flex-wrap justify-start gap-2">
@@ -204,7 +226,7 @@ export function ThreadView({
                     key={s.id}
                     type="button"
                     onClick={() => onSendText(s.prompt)}
-                    className="rounded-full border border-black/[0.08] bg-white px-4 py-2 text-left text-sm text-neutral-600 shadow-xs transition-colors hover:text-neutral-900 dark:border-white/[0.09] dark:bg-[#0B0B0D] dark:text-neutral-300 dark:hover:text-neutral-50"
+                    className="max-w-full rounded-2xl border border-black/[0.08] bg-white px-3.5 py-2.5 text-left text-[13px] leading-snug text-neutral-600 shadow-xs transition-colors hover:text-neutral-900 sm:rounded-full sm:px-4 sm:py-2 sm:text-sm dark:border-white/[0.09] dark:bg-[#0B0B0D] dark:text-neutral-300 dark:hover:text-neutral-50"
                   >
                     {s.label}
                   </button>
@@ -232,48 +254,26 @@ export function ThreadView({
         )}
       </div>
 
-      <div className="shrink-0 px-4 pb-4 sm:px-6">
+      <div className="shrink-0 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-6 sm:pb-4">
         <div className="mx-auto w-full max-w-[760px]">
           <form
             onSubmit={(e) => {
               e.preventDefault()
               submit()
             }}
-            className="rounded-2xl border border-black/[0.08] bg-white shadow-xs dark:border-white/[0.09] dark:bg-[#0B0B0D]"
+            className="min-w-0 rounded-2xl border border-black/[0.08] bg-white shadow-xs dark:border-white/[0.09] dark:bg-[#0B0B0D]"
           >
-            <div className="flex w-full flex-wrap items-center justify-between gap-2 border-b border-black/[0.06] px-3.5 py-2 dark:border-white/[0.07]">
-              <span className="flex min-w-0 flex-1 items-center gap-2">
-                <button
-                  type="button"
-                  onClick={onOpenMobileNav}
-                  aria-label="Threads"
-                  className="grid size-7 shrink-0 place-items-center rounded-full text-neutral-500 transition-colors hover:bg-black/[0.04] hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-white/[0.06] dark:hover:text-neutral-50 lg:hidden"
-                >
-                  <PanelLeft className="size-4" />
-                </button>
-                <label
-                  htmlFor="corpus-scope"
-                  className="shrink-0 whitespace-nowrap text-[12.5px] text-neutral-500 dark:text-neutral-400"
-                >
-                  Search in
-                </label>
-                <select
-                  id="corpus-scope"
-                  value={thread.scope}
-                  onChange={(e) => onScopeChange(e.target.value)}
-                  className="min-w-0 flex-1 rounded-full border border-black/[0.08] bg-white px-3 py-1 text-[12.5px] text-neutral-700 outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400 dark:border-white/[0.09] dark:bg-[#0B0B0D] dark:text-neutral-200"
-                >
-                  <option value="">All California law</option>
-                  {groupDatasets(datasets).map(({ group, items }) => (
-                    <optgroup key={group} label={group}>
-                      {items.map((d) => (
-                        <option key={d.code} value={d.code}>
-                          {d.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
+            <div className="flex items-center gap-2 border-b border-black/[0.06] px-3 py-2 dark:border-white/[0.07] sm:px-3.5">
+              <button
+                type="button"
+                onClick={onOpenMobileNav}
+                aria-label="Threads"
+                className="grid size-7 shrink-0 place-items-center rounded-full text-neutral-500 transition-colors hover:bg-black/[0.04] hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-white/[0.06] dark:hover:text-neutral-50 lg:hidden"
+              >
+                <PanelLeft className="size-4" />
+              </button>
+              <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                {thread.scope ? 'Specific source selected' : 'AI searches all California law'}
               </span>
             </div>
             <textarea
@@ -288,7 +288,7 @@ export function ThreadView({
                 }
               }}
               placeholder={isEmpty ? 'Ask anything about California law' : 'Ask a follow-up'}
-              className="w-full resize-none bg-transparent px-4 pt-3 text-[15px] text-neutral-900 outline-hidden placeholder:text-neutral-400 dark:text-neutral-100"
+              className="block max-h-40 w-full resize-none bg-transparent px-3.5 pt-3 text-base leading-relaxed text-neutral-900 outline-hidden placeholder:text-neutral-400 sm:px-4 dark:text-neutral-100"
             />
             <div className="flex justify-end px-3 pb-3 pt-1">
               {thread.running ? (
