@@ -1,6 +1,7 @@
-// Bisect step 3 stub: stands in for the real thread view while the store is tested.
+// Bisect step 4: renders only the @assistant-ui/react test component.
 import type { ChatMessage, ChatThread } from './types'
 import type { DatasetInfo } from '@/components/corpus/datasets'
+import { AssistantTest } from './assistant-test'
 
 type ThreadViewProps = {
   thread: ChatThread
@@ -14,5 +15,5 @@ type ThreadViewProps = {
 }
 
 export function ThreadView(_props: ThreadViewProps) {
-  return <div>Thread view stub</div>
+  return <AssistantTest />
 }
