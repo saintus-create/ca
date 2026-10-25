@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Plus, X } from 'lucide-react'
 import { Sidebar, SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { ThreadView } from './thread-view'
+import { VoiceHead } from './voice-head'
 import type { ChatMessage, ChatMessagePart, ChatSource, ChatThread } from './types'
 import { fetchDatasets, type DatasetInfo } from '@/components/corpus/datasets'
 
@@ -486,6 +487,11 @@ export function AssistantChat() {
           />
         </SidebarInset>
       </div>
+      <VoiceHead
+        thread={current}
+        onSendText={(text) => sendText(current.id, text)}
+        onCancel={() => cancelRun(current.id)}
+      />
     </SidebarProvider>
   )
 }
