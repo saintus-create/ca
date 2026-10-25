@@ -12,17 +12,17 @@ import { groupDatasets, type DatasetInfo } from '@/components/corpus/datasets'
 const SUGGESTED = [
   {
     id: 'deposit',
-    label: 'How many days does a landlord have to return a security deposit?',
+    label: 'Security deposits',
     prompt: 'How many days does a landlord have to return a security deposit after a tenant moves out?',
   },
   {
     id: 'limitations',
-    label: 'Statute of limitations for a written contract?',
+    label: 'Contract deadlines',
     prompt: 'What is the statute of limitations for breach of a written contract in California?',
   },
   {
     id: 'car-search',
-    label: 'When can an officer search a car without a warrant?',
+    label: 'Warrantless car searches',
     prompt: 'When can an officer search a car without a warrant?',
   },
 ]
@@ -47,28 +47,6 @@ function UserMessageView({ message }: { message: ChatMessage }) {
     <div className="flex justify-end">
       <div className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-brand px-4 py-2.5 text-[13.5px] leading-relaxed text-white">
         {text}
-        <details className="mx-auto mt-2 w-full max-w-[760px] px-1 text-xs text-neutral-500 dark:text-neutral-400">
-          <summary className="flex cursor-pointer list-none items-center gap-1.5 py-1.5 [&::-webkit-details-marker]:hidden">
-            <ChevronDown className="size-3.5 transition-transform [[open]>&]:rotate-180" />
-            <span>{thread.scope ? `Search limited to ${datasets.find((d) => d.code === thread.scope)?.name ?? thread.scope}` : 'Limit search to a specific source (optional)'}</span>
-          </summary>
-          <label htmlFor="corpus-scope" className="sr-only">Limit search to a specific source</label>
-          <select
-            id="corpus-scope"
-            value={thread.scope}
-            onChange={(e) => onScopeChange(e.target.value)}
-            className="mb-2 w-full rounded-xl border border-black/[0.08] bg-white px-3 py-2.5 text-sm text-neutral-700 outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400 dark:border-white/[0.09] dark:bg-[#0B0B0D] dark:text-neutral-200"
-          >
-            <option value="">All California law (recommended)</option>
-            {groupDatasets(datasets).map(({ group, items }) => (
-              <optgroup key={group} label={group}>
-                {items.map((d) => (
-                  <option key={d.code} value={d.code}>{d.name}</option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
-        </details>
       </div>
     </div>
   )
@@ -226,7 +204,7 @@ export function ThreadView({
                     key={s.id}
                     type="button"
                     onClick={() => onSendText(s.prompt)}
-                    className="max-w-full rounded-2xl border border-black/[0.08] bg-white px-3.5 py-2.5 text-left text-[13px] leading-snug text-neutral-600 shadow-xs transition-colors hover:text-neutral-900 sm:rounded-full sm:px-4 sm:py-2 sm:text-sm dark:border-white/[0.09] dark:bg-[#0B0B0D] dark:text-neutral-300 dark:hover:text-neutral-50"
+                    className="max-w-full rounded-full border border-black/[0.08] bg-white px-3 py-2 text-left text-[13px] leading-snug text-neutral-600 shadow-xs transition-colors hover:text-neutral-900 sm:px-4 sm:py-2 sm:text-sm dark:border-white/[0.09] dark:bg-[#0B0B0D] dark:text-neutral-300 dark:hover:text-neutral-50"
                   >
                     {s.label}
                   </button>
