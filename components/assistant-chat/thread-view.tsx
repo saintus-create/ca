@@ -35,8 +35,6 @@ type ThreadViewProps = {
   onCancel: () => void
   onReload: () => void
   onScopeChange: (scope: string) => void
-  onSetMessages: (messages: readonly ChatMessage[]) => void
-  onOpenMobileNav: () => void
 }
 
 function UserMessageView({ message }: { message: ChatMessage }) {
@@ -168,7 +166,6 @@ export function ThreadView({
   onCancel,
   onReload,
   onScopeChange,
-  onOpenMobileNav,
 }: ThreadViewProps) {
   const [input, setInput] = useState('')
   const inputRef = useRef<HTMLTextAreaElement>(null)
