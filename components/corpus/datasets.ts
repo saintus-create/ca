@@ -16,12 +16,15 @@ const NAMES: Record<string, string> = {
   CCP: 'Code of Civil Procedure',
   CIV: 'Civil Code',
   COM: 'Commercial Code',
+  CONS: 'California Constitution',
   CORP: 'Corporations Code',
   EDC: 'Education Code',
   ELEC: 'Elections Code',
   EVID: 'Evidence Code',
   FAC: 'Food and Agricultural Code',
   FAM: 'Family Code',
+  FGC: 'Fish and Game Code',
+  FIN: 'Financial Code',
   GOV: 'Government Code',
   HNC: 'Harbors and Navigation Code',
   HSC: 'Health and Safety Code',
@@ -31,6 +34,7 @@ const NAMES: Record<string, string> = {
   PCC: 'Public Contract Code',
   PEN: 'Penal Code',
   PRC: 'Public Resources Code',
+  PROB: 'Probate Code',
   PUC: 'Public Utilities Code',
   RTC: 'Revenue and Taxation Code',
   SHC: 'Streets and Highways Code',
@@ -42,6 +46,9 @@ const NAMES: Record<string, string> = {
   FORMS: 'Judicial Council Forms',
   BILLS: 'Legislation',
   FAM_CASES: 'Family Case Annotations',
+  DIRECTORY: 'Agency Directory',
+  'wp-digest': "West's California Digest",
+  WPDIGEST: "West's California Digest",
 }
 
 const GROUPS: Record<string, string> = {
