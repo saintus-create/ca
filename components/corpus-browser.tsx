@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { ArrowUp, Loader2 } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import {
   fetchDatasets,
   groupDatasets,
@@ -22,9 +21,10 @@ interface CorpusHit {
 
 /**
  * California Law directly, no agent involved. Built in the chat's own
- * visual language: the same white card and type sizes as the chat, so search
- * and chat read as one tool. Dataset names and source titles are shown in
- * sentence case; the stored titles are all caps.
+ * visual language: the search box and a flat code menu, grey section labels
+ * over plain code links with generous spacing, so search and chat read as
+ * one tool. Dataset names and source titles are shown in sentence case; the
+ * stored titles are all caps.
  */
 export function CorpusBrowser() {
   const [datasets, setDatasets] = useState<DatasetInfo[]>([])
@@ -78,7 +78,7 @@ export function CorpusBrowser() {
           <div className="mt-8 rounded-2xl border border-black/[0.08] bg-white shadow-xs dark:border-white/[0.09] dark:bg-[#0B0B0D]">
             <form
               onSubmit={runSearch}
-              className="flex items-center gap-2 border-b border-black/[0.06] px-3.5 py-2.5 dark:border-white/[0.07]"
+              className="flex items-center gap-2 px-3.5 py-2.5"
             >
               <input
                 type="text"
@@ -105,36 +105,41 @@ export function CorpusBrowser() {
               </button>
             </form>
 
-            <div className="space-y-4 px-3.5 py-4">
-              {groupDatasets(datasets).map(({ group, items }) => (
-                <div key={group}>
-                  <p className="px-1.5 text-[13px] font-medium text-neutral-500 dark:text-neutral-400">
-                    {group}
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {items.map((d) => {
-                      const active = selected === d.code
-                      return (
-                        <button
-                          key={d.code}
-                          type="button"
-                          onClick={() => setSelected(active ? '' : d.code)}
-                          aria-pressed={active}
-                          className={cn(
-                            'rounded-full border px-3 py-1.5 text-[12.5px] transition-colors',
-                            active
-                              ? 'border-transparent bg-brand text-white'
-                              : 'border-black/[0.08] bg-white text-neutral-600 hover:border-black/[0.16] hover:text-neutral-900 dark:border-white/[0.1] dark:bg-white/[0.03] dark:text-neutral-300 dark:hover:text-neutral-50',
-                          )}
-                        >
-                          {d.name}
-                        </button>
-                      )
-                    })}
-                  </div>
+          </div>
+
+          <div className="mt-12 space-y-10">
+            {groupDatasets(datasets).map(({ group, items }) => (
+              <div key={group}>
+                <p className="text-[13px] text-neutral-500 dark:text-neutral-400">
+                  {group}
+                </p>
+                <div className="mt-3">
+                  {items.map((d) => {
+                    const active = selected === d.code
+                    return (
+                      <button
+                        key={d.code}
+                        type="button"
+                        onClick={() => setSelected(active ? '' : d.code)}
+                        aria-pressed={active}
+                        className={`flex w-full items-center gap-2.5 py-2 text-left text-[17px] transition-colors ${
+                          active
+                            ? 'text-[#8a6d1a] dark:text-[#d3ab55]'
+                            : 'text-neutral-900 hover:text-neutral-500 dark:text-neutral-50 dark:hover:text-neutral-400'
+                        }`}
+                      >
+                        <span
+                          className={`size-1.5 shrink-0 rounded-full ${
+                            active ? 'bg-[#8a6d1a] dark:bg-[#d3ab55]' : 'bg-transparent'
+                          }`}
+                        />
+                        {d.name}
+                      </button>
+                    )
+                  })}
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>

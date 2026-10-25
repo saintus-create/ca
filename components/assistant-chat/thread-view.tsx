@@ -241,8 +241,8 @@ export function ThreadView({
           >
             <div className="flex items-center gap-2 border-b border-black/[0.06] px-3 py-2 dark:border-white/[0.07] sm:px-3.5">
               <SidebarTrigger
-                aria-label="Toggle thread history"
-                className="size-8 shrink-0 rounded-full text-neutral-500 hover:bg-black/[0.04] hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-white/[0.06] dark:hover:text-neutral-50"
+                aria-label="Threads"
+                className="grid size-7 shrink-0 place-items-center rounded-full text-neutral-500 transition-colors hover:bg-black/[0.04] hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-white/[0.06] dark:hover:text-neutral-50 lg:hidden"
               />
               <span className="text-xs text-neutral-500 dark:text-neutral-400">
                 {thread.scope ? 'Specific source selected' : 'AI searches all California law'}
