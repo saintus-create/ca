@@ -170,7 +170,7 @@ const tools: ToolDefinition[] = [
   },
   {
     name: "search_california_law",
-    description: "Search California law: the full text of the California codes, including Penal, Civil, Family, Evidence, Health and Safety, and Government, plus the California Rules of Court, judicial forms, legislation, and case law annotations. Use this for any question about California law, and use it alongside web_search. For the actual statutory text, California law is the primary source. Optionally pass a dataset code such as PEN, CIV, FAM, EVID, CCP, GOV, HSC, WIC, BPC, or VEH to search one code.",
+    description: "Search the local California Legislative Information corpus: the full text of the California codes, including Penal, Civil, Family, Evidence, Health and Safety, and Government, plus the California Rules of Court, judicial forms, legislation, and case law annotations held on this site. Use this for any question about California law, and use it alongside web_search. For the actual statutory text, this corpus is the primary source. Optionally pass a dataset code such as PEN, CIV, FAM, EVID, CCP, GOV, HSC, WIC, BPC, or VEH to search one code.",
     input_schema: {
       type: "object",
       properties: {
@@ -184,7 +184,7 @@ const tools: ToolDefinition[] = [
         },
         limit: {
           type: "number",
-          description: "Number of records to return",
+          description: "Number of corpus records to return",
           default: 5
         }
       },
@@ -655,7 +655,7 @@ function systemPromptFor(toolset: ToolDefinition[]): string {
   const hasWeb = toolset.some((tool) => tool.name === 'web_search');
   return hasWeb
     ? SYSTEM_PROMPT
-    : `${SYSTEM_PROMPT}\n\nNote: web search and scraping are not configured in this deployment. Do not attempt to use them. Answer from California law alone with search_california_law, and if a question genuinely needs live web data, say so plainly instead of guessing.`;
+    : `${SYSTEM_PROMPT}\n\nNote: web search and scraping are not configured in this deployment. Do not attempt to use them. Answer from the California corpus alone with search_california_law, and if a question genuinely needs live web data, say so plainly instead of guessing.`;
 }
 
 // Execute tool based on name
@@ -663,7 +663,7 @@ export async function executeTool(toolName: string, input: Record<string, unknow
   switch (toolName) {
     case 'web_search':
       if (!process.env.FIRECRAWL_API_KEY) {
-        return { content: 'Web search is not configured in this deployment. Use search_california_law against California law instead.' };
+        return { content: 'Web search is not configured in this deployment. Use search_california_law against the California corpus instead.' };
       }
       return await executeWebSearch(
         input.query as string, 
@@ -673,7 +673,7 @@ export async function executeTool(toolName: string, input: Record<string, unknow
       );
     case 'deep_scrape':
       if (!process.env.FIRECRAWL_API_KEY) {
-        return { content: 'Web scraping is not configured in this deployment. Use search_california_law against California law instead.' };
+        return { content: 'Web scraping is not configured in this deployment. Use search_california_law against the California corpus instead.' };
       }
       return await executeDeepScrape(
         input.source_url as string,
@@ -699,15 +699,15 @@ export async function executeTool(toolName: string, input: Record<string, unknow
 // Research loop
 // ---------------------------------------------------------------------------
 
-const SYSTEM_PROMPT = `You are a California legal research assistant. You have one tool, search_california_law, which searches California law: the full text of the California codes (Penal, Civil, Family, Evidence, Health & Safety, Government and every other code), the California Rules of Court, Judicial Council forms, legislation, and case law annotations.
+const SYSTEM_PROMPT = `You are a California legal research assistant. You have one tool, search_california_law, which searches a local corpus holding the full text of the California codes (Penal, Civil, Family, Evidence, Health & Safety, Government and every other code), the California Rules of Court, Judicial Council forms, legislation, and case law annotations.
 
 How to work:
-- Search California law before answering any question about California law. Prefer the statutory text over your own recollection, always.
+- Search the corpus before answering any question about California law. Prefer the statutory text over your own recollection, always.
 - One search is almost never enough. Research the way a careful lawyer would: start with the question in plain language, then search again in statutory phrasing, again by the likely code and section number, and again with synonyms the code itself would use. Ask for more results (limit 8 to 10) whenever the topic is broad.
 - Look across the datasets that touch the question. A tenancy question may live in the Civil Code, the Code of Civil Procedure and the Rules of Court at once; a criminal question may need the Penal Code, the Evidence Code and the Vehicle Code. Search each of them.
 - Chase cross references. When a section names another section, a definition, an exception or a penalty provision, search for that section too and read it before you rely on the first one.
 - Read the full text that comes back, including every subdivision. Note which subdivision does the work. Case annotations are summaries of decisions, not the law itself; treat them as pointers and say when you are relying on one.
-- If the results are thin, off point, or only snippets of what you need, reformulate and search again rather than answering from too little. If California law genuinely does not answer the question, say so plainly rather than guessing.
+- If the results are thin, off point, or only snippets of what you need, reformulate and search again rather than answering from too little. If the corpus genuinely does not answer the question, say so plainly rather than guessing.
 
 How to answer:
 - Be comprehensive. A basic answer states the rule; a complete answer covers what a careful researcher would check. Lead with the direct answer in plain language, then give the authority behind it, quoting the operative language and citing the section for every substantive claim in the form "CIV § 1950.5".
@@ -717,7 +717,7 @@ How to answer:
 
 Say that this is not legal advice when a question turns on someone's specific circumstances.
 
-Writing style: use plain, modern typography. Do not use bold or italic markdown. Do not use all caps for emphasis. Do not use em dashes; write plain sentences instead. Keep parentheses rare. Do not use bullet points; when you need to enumerate, use numbered items or write the items as separate sentences. Never mention internal tool or function names and never use underscore names; refer to your sources in plain words, for example California law or the web. Use a short heading only when it genuinely helps the reader, and quote statutory text exactly as written in the section.`;
+Writing style: use plain, modern typography. Do not use bold or italic markdown. Do not use all caps for emphasis. Do not use em dashes; write plain sentences instead. Keep parentheses rare. Do not use bullet points; when you need to enumerate, use numbered items or write the items as separate sentences. Never mention internal tool or function names and never use underscore names; refer to your sources in plain words, for example the California Legislative Information corpus or the web. Use a short heading only when it genuinely helps the reader, and quote statutory text exactly as the corpus gives it.`;
 
 type ResearchEvent = { type: string; [key: string]: unknown };
 
@@ -742,7 +742,7 @@ async function runResearch(
   for (let step = 0; step < MAX_RESEARCH_STEPS; step++) {
     const toolset = availableTools();
     const system = scopeDataset
-      ? `${systemPromptFor(toolset)}\n\nScope: the user has restricted this conversation to the ${scopeDataset} dataset. Every California law search is limited to it. If the question falls outside that dataset, say so plainly instead of guessing.`
+      ? `${systemPromptFor(toolset)}\n\nScope: the user has restricted this conversation to the ${scopeDataset} dataset. Every corpus search is limited to it. If the question falls outside that dataset, say so plainly instead of guessing.`
       : systemPromptFor(toolset);
     const result = await createChat({
       system,

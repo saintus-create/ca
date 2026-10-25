@@ -22,7 +22,8 @@ interface CorpusHit {
 
 /**
  * California Law directly, no agent involved. Built in the chat's own
- * visual language: the same white card and type sizes as the chat, so search
+ * visual language: the same white card on the charcoal band, the same chips
+ * as the chat's suggestions, the same type sizes as its answers, so search
  * and chat read as one tool. Dataset names and source titles are shown in
  * sentence case; the stored titles are all caps.
  */
@@ -37,7 +38,7 @@ export function CorpusBrowser() {
   useEffect(() => {
     fetchDatasets()
       .then(setDatasets)
-      .catch(() => setError('The California law index could not be loaded.'))
+      .catch(() => setError('The corpus index could not be loaded.'))
   }, [])
 
   const runSearch = async (e?: React.FormEvent) => {
@@ -95,7 +96,7 @@ export function CorpusBrowser() {
                 type="submit"
                 disabled={isLoading || !query.trim()}
                 aria-label="Search California Law"
-                className="grid size-8 shrink-0 place-items-center rounded-full bg-brand text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+                className="grid size-8 shrink-0 place-items-center rounded-full bg-neutral-900 text-white transition-opacity hover:opacity-90 disabled:opacity-40 dark:bg-neutral-100 dark:text-neutral-900"
               >
                 {isLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -123,7 +124,7 @@ export function CorpusBrowser() {
                           className={cn(
                             'rounded-full border px-3 py-1.5 text-[12.5px] transition-colors',
                             active
-                              ? 'border-transparent bg-brand text-white'
+                              ? 'border-transparent bg-[#22364a] text-white dark:bg-[#33506b]'
                               : 'border-black/[0.08] bg-white text-neutral-600 hover:border-black/[0.16] hover:text-neutral-900 dark:border-white/[0.1] dark:bg-white/[0.03] dark:text-neutral-300 dark:hover:text-neutral-50',
                           )}
                         >
