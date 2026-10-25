@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Plus, X } from 'lucide-react'
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
+import { Sidebar, SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { ThreadView } from './thread-view'
 import type { ChatMessage, ChatMessagePart, ChatSource, ChatThread } from './types'
 import { fetchDatasets, type DatasetInfo } from '@/components/corpus/datasets'
@@ -185,7 +185,6 @@ export function AssistantChat() {
   const [threads, setThreads] = useState<ChatThread[]>(() => [freshThread()])
   const [currentId, setCurrentId] = useState<string | null>(null)
   const [datasets, setDatasets] = useState<DatasetInfo[]>([])
-  const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [loaded, setLoaded] = useState(false)
   const abortRefs = useRef(new Map<string, AbortController>())
   const threadsRef = useRef(threads)
@@ -443,7 +442,6 @@ export function AssistantChat() {
     const thread = freshThread()
     setThreads((prev) => [thread, ...prev])
     setCurrentId(thread.id)
-    setMobileNavOpen(false)
   }, [])
 
   const deleteThread = useCallback(
@@ -465,36 +463,30 @@ export function AssistantChat() {
     currentId: current.id,
     onSelect: (id: string) => {
       setCurrentId(id)
-      setMobileNavOpen(false)
     },
     onNew: newThread,
     onDelete: deleteThread,
   }
 
   return (
-    <div className="flex min-h-0 flex-1">
-      <aside className="hidden w-64 shrink-0 flex-col border-r border-black/[0.08] dark:border-white/[0.09] lg:flex">
-        <ThreadList {...sidebarProps} />
-      </aside>
-      <div className="flex min-h-0 flex-1 flex-col">
-        <ThreadView
-          key={current.id}
-          thread={current}
-          datasets={datasets}
-          onSendText={(text) => sendText(current.id, text)}
-          onCancel={() => cancelRun(current.id)}
-          onReload={() => reloadThread(current.id)}
-          onScopeChange={(scope) => updateThread(current.id, (t) => ({ ...t, scope, updatedAt: Date.now() }))}
-          onSetMessages={(messages) => updateThread(current.id, (t) => ({ ...t, messages: [...messages] }))}
-          onOpenMobileNav={() => setMobileNavOpen(true)}
-        />
-      </div>
-      <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
-        <SheetContent side="left" className="w-72 p-0">
-          <SheetTitle className="sr-only">Threads</SheetTitle>
+    <SidebarProvider defaultOpen>
+      <div className="flex h-full min-h-0 w-full">
+        <Sidebar side="left" collapsible="offcanvas" className="border-r border-black/[0.08] dark:border-white/[0.09]">
           <ThreadList {...sidebarProps} />
-        </SheetContent>
-      </Sheet>
-    </div>
-  )
+        </Sidebar>
+        <SidebarInset className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <ThreadView
+            key={current.id}
+            thread={current}
+            datasets={datasets}
+            onSendText={(text) => sendText(current.id, text)}
+            onCancel={() => cancelRun(current.id)}
+            onReload={() => reloadThread(current.id)}
+            onScopeChange={(scope) => updateThread(current.id, (t) => ({ ...t, scope, updatedAt: Date.now() }))}
+            onSetMessages={(messages) => updateThread(current.id, (t) => ({ ...t, messages: [...messages] }))}
+            onOpenMobileNav={() => {}}
+          />
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
 }
