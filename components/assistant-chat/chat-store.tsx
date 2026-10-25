@@ -489,4 +489,5 @@ export function AssistantChat() {
         </SidebarInset>
       </div>
     </SidebarProvider>
+  )
 }
