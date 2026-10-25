@@ -277,7 +277,7 @@ export function VoiceHead({
   }
 
   return (
-    <div className="fixed bottom-24 right-4 z-50 flex flex-col items-end gap-2 sm:bottom-28">
+    <div className="fixed bottom-48 right-4 z-50 flex flex-col items-end gap-2 sm:bottom-28">
       {state !== 'idle' && (
         <div className="w-64 max-w-[70vw] rounded-2xl border border-black/[0.08] bg-white p-3 text-sm leading-relaxed text-neutral-700 shadow-lg dark:border-white/[0.09] dark:bg-[#0B0B0D] dark:text-neutral-300">
           {state === 'listening' && (transcript || 'Listening…')}
