@@ -61,7 +61,7 @@ export function ChatEmptyState({
               onClick={() => onSelectPrompt?.(prompt)}
               style={{ animationDelay: `${Math.min(index, 5) * 50}ms` }}
               className={cn(
-                'rounded-full border border-black/[0.08] bg-white px-3 py-1.5 text-[12.5px] text-neutral-600',
+                'rounded-full border border-border/80 bg-card px-3 py-1.5 text-[12.5px] text-neutral-600',
                 'transition-[color,border-color,transform] duration-150 active:scale-[0.96]',
                 'hover:border-black/[0.16] hover:bg-black/[0.02] hover:text-neutral-900',
                 'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400',
