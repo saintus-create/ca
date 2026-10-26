@@ -21,7 +21,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
       {streaming && (
         <span
           aria-hidden="true"
-          className="ml-0.5 inline-block h-[1em] w-[0.5ch] animate-pulse bg-[#8a6d1a] align-baseline"
+          className="ml-0.5 inline-block h-[1em] w-[0.5ch] animate-pulse bg-citation align-baseline"
         />
       )}
       {sources.length > 0 && <CitationTooltip sources={sources} />}
