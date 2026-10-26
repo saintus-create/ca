@@ -63,8 +63,11 @@ async function readCorpusFile(rel: string): Promise<string> {
   // disk). On serverless hosts public/ files are served as static
   // assets but are NOT present inside the function, so fall back to
   // fetching the file over HTTP from, in order: an explicit override,
-  // this deployment's own production URL, its deployment URL, and
-  // finally the public GitHub repo (the corpus lives there too).
+  // this deployment's own production URL, and its deployment URL.
+  //
+  // Deliberately no third-party fallback: the corpus must come from this
+  // deployment, never from an external repository, or the app would keep
+  // working off a copy it does not control.
   try {
     return await readFile(path.join(CORPUS_DIR, rel), 'utf8');
   } catch {
@@ -75,7 +78,6 @@ async function readCorpusFile(rel: string): Promise<string> {
   if (process.env.VERCEL_PROJECT_PRODUCTION_URL)
     bases.push(`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`);
   if (process.env.VERCEL_URL) bases.push(`https://${process.env.VERCEL_URL}`);
-  bases.push('https://raw.githubusercontent.com/saintus-create/ca/main/public');
 
   let lastError: unknown = null;
   for (const base of bases) {
