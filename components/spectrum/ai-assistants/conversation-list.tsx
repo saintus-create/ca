@@ -61,7 +61,7 @@ export function ConversationList({
     <nav
       aria-label="Conversations"
       className={cn(
-        'w-full max-w-[300px] rounded-2xl border border-black/[0.08] bg-white p-2 shadow-xs dark:border-white/[0.09] dark:bg-[#0B0B0D]',
+        'w-full max-w-[300px] rounded-2xl border border-border/80 bg-card p-2 shadow-xs',
         className,
       )}
     >
