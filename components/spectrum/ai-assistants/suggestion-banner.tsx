@@ -67,7 +67,7 @@ export function SuggestionBanner({
   return (
     <div
       className={cn(
-        'flex w-full max-w-[480px] items-start gap-2.5 rounded-xl border border-black/[0.08] bg-white py-2.5 pl-3 pr-2 dark:border-white/[0.09] dark:bg-[#0B0B0D]',
+        'flex w-full max-w-[480px] items-start gap-2.5 rounded-xl border border-border/80 bg-card py-2.5 pl-3 pr-2',
         variant === 'Floating' && 'shadow-lg',
         className,
       )}
