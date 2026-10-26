@@ -30,12 +30,7 @@ export interface ThinkingEvent {
   tool?: string
   parameters?: Record<string, unknown>
   result?: string
-  searchResults?: Array<{
-    url: string
-    title: string
-    description: string
-    markdown?: string
-  }>
+  searchResults?: Array<{ url: string; title: string; description: string; markdown?: string }>
   screenshots?: Array<{ url: string; screenshot?: string }>
   duration?: number
   thinkingBlocks?: number
@@ -56,22 +51,9 @@ interface Message {
 }
 
 const SUGGESTED_PROMPTS: SuggestedPrompt[] = [
-  {
-    id: 'deposit',
-    label: 'How many days does a landlord have to return a security deposit?',
-    prompt:
-      'How many days does a landlord have to return a security deposit after a tenant moves out?',
-  },
-  {
-    id: 'limitations',
-    label: 'Statute of limitations for a written contract?',
-    prompt: 'What is the statute of limitations for breach of a written contract in California?',
-  },
-  {
-    id: 'car-search',
-    label: 'When can an officer search a car without a warrant?',
-    prompt: 'When can an officer search a car without a warrant?',
-  },
+  { id: 'deposit', label: 'How many days does a landlord have to return a security deposit?', prompt: 'How many days does a landlord have to return a security deposit after a tenant moves out?' },
+  { id: 'limitations', label: 'Statute of limitations for a written contract?', prompt: 'What is the statute of limitations for breach of a written contract in California?' },
+  { id: 'car-search', label: 'When can an officer search a car without a warrant?', prompt: 'When can an officer search a car without a warrant?' },
 ]
 
 const TOOL_LABELS: Record<string, string> = {
@@ -87,7 +69,6 @@ function toolLabel(tool?: string): string {
   return (tool && TOOL_LABELS[tool]) || 'Research Step'
 }
 
-/** Shape the raw agent events into Spectrum's reasoning steps and tool calls. */
 function shapeEvents(events: ThinkingEvent[]) {
   const steps: ReasoningStep[] = []
   const calls: ToolCall[] = []
@@ -95,23 +76,13 @@ function shapeEvents(events: ThinkingEvent[]) {
     if (event.type === 'thinking' && event.content) {
       steps.push({ id: `step-${idx}`, content: event.content })
     } else if (event.type === 'tool_call') {
-      calls.push({
-        id: `call-${idx}`,
-        name: toolLabel(event.tool),
-        args: event.parameters,
-        status: 'running',
-        startedAt: Date.now(),
-      })
+      calls.push({ id: `call-${idx}`, name: toolLabel(event.tool), args: event.parameters, status: 'running', startedAt: Date.now() })
     } else if (event.type === 'tool_result') {
       const open = [...calls].reverse().find((c) => c.status === 'running' && c.name === toolLabel(event.tool))
       if (open) {
         open.status = 'success'
         open.completedAt = open.startedAt ? open.startedAt + (event.duration ?? 0) : undefined
-        open.result = event.result
-          ? event.result.length > 600
-            ? `${event.result.slice(0, 600)}...`
-            : event.result
-          : undefined
+        open.result = event.result ? (event.result.length > 600 ? `${event.result.slice(0, 600)}...` : event.result) : undefined
       }
     }
   })
@@ -120,38 +91,248 @@ function shapeEvents(events: ThinkingEvent[]) {
 
 interface ResearchChatProps {
   onMessagesChange?: (hasMessages: boolean) => void
-  /** Render the voice controls. Only true when Cartesia is configured. */
   voiceEnabled?: boolean
 }
 
-export function ResearchChat({
-  onMessagesChange,
-  voiceEnabled = false,
-}: ResearchChatProps) {
+export function ResearchChat({ onMessagesChange, voiceEnabled = false }: ResearchChatProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [scope, setScope] = useState('')
   const [datasets, setDatasets] = useState<DatasetInfo[]>([])
-
-  useEffect(() => {
-    fetchDatasets()
-      .then(setDatasets)
-      .catch(() => setDatasets([]))
-  }, [])
+  useEffect(() => { fetchDatasets().then(setDatasets).catch(() => setDatasets([])) }, [])
   const [voiceState, setVoiceState] = useState<VoiceInputState>('idle')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const recorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const discardRef = useRef(false)
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
+  useEffect(() => { onMessagesChange?.(messages.length > 0) }, [messages.length, onMessagesChange])
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  const parseSearchResults = (resultText: string) => {
+    const results: Array<{ url: string; title: string; description?: string; index?: number; scraped?: boolean; dateFound?: string; markdown?: string }> = []
+    const lines = resultText.split('\n')
+    let current: (typeof results)[number] | null = null
+    for (const line of lines) {
+      const titleMatch = line.match(/^\[(\d+)\]\s+(.+)$/)
+      if (titleMatch) {
+        if (current && current.title) results.push(current)
+        current = { url: '', index: parseInt(titleMatch[1]), title: titleMatch[2].replace(' (scraped)', ''), scraped: line.includes('(scraped)') }
+        continue
+      }
+      if (line.startsWith('URL: ') && current) { current.url = line.substring(5); continue }
+      if (line.startsWith('Source: ') && current) { current.url = line.substring(8).trim(); continue }
+      if (line.startsWith('Description: ') && current) { current.description = line.substring(13); continue }
+      if (line.startsWith('Date: ') && current) { current.dateFound = line.substring(6); continue }
+      if (line.startsWith('Content preview: ') && current) { current.markdown = line.substring(17); continue }
+      if (current && !current.description && line.trim().length > 40 && !/^[A-Za-z][A-Za-z ]{0,12}: /.test(line)) {
+        current.description = line.trim()
+        continue
+      }
+    }
+    if (current && current.title) results.push(current)
+    return results
+  }
 
-  useEffect(() => {
-    onMessagesChange?.(messages.length > 0)
-  }, [messages.length, onMessagesChange])
+  const handleSearch = useCallback(async (query: string) => {
+    if (!query.trim() || isSearching) return
+    const userMessage: Message = { id: Date.now().toString(), role: 'user', content: query }
+    const assistantMessage: Message = { id: (Date.now() + 1).toString(), role: 'assistant', content: '', searchData: { status: 'searching', events: [], startedAt: Date.now() } }
+    setMessages((prev) => [...prev, userMessage, assistantMessage])
+    setIsSearching(true)
+    try {
+      const response = await fetch('/api/open-researcher', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query, dataset: scope || undefined }) })
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        throw new Error(errorData.error || errorData.message || 'Search failed')
+      }
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
+      if (!reader) throw new Error('No response stream')
+      const events: ThinkingEvent[] = []
+      const collectedSources: Message['sources'] = []
+      let finalContent = ''
+      let streamError: string | null = null
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        const chunk = decoder.decode(value)
+        for (const line of chunk.split('\n')) {
+          if (!line.startsWith('data: ')) continue
+          try {
+            const data = JSON.parse(line.slice(6))
+            if (data.type === 'event') {
+              events.push(data.event)
+              if (data.event.type === 'tool_result' && (data.event.tool === 'web_search' || data.event.tool === 'search_california_law')) {
+                const parsed = parseSearchResults(data.event.result || '')
+                if (parsed.length > 0) {
+                  collectedSources.length = 0
+                  collectedSources.push(...parsed.map((r) => ({ url: r.url, title: r.title, description: r.description })))
+                }
+              }
+              setMessages((prev) => prev.map((msg) => msg.id === assistantMessage.id ? { ...msg, searchData: { status: 'searching', events: [...events], startedAt: assistantMessage.searchData!.startedAt } } : msg))
+            } else if (data.type === 'response') {
+              finalContent = data.content
+            } else if (data.type === 'error') {
+              streamError = data.error || data.originalError || 'The research request failed.'
+            } else if (data.type === 'done') {
+              setMessages((prev) => prev.map((msg) => msg.id === assistantMessage.id ? { ...msg, content: finalContent, searchData: { status: 'complete', events, startedAt: assistantMessage.searchData!.startedAt, durationMs: Date.now() - assistantMessage.searchData!.startedAt }, sources: collectedSources } : msg))
+            }
+          } catch { /* SSE parse */ }
+        }
+      }
+      if (streamError) throw new Error(streamError)
+    } catch (error) {
+      let errorMessage = 'Sorry, an error occurred while searching. Please try again.'
+      if (error instanceof Error) {
+        if (error.message.includes('SARVAM_API_KEY') || error.message.includes('ANTHROPIC_API_KEY') || error.message.includes('not configured')) {
+          errorMessage = 'The research service is not set up on this deployment yet. The operator needs to add the language model key before questions can be answered.'
+        } else if (error.message.includes('FIRECRAWL_API_KEY')) {
+          errorMessage = 'Web search is not configured on this deployment. The California corpus still works.'
+        } else if (error.message.includes('model')) {
+          errorMessage = 'The configured model is not available for this API key.'
+        } else {
+          errorMessage = `Error: ${error.message}`
+        }
+      }
+      setMessages((prev) => prev.map((msg) => msg.id === assistantMessage.id ? { ...msg, content: errorMessage, searchData: { status: 'error', events: msg.searchData?.events ?? [], startedAt: msg.searchData?.startedAt ?? Date.now() } } : msg))
+    } finally {
+      setIsSearching(false)
+    }
+  }, [isSearching, scope])
 
-  // PLACEHOLDER_REST_OF_FILE - will be fixed in next commit if truncated
-  return null
+  const startRecorder = useCallback((stream: MediaStream) => {
+    try {
+      const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus']
+      const mime = candidates.find((t) => typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(t))
+      const recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined)
+      chunksRef.current = []
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data) }
+      recorder.onstop = async () => {
+        if (discardRef.current) { setVoiceState('idle'); return }
+        setVoiceState('processing')
+        const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'audio/webm' })
+        try {
+          const form = new FormData()
+          const ext = blob.type.includes('mp4') ? 'm4a' : blob.type.includes('ogg') ? 'ogg' : 'webm'
+          form.append('audio', blob, `query.${ext}`)
+          const res = await fetch('/api/voice/stt', { method: 'POST', body: form })
+          const data = (await res.json().catch(() => ({}))) as { text?: string; error?: string }
+          if (!res.ok) throw new Error(data.error || `Transcription failed (${res.status}).`)
+          const text = (data.text || '').trim()
+          if (text) handleSearch(text)
+          else toast.error('I could not hear a question in that recording.')
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : 'Transcription failed.')
+        } finally {
+          setVoiceState('idle')
+        }
+      }
+      recorderRef.current = recorder
+      recorder.start()
+    } catch {
+      toast.error('Voice recording is not available in this browser.')
+      setVoiceState('idle')
+    }
+  }, [handleSearch])
+
+  const stopRecorder = useCallback((discard: boolean) => {
+    discardRef.current = discard
+    const recorder = recorderRef.current
+    if (recorder && recorder.state !== 'inactive') recorder.stop()
+    else if (discard) setVoiceState('idle')
+    recorderRef.current = null
+  }, [])
+
+  const scopeStrip = (
+    <div className="flex w-full flex-wrap items-center justify-between gap-2 border-b border-border/60 px-3.5 py-2">
+      <span className="flex min-w-0 flex-1 items-center gap-2">
+        <label htmlFor="corpus-scope" className="shrink-0 whitespace-nowrap text-[12.5px] text-neutral-500 dark:text-neutral-400">Search in</label>
+        <select id="corpus-scope" value={scope} onChange={(e) => setScope(e.target.value)} className="min-w-0 flex-1 rounded-full border border-border/80 bg-card px-3 py-1 text-[12.5px] text-foreground outline-hidden focus-visible:ring-2 focus-visible:ring-ring">
+          <option value="">All California law</option>
+          {groupDatasets(datasets).map(({ group, items }) => (
+            <optgroup key={group} label={group}>
+              {items.map((d) => (<option key={d.code} value={d.code}>{d.name}</option>))}
+            </optgroup>
+          ))}
+        </select>
+      </span>
+      <a href="/corpus" className="text-[12.5px] text-neutral-500 underline decoration-neutral-300 underline-offset-4 transition-colors hover:text-neutral-800 dark:text-neutral-400 dark:decoration-neutral-600 dark:hover:text-neutral-100">California Law</a>
+    </div>
+  )
+
+  const voiceControls = voiceEnabled ? (
+    <div className="flex flex-col items-center gap-3">
+      {voiceState === 'idle' ? (
+        <VoiceInput state="idle" onStart={() => { discardRef.current = false; setVoiceState('recording') }} />
+      ) : (
+        <div className="flex w-full max-w-[560px] flex-col items-center gap-3 rounded-2xl border border-border/80 bg-card px-4 py-3">
+          <LiveWaveform active={voiceState === 'recording'} processing={voiceState === 'processing'} mode="static" height={56} className="w-full" onStreamReady={startRecorder} onError={() => { toast.error('Microphone access was not granted.'); setVoiceState('idle') }} />
+          <VoiceInput state={voiceState} onConfirm={() => stopRecorder(false)} onCancel={() => stopRecorder(true)} />
+        </div>
+      )}
+    </div>
+  ) : null
+
+  if (messages.length === 0) {
+    return (
+      <div className="mx-auto flex w-full max-w-[640px] flex-col items-center gap-6 rounded-2xl border border-border/80 bg-card px-6 py-8 shadow-xs">
+        <ChatEmptyState variant="Centered" title="Ask about California law" subtitle="" prompts={SUGGESTED_PROMPTS} onSelectPrompt={(p) => handleSearch(p.prompt || p.label)} />
+        <div className="w-full">
+          {scopeStrip}
+          <PromptComposer placeholder="Ask anything about California law" isGenerating={isSearching} onSend={(text) => handleSearch(text)} variant="Minimal" maxLength={8000} className="max-w-none rounded-none border-0 bg-transparent shadow-none" />
+        </div>
+        {voiceControls}
+      </div>
+    )
+  }
+
+  return (
+    <div className="mx-auto flex min-h-0 w-full max-w-[760px] flex-1 flex-col overflow-hidden rounded-2xl border border-border/80 bg-card shadow-xs">
+      <div className="flex-1 space-y-6 overflow-y-auto px-4 py-5 sm:px-6">
+        {messages.map((message) => {
+          if (message.role === 'user') {
+            return (
+              <div key={message.id} className="flex justify-end">
+                <div className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-neutral-900 px-4 py-2.5 text-[13.5px] leading-relaxed text-white dark:bg-neutral-100 dark:text-neutral-900">{message.content}</div>
+              </div>
+            )
+          }
+          const { steps, calls } = shapeEvents(message.searchData?.events ?? [])
+          const isLive = message.searchData?.status === 'searching'
+          return (
+            <div key={message.id} className="space-y-3">
+              {steps.length > 0 && <ReasoningTrace steps={steps} defaultOpen={isLive} />}
+              {calls.length > 0 && <ToolChips calls={calls} />}
+              {isLive && !message.content && <ThinkingDots />}
+              {message.searchData?.status === 'error' && <ErrorState onRetry={() => { /* retry last */ }} />}
+              {message.content && (
+                <div className="space-y-2">
+                  <MarkdownRenderer content={message.content} streaming={isLive} sources={message.sources} />
+                  {!isLive && (
+                    <div className="flex items-center gap-2">
+                      <MessageActions content={message.content} />
+                      <SpeakButton text={message.content} messageId={message.id} />
+                      <SpeakingBar messageId={message.id} />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })}
+        <div ref={messagesEndRef} />
+      </div>
+      <div className="space-y-3 border-t border-border/60 px-4 py-4">
+        {scopeStrip}
+        <PromptComposer placeholder="Ask a follow-up" isGenerating={isSearching} onSend={(text) => handleSearch(text)} variant="Minimal" maxLength={8000} className="max-w-none" />
+        {voiceControls}
+      </div>
+    </div>
+  )
+}
+
+function SpeakingBar({ messageId }: { messageId: string }) {
+  const speech = useSpeechController()
+  if (speech.activeId !== messageId || speech.status !== 'playing') return null
+  return <BarVisualizer state="speaking" demo barCount={16} className="h-6 w-24" aria-hidden />
 }
