@@ -65,6 +65,10 @@
      with the chroma kept low so the site stays neutral. */
   --color-brand: #22364a;
   --color-brand-foreground: oklch(0.985 0 0);
+  /* Semantic accent for citations, statutory highlights, and secondary links.
+     Warm gold keeps legal citations legible without competing with primary text. */
+  --color-citation: #8a6d1a;
+  --color-citation-foreground: #8a6d1a;
 }
 
 @layer utilities {
@@ -115,6 +119,9 @@
     /* Brand ramp (dark): the same charcoal blue, lifted a step for dark surfaces. */
     --color-brand: #33506b;
     --color-brand-foreground: oklch(0.985 0 0);
+    /* Citation accent (dark): higher luminance gold for contrast on dark surfaces. */
+    --color-citation: #d3ab55;
+    --color-citation-foreground: #d3ab55;
   }
 }
 
@@ -313,12 +320,11 @@
 
   .markdown-content a {
     font-weight: 500;
-    color: #8a6d1a;
+    color: var(--color-citation);
     text-decoration-line: underline;
     text-decoration-thickness: 1px;
     text-underline-offset: 2px;
   }
-  .dark .markdown-content a { color: #d3ab55; }
 
   .markdown-content ul,
   .markdown-content ol {
@@ -334,11 +340,10 @@
     top: 0.48em;
     width: 0.6rem;
     height: 0.6rem;
-    background-color: #8a6d1a;
+    background-color: var(--color-citation);
     -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14'/%3E%3Cpath d='m13 6 6 6-6 6'/%3E%3C/svg%3E") no-repeat center / contain;
     mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14'/%3E%3Cpath d='m13 6 6 6-6 6'/%3E%3C/svg%3E") no-repeat center / contain;
   }
-  .dark .markdown-content ul > li::before { background-color: #d3ab55; }
   .markdown-content ol { list-style-type: decimal; }
   .markdown-content li { padding-left: 0.125rem; }
   .markdown-content li + li { margin-top: 0.375rem; }
@@ -434,19 +439,18 @@
     line-height: 0;
     font-weight: 500;
     font-variant-numeric: tabular-nums;
-    color: #8a6d1a;
+    color: var(--color-citation);
     cursor: pointer;
   }
   .markdown-content sup.citation:hover { text-decoration: underline; }
-  .dark .markdown-content sup.citation { color: #d3ab55; }
 }
 
 
-/* Custom scrollbar styles */
+/* Custom scrollbar styles — driven by design tokens */
 @layer components {
   .custom-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: #d1d5db #f3f4f6;
+    scrollbar-color: var(--color-border) var(--color-muted);
   }
 
   .custom-scrollbar::-webkit-scrollbar {
@@ -455,32 +459,16 @@
   }
 
   .custom-scrollbar::-webkit-scrollbar-track {
-    background: #f3f4f6;
+    background: var(--color-muted);
     border-radius: 4px;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #d1d5db;
+    background: var(--color-border);
     border-radius: 4px;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #9ca3af;
-  }
-
-  .dark .custom-scrollbar {
-    scrollbar-color: #4b5563 #1f2937;
-  }
-
-  .dark .custom-scrollbar::-webkit-scrollbar-track {
-    background: #1f2937;
-  }
-
-  .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #4b5563;
-  }
-
-  .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #6b7280;
+    background: var(--color-muted-foreground);
   }
 }
