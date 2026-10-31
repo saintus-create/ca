@@ -1,15 +1,57 @@
-import Link from 'next/link'
+'use client'
 
-/** Site name only. Section links live in the footer — not a second brand strip. */
+import Link from 'next/link'
+import { Menu } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+
+/** Mark + icon menu. No text link strip in the header. */
 export function SiteHeader() {
   return (
-    <header className="flex h-12 shrink-0 items-center border-b border-border/80 px-4 sm:h-14 sm:px-6">
+    <header className="flex h-12 shrink-0 items-center justify-between border-b border-border/80 px-3 sm:h-14 sm:px-5">
       <Link
         href="/"
-        className="truncate text-[14px] font-medium tracking-[-0.02em] text-neutral-900 dark:text-neutral-50 sm:text-[15px]"
+        className="min-w-0 truncate text-[14px] font-medium tracking-[-0.02em] text-neutral-900 dark:text-neutral-50 sm:text-[15px]"
       >
-        California Legislative Information
+        <span className="sm:hidden">CA Legislative Info</span>
+        <span className="hidden sm:inline">California Legislative Information</span>
       </Link>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-9 shrink-0 rounded-full"
+            aria-label="Menu"
+          >
+            <Menu className="size-5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-52">
+          <DropdownMenuItem asChild>
+            <Link href="/corpus">Codes &amp; sources</Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <a href="https://leginfo.legislature.ca.gov/" target="_blank" rel="noreferrer">
+              Official LegInfo
+            </a>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <a href="https://github.com/saintus-create/ca" target="_blank" rel="noreferrer">
+              GitHub
+            </a>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </header>
   )
 }
