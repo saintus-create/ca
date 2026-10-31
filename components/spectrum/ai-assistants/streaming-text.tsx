@@ -1,7 +1,7 @@
 'use client';
 
 import { CornerDownLeft } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, hostnameOf } from '@/lib/utils';
 import type { Citation, SuggestedPrompt } from './types';
 
 const KEYFRAMES = `
@@ -81,9 +81,11 @@ export function StreamingText({
                     <span className="font-medium text-neutral-800 dark:text-neutral-200">
                       {citation.title}
                     </span>
-                    <span className="ml-1.5 font-mono text-[10.5px] text-neutral-400 dark:text-neutral-600">
-                      {new URL(citation.url).hostname}
-                    </span>
+                    {hostnameOf(citation.url) && (
+                      <span className="ml-1.5 font-mono text-[10.5px] text-neutral-400 dark:text-neutral-600">
+                        {hostnameOf(citation.url)}
+                      </span>
+                    )}
                   </span>
                 </li>
               ))}

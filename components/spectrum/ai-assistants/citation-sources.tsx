@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@/lib/utils';
+import { cn, hostnameOf } from '@/lib/utils';
 import type { Citation } from './types';
 
 export type CitationSourcesVariant = 'Inline' | 'Footnotes';
@@ -23,15 +23,21 @@ export function CitationSources({
 
   return (
     <div className={cn('w-full max-w-[520px] text-[13.5px] leading-[1.7] text-neutral-700 dark:text-neutral-300', className)}>
-      <p>
-        {parts.map((part, index) => {
-          const match = part.match(/^\[(\d+)\]$/);
-          if (!match) return <span key={index}>{part}</span>;
-          const citation = byIndex.get(Number(match[1]));
-          if (!citation) return <span key={index}>{part}</span>;
-          return <CitationMarker key={index} citation={citation} />;
-        })}
-      </p>
+      {/* The inline variant re-renders the answer with numbered markers in
+          place. The footnotes variant is appended below an answer that has
+          already been rendered, so repeating the text here would print the
+          whole answer twice. */}
+      {variant === 'Inline' && (
+        <p>
+          {parts.map((part, index) => {
+            const match = part.match(/^\[(\d+)\]$/);
+            if (!match) return <span key={index}>{part}</span>;
+            const citation = byIndex.get(Number(match[1]));
+            if (!citation) return <span key={index}>{part}</span>;
+            return <CitationMarker key={index} citation={citation} />;
+          })}
+        </p>
+      )}
 
       {variant === 'Footnotes' && (
         <ol className="mt-4 space-y-2 border-t border-black/[0.06] pt-3 dark:border-white/[0.07]">
@@ -44,9 +50,11 @@ export function CitationSources({
                 <span className="font-medium text-neutral-800 dark:text-neutral-200">
                   {citation.title}
                 </span>
-                <span className="ml-1.5 font-mono text-[10.5px] text-neutral-400 dark:text-neutral-600">
-                  {new URL(citation.url).hostname}
-                </span>
+                {hostnameOf(citation.url) && (
+                  <span className="ml-1.5 font-mono text-[10.5px] text-neutral-400 dark:text-neutral-600">
+                    {hostnameOf(citation.url)}
+                  </span>
+                )}
                 {citation.snippet && (
                   <span className="mt-0.5 block text-neutral-500 dark:text-neutral-400">
                     {citation.snippet}
@@ -84,9 +92,11 @@ function CitationMarker({ citation }: { citation: Citation }) {
         <span className="block text-[12.5px] font-medium text-neutral-900 dark:text-neutral-50">
           {citation.title}
         </span>
-        <span className="mt-0.5 block font-mono text-[10.5px] text-neutral-400 dark:text-neutral-500">
-          {new URL(citation.url).hostname}
-        </span>
+        {hostnameOf(citation.url) && (
+          <span className="mt-0.5 block font-mono text-[10.5px] text-neutral-400 dark:text-neutral-500">
+            {hostnameOf(citation.url)}
+          </span>
+        )}
         {citation.snippet && (
           <span className="mt-1.5 block text-[12px] leading-[1.5] text-neutral-500 dark:text-neutral-400">
             {citation.snippet}

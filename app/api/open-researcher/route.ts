@@ -25,11 +25,9 @@ export async function POST(req: NextRequest) {
     // Firecrawl is optional. A key supplied through the UI takes precedence;
     // without one, the California law corpus and the language model still run,
     // and only the web search/scrape tools return a tool-level error if used.
-    const firecrawlApiKey = req.headers.get('X-Firecrawl-API-Key') || process.env.FIRECRAWL_API_KEY
-
-    if (firecrawlApiKey) {
-      process.env.FIRECRAWL_API_KEY = firecrawlApiKey
-    }
+    // Passed down per request rather than written into process.env, so a key
+    // supplied by one visitor is never reused by the next request.
+    const firecrawlApiKey = req.headers.get('X-Firecrawl-API-Key')?.trim() || undefined
 
     // Create a streaming response
     const encoder = new TextEncoder()
@@ -44,7 +42,7 @@ export async function POST(req: NextRequest) {
             // Send event as SSE
             const data = `data: ${JSON.stringify({ type: 'event', event: eventWithTimestamp })}\n\n`
             controller.enqueue(encoder.encode(data))
-          }, scopeDataset)
+          }, scopeDataset, firecrawlApiKey)
 
           // Send final response
           if (finalResponse) {

@@ -2,20 +2,25 @@ import FirecrawlApp from '@mendable/firecrawl-js';
 import { executeCorpusSearch } from './corpus-search';
 import { createChat, type LlmMessage } from './llm';
 
-// Lazy initialization for Vercel deployment
-let firecrawl: FirecrawlApp | null = null;
+// Clients are cached per key. The key can come from the environment or from a
+// request (the UI lets a visitor supply their own), so caching by key keeps
+// both paths working without one request's key leaking into the next.
+// FIRECRAWL_BASE_URL points the SDK at a proxy or a self-hosted deployment;
+// without it the SDK talks to https://api.firecrawl.dev.
+const firecrawlClients = new Map<string, FirecrawlApp>();
 
-function getFirecrawlClient(): FirecrawlApp {
-  if (!firecrawl) {
-    const apiKey = process.env.FIRECRAWL_API_KEY;
-    if (!apiKey) {
-      // FIRECRAWL_API_KEY is not set in environment variables
-      throw new Error('FIRECRAWL_API_KEY environment variable is not set');
-    }
-    // Initializing Firecrawl client
-    firecrawl = new FirecrawlApp({ apiKey });
+function getFirecrawlClient(apiKeyOverride?: string): FirecrawlApp {
+  const apiKey = apiKeyOverride?.trim() || process.env.FIRECRAWL_API_KEY;
+  if (!apiKey) {
+    throw new Error('FIRECRAWL_API_KEY environment variable is not set');
   }
-  return firecrawl;
+  const apiUrl = process.env.FIRECRAWL_BASE_URL?.replace(/\/+$/, '') || null;
+  const cacheKey = `${apiKey}::${apiUrl ?? ''}`;
+  const cached = firecrawlClients.get(cacheKey);
+  if (cached) return cached;
+  const client = new FirecrawlApp({ apiKey, apiUrl });
+  firecrawlClients.set(cacheKey, client);
+  return client;
 }
 
 // The model, provider, and thinking configuration all live in lib/llm.ts:
@@ -194,7 +199,7 @@ const tools: ToolDefinition[] = [
 ];
 
 // Execute Firecrawl search with two-step approach
-async function executeWebSearch(query: string, limit: number = 5, scrapeContent: boolean = false, tbs?: string): Promise<{ content: string; screenshots: Array<{ url: string; screenshot?: string }> }> {
+async function executeWebSearch(query: string, limit: number = 5, scrapeContent: boolean = false, tbs?: string, firecrawlApiKey?: string): Promise<{ content: string; screenshots: Array<{ url: string; screenshot?: string }> }> {
   // Performing firecrawl search
   
   const screenshots: Array<{ url: string; screenshot?: string }> = [];
@@ -212,7 +217,7 @@ async function executeWebSearch(query: string, limit: number = 5, scrapeContent:
       searchOptions.tbs = tbs;
     }
 
-    const metadataResults = await getFirecrawlClient().search(query, searchOptions) as FirecrawlSearchResult;
+    const metadataResults = await getFirecrawlClient(firecrawlApiKey).search(query, searchOptions) as FirecrawlSearchResult;
     
     if (!metadataResults.data || metadataResults.data.length === 0) {
       return { content: "No search results found.", screenshots: [] };
@@ -303,7 +308,7 @@ async function executeWebSearch(query: string, limit: number = 5, scrapeContent:
           scrapeOptions.tbs = tbs;
         }
 
-        const scrapedResults = await getFirecrawlClient().search(query, scrapeOptions) as FirecrawlSearchResult;
+        const scrapedResults = await getFirecrawlClient(firecrawlApiKey).search(query, scrapeOptions) as FirecrawlSearchResult;
         
         // Add scraped content to output
         output += `\nScraped content:\n\n`;
@@ -506,7 +511,8 @@ async function executeDeepScrape(
   linkFilter?: string, 
   maxDepth: number = 1, 
   maxLinks: number = 5,
-  formats: string[] = ["markdown"]
+  formats: string[] = ["markdown"],
+  firecrawlApiKey?: string
 ): Promise<{ content: string; screenshots: Array<{ url: string; screenshot?: string }> }> {
   // Performing firecrawl scrape
   
@@ -517,7 +523,7 @@ async function executeDeepScrape(
     
     let sourceResult;
     try {
-      sourceResult = await getFirecrawlClient().scrapeUrl(sourceUrl, {
+      sourceResult = await getFirecrawlClient(firecrawlApiKey).scrapeUrl(sourceUrl, {
         formats: ['markdown', 'links', 'screenshot@fullPage']
       });
     } catch (scrapeError) {
@@ -583,7 +589,7 @@ async function executeDeepScrape(
     // Scrape each link in parallel
     const scrapePromises = linksToScrape.map(async (link: string) => {
       try {
-        const result = await getFirecrawlClient().scrapeUrl(link, { 
+        const result = await getFirecrawlClient(firecrawlApiKey).scrapeUrl(link, { 
           formats: [...formats, 'screenshot@fullPage'] as ("markdown" | "html" | "content" | "rawHtml" | "links" | "screenshot" | "screenshot@fullPage" | "extract" | "json" | "changeTracking")[]
         });
         
@@ -645,8 +651,8 @@ async function executeDeepScrape(
 // The web tools need a Firecrawl key; the corpus tool does not. Rather than
 // failing a whole research run because one source is unconfigured, offer only
 // the tools that can actually execute.
-export function availableTools(): ToolDefinition[] {
-  return process.env.FIRECRAWL_API_KEY
+export function availableTools(firecrawlApiKey?: string): ToolDefinition[] {
+  return firecrawlApiKey?.trim() || process.env.FIRECRAWL_API_KEY
     ? tools
     : tools.filter((tool) => tool.name === 'search_california_law');
 }
@@ -659,20 +665,22 @@ function systemPromptFor(toolset: ToolDefinition[]): string {
 }
 
 // Execute tool based on name
-export async function executeTool(toolName: string, input: Record<string, unknown>): Promise<{ content: string; screenshots?: Array<{ url: string; screenshot?: string }> }> {
+export async function executeTool(toolName: string, input: Record<string, unknown>, firecrawlApiKey?: string): Promise<{ content: string; screenshots?: Array<{ url: string; screenshot?: string }> }> {
+  const firecrawlKey = firecrawlApiKey?.trim() || process.env.FIRECRAWL_API_KEY;
   switch (toolName) {
     case 'web_search':
-      if (!process.env.FIRECRAWL_API_KEY) {
+      if (!firecrawlKey) {
         return { content: 'Web search is not configured in this deployment. Use search_california_law against California law instead.' };
       }
       return await executeWebSearch(
         input.query as string, 
         (input.limit as number) || 5, 
         (input.scrape_content as boolean) || false,
-        input.tbs as string | undefined
+        input.tbs as string | undefined,
+        firecrawlKey
       );
     case 'deep_scrape':
-      if (!process.env.FIRECRAWL_API_KEY) {
+      if (!firecrawlKey) {
         return { content: 'Web scraping is not configured in this deployment. Use search_california_law against California law instead.' };
       }
       return await executeDeepScrape(
@@ -680,7 +688,8 @@ export async function executeTool(toolName: string, input: Record<string, unknow
         input.link_filter as string | undefined,
         (input.max_depth as number) || 1,
         (input.max_links as number) || 5,
-        (input.formats as string[]) || ['markdown']
+        (input.formats as string[]) || ['markdown'],
+        firecrawlKey
       );
     case 'analyze_content':
       return { content: await analyzeContent(input.content as string, input.analysis_type as string, input.context as string | undefined) };
@@ -730,7 +739,8 @@ function displayToolName(name: string): string {
 async function runResearch(
   query: string,
   onEvent: (event: ResearchEvent) => void,
-  scopeDataset?: string
+  scopeDataset?: string,
+  firecrawlApiKey?: string
 ): Promise<string> {
   onEvent({ type: 'start', query });
 
@@ -740,7 +750,7 @@ async function runResearch(
   let toolCallCount = 0;
 
   for (let step = 0; step < MAX_RESEARCH_STEPS; step++) {
-    const toolset = availableTools();
+    const toolset = availableTools(firecrawlApiKey);
     const system = scopeDataset
       ? `${systemPromptFor(toolset)}\n\nScope: the user has restricted this conversation to the ${scopeDataset} dataset. Every California law search is limited to it. If the question falls outside that dataset, say so plainly instead of guessing.`
       : systemPromptFor(toolset);
@@ -789,7 +799,7 @@ async function runResearch(
       });
 
       const startedAt = Date.now();
-      const toolResult = await executeTool(call.name ?? '', input);
+      const toolResult = await executeTool(call.name ?? '', input, firecrawlApiKey);
       onEvent({
         type: 'tool_result',
         tool: call.name ?? '',
@@ -818,11 +828,12 @@ async function runResearch(
 export async function performResearchWithStreaming(
   query: string,
   onEvent: (event: ResearchEvent) => void,
-  scopeDataset?: string
+  scopeDataset?: string,
+  firecrawlApiKey?: string
 ): Promise<string> {
-  return runResearch(query, onEvent, scopeDataset);
+  return runResearch(query, onEvent, scopeDataset, firecrawlApiKey);
 }
 
-export async function performResearch(query: string): Promise<string> {
-  return runResearch(query, () => {});
+export async function performResearch(query: string, firecrawlApiKey?: string): Promise<string> {
+  return runResearch(query, () => {}, undefined, firecrawlApiKey);
 }

@@ -9,6 +9,7 @@ import { ThreadView } from './thread-view'
 import { VoiceHead } from './voice-head'
 import type { ChatMessage, ChatMessagePart, ChatSource, ChatThread } from './types'
 import { fetchDatasets, type DatasetInfo } from '@/components/corpus/datasets'
+import { readSse, parseSseFrame } from '@/lib/sse'
 
 const STORAGE_KEY = 'california-law-threads-v1'
 
@@ -49,6 +50,22 @@ function threadTitle(text: string): string {
   return clean.length > 48 ? `${clean.slice(0, 48)}…` : clean
 }
 
+function clip(text: string, max: number): string {
+  const clean = text.replace(/\s+/g, ' ').trim()
+  return clean.length > max ? `${clean.slice(0, max).trimEnd()}…` : clean
+}
+
+/** Corpus hits arrive as `CIV § 1950.5, CIV: Security deposits`. Keep the
+ *  citation and drop a trailing title that only repeats it, so a footnote does
+ *  not read "CIV § 1950.5, CIV: CIV § 1950.5". */
+function citationTitle(head: string): string {
+  const clean = head.replace(' (scraped)', '').trim()
+  const corpus = clean.match(/^([A-Z]{2,6} § [\w.()]+),\s*[A-Z]{2,6}:\s*(.*)$/)
+  if (!corpus) return clip(clean, 120)
+  const [, citation, rest] = corpus
+  return clip(rest && rest !== citation ? `${citation}: ${rest}` : citation, 120)
+}
+
 function parseSearchResults(resultText: string): ChatSource[] {
   const results: ChatSource[] = []
   let current: ChatSource | null = null
@@ -56,7 +73,7 @@ function parseSearchResults(resultText: string): ChatSource[] {
     const titleMatch = line.match(/^\[(\d+)\]\s+(.+)$/)
     if (titleMatch) {
       if (current && current.title) results.push(current)
-      current = { url: '', title: titleMatch[2].replace(' (scraped)', '') }
+      current = { url: '', title: citationTitle(titleMatch[2]) }
       continue
     }
     if (line.startsWith('URL: ') && current) {
@@ -68,11 +85,12 @@ function parseSearchResults(resultText: string): ChatSource[] {
       continue
     }
     if (line.startsWith('Description: ') && current) {
-      current.description = line.substring(13)
+      current.description = clip(line.substring(13), 240)
       continue
     }
     if (current && !current.description && line.trim().length > 40 && !/^[A-Za-z][A-Za-z ]{0,12}: /.test(line)) {
-      current.description = line.trim()
+      // First substantial line of the body: a preview, never the whole section.
+      current.description = clip(line, 240)
       continue
     }
   }
@@ -280,52 +298,51 @@ export function AssistantChat() {
               'Search failed',
           )
         }
-        const reader = response.body?.getReader()
-        if (!reader) throw new Error('No response stream')
-        const decoder = new TextDecoder()
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-          const chunk = decoder.decode(value)
-          for (const line of chunk.split('\n')) {
-            if (!line.startsWith('data: ')) continue
-            try {
-              const data = JSON.parse(line.slice(6)) as {
-                type?: string
-                event?: { type?: string; tool?: string; parameters?: Record<string, unknown>; content?: string; result?: string }
-                content?: string
-                error?: string
+        if (!response.body) throw new Error('No response stream')
+        // lib/sse holds frames until they are complete and decodes multi-byte
+        // characters across chunk boundaries. Parsing each chunk on its own
+        // drops any frame the network splits, which truncates answers silently.
+        for await (const frame of readSse(response.body)) {
+          const payload = parseSseFrame(frame)
+          if (!payload) continue
+          let data: {
+            type?: string
+            event?: { type?: string; tool?: string; parameters?: Record<string, unknown>; content?: string; result?: string }
+            content?: string
+            error?: string
+          }
+          try {
+            data = JSON.parse(payload)
+          } catch {
+            /* skip malformed SSE */
+            continue
+          }
+          if (data.type === 'event' && data.event) {
+            const event = data.event
+            if (event.type === 'thinking' && event.content) {
+              reasoning += (reasoning ? '\n' : '') + event.content
+            } else if (event.type === 'tool_call') {
+              toolCalls.push({
+                id: `call-${toolCalls.length}`,
+                name: toolLabel(event.tool),
+                args: event.parameters ?? {},
+              })
+            } else if (event.type === 'tool_result') {
+              const open = [...toolCalls].reverse().find((c) => c.name === toolLabel(event.tool) && c.result === undefined)
+              if (open && event.result) {
+                open.result = event.result.length > 600 ? `${event.result.slice(0, 600)}...` : event.result
               }
-              if (data.type === 'event' && data.event) {
-                const event = data.event
-                if (event.type === 'thinking' && event.content) {
-                  reasoning += (reasoning ? '\n' : '') + event.content
-                } else if (event.type === 'tool_call') {
-                  toolCalls.push({
-                    id: `call-${toolCalls.length}`,
-                    name: toolLabel(event.tool),
-                    args: event.parameters ?? {},
-                  })
-                } else if (event.type === 'tool_result') {
-                  const open = [...toolCalls].reverse().find((c) => c.name === toolLabel(event.tool) && c.result === undefined)
-                  if (open && event.result) {
-                    open.result = event.result.length > 600 ? `${event.result.slice(0, 600)}...` : event.result
-                  }
-                  if ((event.tool === 'web_search' || event.tool === 'search_california_law') && event.result) {
-                    const parsed = parseSearchResults(event.result)
-                    if (parsed.length > 0) sources = parsed
-                  }
-                }
-                applyParts()
-              } else if (data.type === 'response') {
-                text = data.content ?? ''
-                applyParts()
-              } else if (data.type === 'error') {
-                streamError = data.error ?? 'The research request failed.'
+              if ((event.tool === 'web_search' || event.tool === 'search_california_law') && event.result) {
+                const parsed = parseSearchResults(event.result)
+                if (parsed.length > 0) sources = parsed
               }
-            } catch {
-              /* skip malformed SSE */
             }
+            applyParts()
+          } else if (data.type === 'response') {
+            text = data.content ?? ''
+            applyParts()
+          } else if (data.type === 'error') {
+            streamError = data.error ?? 'The research request failed.'
           }
         }
         if (streamError) throw new Error(streamError)
