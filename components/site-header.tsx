@@ -1,7 +1,9 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
-import { Menu } from 'lucide-react'
+import { KeyRound, Menu } from 'lucide-react'
+import { ApiKeyDialog } from '@/components/api-key-dialog'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -13,6 +15,7 @@ import {
 
 /** Mark + icon menu. No text link strip in the header. */
 export function SiteHeader() {
+  const [keysOpen, setKeysOpen] = useState(false)
   return (
     <header className="flex h-12 shrink-0 items-center justify-between border-b border-border/80 px-3 sm:h-14 sm:px-5">
       <Link
@@ -45,6 +48,10 @@ export function SiteHeader() {
             </a>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
+          <DropdownMenuItem onSelect={() => setKeysOpen(true)}>
+            <KeyRound className="mr-2 size-4" />
+            API keys
+          </DropdownMenuItem>
           <DropdownMenuItem asChild>
             <a href="https://github.com/saintus-create/ca" target="_blank" rel="noreferrer">
               GitHub
@@ -52,6 +59,7 @@ export function SiteHeader() {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      <ApiKeyDialog open={keysOpen} onOpenChange={setKeysOpen} />
     </header>
   )
 }

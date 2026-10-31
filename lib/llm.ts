@@ -98,19 +98,28 @@ export function providerDefaults(provider: LlmProvider): { model: string; apiKey
   }
 }
 
-export function isProviderConfigured(provider: LlmProvider): boolean {
+export function isProviderConfigured(provider: LlmProvider, apiKeyOverride?: string): boolean {
+  if (apiKeyOverride?.trim()) return true;
   return Boolean(envValue(providerDefaults(provider).apiKeyEnv));
 }
 
-export async function createChat(request: ChatRequest): Promise<ChatResult> {
-  const provider = resolveProvider();
+/** Per-request overrides. A key supplied by the browser is used for that one
+ *  request and never written into process.env, so one visitor's key cannot be
+ *  picked up by the next. */
+export interface ChatOptions {
+  apiKey?: string;
+  provider?: LlmProvider;
+}
+
+export async function createChat(request: ChatRequest, options?: ChatOptions): Promise<ChatResult> {
+  const provider = options?.provider ?? resolveProvider();
   const { model } = providerDefaults(provider);
   const blocks =
     provider === 'venice'
-      ? await veniceChat(model, request)
+      ? await veniceChat(model, request, options?.apiKey)
       : provider === 'anthropic'
-        ? await anthropicChat(model, request)
-        : await sarvamChat(model, request);
+        ? await anthropicChat(model, request, options?.apiKey)
+        : await sarvamChat(model, request, options?.apiKey);
 
   return {
     blocks,
@@ -204,8 +213,8 @@ function safeParseArguments(raw: string | undefined): Record<string, unknown> {
   }
 }
 
-async function sarvamChat(model: string, request: ChatRequest): Promise<LlmBlock[]> {
-  const apiKey = envValue('SARVAM_API_KEY');
+async function sarvamChat(model: string, request: ChatRequest, apiKeyOverride?: string): Promise<LlmBlock[]> {
+  const apiKey = apiKeyOverride?.trim() || envValue('SARVAM_API_KEY');
   if (!apiKey) {
     throw new Error('Authentication error: SARVAM_API_KEY is not set.');
   }
@@ -328,8 +337,8 @@ async function sarvamChat(model: string, request: ChatRequest): Promise<LlmBlock
 // Venice (OpenAI-compatible chat completions; uncensored models)
 // ---------------------------------------------------------------------------
 
-async function veniceChat(model: string, request: ChatRequest): Promise<LlmBlock[]> {
-  const apiKey = envValue('VENICE_API_KEY');
+async function veniceChat(model: string, request: ChatRequest, apiKeyOverride?: string): Promise<LlmBlock[]> {
+  const apiKey = apiKeyOverride?.trim() || envValue('VENICE_API_KEY');
   if (!apiKey) {
     throw new Error('Authentication error: VENICE_API_KEY is not set.');
   }
@@ -448,24 +457,27 @@ async function veniceChat(model: string, request: ChatRequest): Promise<LlmBlock
 // Anthropic (fallback provider)
 // ---------------------------------------------------------------------------
 
-let anthropicClient: Anthropic | null = null;
+// One client per key, so a request that carries its own key does not reuse
+// (or overwrite) the one built from the environment.
+const anthropicClients = new Map<string, Anthropic>();
 
-function getAnthropicClient(): Anthropic {
-  const apiKey = envValue('ANTHROPIC_API_KEY');
+function getAnthropicClient(apiKeyOverride?: string): Anthropic {
+  const apiKey = apiKeyOverride?.trim() || envValue('ANTHROPIC_API_KEY');
   if (!apiKey) {
     throw new Error('Authentication error: ANTHROPIC_API_KEY is not set.');
   }
-  if (!anthropicClient) {
-    // Long generations need headroom, and a streaming request keeps bytes
-    // flowing so idle-connection timeouts don't kill it (see anthropicChat).
-    anthropicClient = new Anthropic({ apiKey, timeout: 600_000, maxRetries: 1 });
-  }
-  return anthropicClient;
+  const cached = anthropicClients.get(apiKey);
+  if (cached) return cached;
+  // Long generations need headroom, and a streaming request keeps bytes
+  // flowing so idle-connection timeouts don't kill it (see anthropicChat).
+  const client = new Anthropic({ apiKey, timeout: 600_000, maxRetries: 1 });
+  anthropicClients.set(apiKey, client);
+  return client;
 }
 
 type AnthropicCreateParams = Parameters<Anthropic['messages']['create']>[0];
 
-async function anthropicChat(model: string, request: ChatRequest): Promise<LlmBlock[]> {
+async function anthropicChat(model: string, request: ChatRequest, apiKeyOverride?: string): Promise<LlmBlock[]> {
   const messages = request.messages.map((message) => ({
     role: message.role,
     content:
@@ -501,7 +513,7 @@ async function anthropicChat(model: string, request: ChatRequest): Promise<LlmBl
     // produce nothing for many seconds before the first byte, and an idle
     // connection gets cut by proxies and some serverless edges. Streaming keeps
     // data flowing.
-    response = (await getAnthropicClient()
+    response = (await getAnthropicClient(apiKeyOverride)
       .messages.stream(params as unknown as AnthropicCreateParams)
       .finalMessage()) as unknown as Anthropic.Message;
   } catch (error) {

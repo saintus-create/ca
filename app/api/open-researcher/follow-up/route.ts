@@ -10,9 +10,11 @@ export async function POST(req: NextRequest) {
     }
 
     // The research provider (Sarvam by default, Anthropic as a fallback)
-    // answers follow-up generation too, so one key covers both routes.
+    // answers follow-up generation too, so one key covers both routes. A key
+    // supplied by the browser is used for this request only.
+    const browserKey = req.headers.get('X-LLM-API-Key')?.trim() || undefined
     const provider = resolveProvider()
-    if (!isProviderConfigured(provider)) {
+    if (!isProviderConfigured(provider, browserKey)) {
       return NextResponse.json(
         { error: `${providerDefaults(provider).apiKeyEnv} is not configured` },
         { status: 500 }
@@ -36,7 +38,7 @@ Only return the JSON array, nothing else.`
       system: 'You write concise follow-up research questions and reply with JSON only.',
       messages: [{ role: 'user', content: prompt }],
       maxTokens: 400,
-    })
+    }, browserKey ? { apiKey: browserKey } : undefined)
 
     // Reasoning-capable models may return thinking blocks before the answer,
     // so use the concatenated text rather than the first block.

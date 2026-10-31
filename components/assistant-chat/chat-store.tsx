@@ -10,6 +10,9 @@ import { VoiceHead } from './voice-head'
 import type { ChatMessage, ChatMessagePart, ChatSource, ChatThread } from './types'
 import { fetchDatasets, type DatasetInfo } from '@/components/corpus/datasets'
 import { readSse, parseSseFrame } from '@/lib/sse'
+import { keyHeaders, readLlmKey } from '@/lib/browser-keys'
+import { ApiKeyDialog } from '@/components/api-key-dialog'
+import { KeyRound } from 'lucide-react'
 
 const STORAGE_KEY = 'california-law-threads-v1'
 
@@ -184,6 +187,10 @@ export function AssistantChat() {
   const [currentId, setCurrentId] = useState<string | null>(null)
   const [datasets, setDatasets] = useState<DatasetInfo[]>([])
   const [loaded, setLoaded] = useState(false)
+  const [keysOpen, setKeysOpen] = useState(false)
+  // Whether this browser or the deployment has a language model key. Checked
+  // after mount so the server and the first client render agree.
+  const [hasKey, setHasKey] = useState<boolean | null>(null)
   const abortRefs = useRef(new Map<string, AbortController>())
   const threadsRef = useRef(threads)
 
@@ -198,6 +205,23 @@ export function AssistantChat() {
       .then(setDatasets)
       .catch(() => setDatasets([]))
   }, [])
+
+  const checkKeys = useCallback(() => {
+    if (readLlmKey()) {
+      setHasKey(true)
+      return
+    }
+    fetch('/api/check-env')
+      .then((response) => response.json())
+      .then((data: { environmentStatus?: { LLM_KEY_CONFIGURED?: boolean } }) => {
+        setHasKey(Boolean(data.environmentStatus?.LLM_KEY_CONFIGURED))
+      })
+      .catch(() => setHasKey(false))
+  }, [])
+
+  useEffect(() => {
+    checkKeys()
+  }, [checkKeys])
 
   useEffect(() => {
     try {
@@ -286,7 +310,7 @@ export function AssistantChat() {
       try {
         const response = await fetch('/api/open-researcher', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...keyHeaders() },
           body: JSON.stringify({ query, dataset }),
           signal: controller.signal,
         })
@@ -352,6 +376,14 @@ export function AssistantChat() {
           return
         }
         const message = friendlyError(error)
+        if (
+          error instanceof Error &&
+          (error.message.includes('not configured') ||
+            error.message.includes('API_KEY') ||
+            error.message.includes('Add your key'))
+        ) {
+          setKeysOpen(true)
+        }
         updateThread(threadId, (t) => ({
           ...t,
           running: false,
@@ -472,6 +504,23 @@ export function AssistantChat() {
           <ThreadList {...sidebarProps} />
         </Sidebar>
         <SidebarInset className="flex min-h-0 min-w-0 flex-1 flex-col">
+          {hasKey === false && (
+            <div className="mx-auto mt-3 flex w-full max-w-[760px] items-center justify-between gap-3 rounded-xl border border-citation/30 bg-citation/[0.06] px-3 py-2 sm:px-4">
+              <p className="text-[12.5px] leading-[1.5] text-neutral-700 dark:text-neutral-300">
+                No API key yet. Add one to start asking questions.
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setKeysOpen(true)}
+                className="shrink-0 gap-1.5 rounded-full"
+              >
+                <KeyRound className="size-3.5" />
+                Add key
+              </Button>
+            </div>
+          )}
           <ThreadView
             key={current.id}
             thread={current}
@@ -483,6 +532,11 @@ export function AssistantChat() {
           />
         </SidebarInset>
       </div>
+      <ApiKeyDialog
+        open={keysOpen}
+        onOpenChange={setKeysOpen}
+        onSaved={() => checkKeys()}
+      />
       <VoiceHead
         thread={current}
         onSendText={(text) => sendText(current.id, text)}

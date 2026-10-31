@@ -38,6 +38,12 @@ A powerful AI-powered research tool that combines Firecrawl's web scraping capab
    npm install
    ```
 
+   You can also skip the environment entirely: open the app, choose **API keys** in the
+   menu (or the **Add key** banner), and paste your key. It is kept in your browser and
+   sent with each request, so a deployment with no keys configured still works. For a
+   shared or public deployment, set the key in the environment instead — a key in a
+   browser is readable by anything else running in that browser.
+
 3. **Set up environment variables**
    ```bash
    cp .env.local.example .env.local

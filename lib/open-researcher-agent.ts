@@ -1,6 +1,6 @@
 import FirecrawlApp from '@mendable/firecrawl-js';
 import { executeCorpusSearch } from './corpus-search';
-import { createChat, type LlmMessage } from './llm';
+import { createChat, type ChatOptions, type LlmMessage } from './llm';
 
 // Clients are cached per key. The key can come from the environment or from a
 // request (the UI lets a visitor supply their own), so caching by key keeps
@@ -740,7 +740,8 @@ async function runResearch(
   query: string,
   onEvent: (event: ResearchEvent) => void,
   scopeDataset?: string,
-  firecrawlApiKey?: string
+  firecrawlApiKey?: string,
+  chatOptions?: ChatOptions
 ): Promise<string> {
   onEvent({ type: 'start', query });
 
@@ -759,7 +760,7 @@ async function runResearch(
       messages,
       tools: toolset,
       maxTokens: RESEARCH_MAX_TOKENS,
-    });
+    }, chatOptions);
 
     // Keep the assistant turn (including any thinking blocks and their
     // signatures) so tool results can be sent back in the same conversation.
@@ -829,11 +830,16 @@ export async function performResearchWithStreaming(
   query: string,
   onEvent: (event: ResearchEvent) => void,
   scopeDataset?: string,
-  firecrawlApiKey?: string
+  firecrawlApiKey?: string,
+  chatOptions?: ChatOptions
 ): Promise<string> {
-  return runResearch(query, onEvent, scopeDataset, firecrawlApiKey);
+  return runResearch(query, onEvent, scopeDataset, firecrawlApiKey, chatOptions);
 }
 
-export async function performResearch(query: string, firecrawlApiKey?: string): Promise<string> {
-  return runResearch(query, () => {}, undefined, firecrawlApiKey);
+export async function performResearch(
+  query: string,
+  firecrawlApiKey?: string,
+  chatOptions?: ChatOptions
+): Promise<string> {
+  return runResearch(query, () => {}, undefined, firecrawlApiKey, chatOptions);
 }

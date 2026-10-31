@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { performResearchWithStreaming } from '@/lib/open-researcher-agent'
-import { isProviderConfigured, providerDefaults, resolveProvider } from '@/lib/llm'
+import { isProviderConfigured, providerDefaults, resolveProvider, type LlmProvider } from '@/lib/llm'
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,13 +11,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Query is required' }, { status: 400 })
     }
 
+    // A key supplied by the browser for this request only. It takes precedence
+    // over the deployment's environment variable and is never written into
+    // process.env, so it cannot leak into another visitor's request.
+    const browserKey = req.headers.get('X-LLM-API-Key')?.trim() || undefined
+    const browserProvider = req.headers.get('X-LLM-Provider')?.trim().toLowerCase()
+    const chatOptions = browserKey
+      ? {
+          apiKey: browserKey,
+          provider:
+            browserProvider === 'sarvam' || browserProvider === 'venice' || browserProvider === 'anthropic'
+              ? (browserProvider as LlmProvider)
+              : undefined,
+        }
+      : undefined
+
     // Check the language model key for the active provider (Sarvam by
     // default, Anthropic as a fallback).
-    const provider = resolveProvider()
-    if (!isProviderConfigured(provider)) {
+    const provider = chatOptions?.provider ?? resolveProvider()
+    if (!isProviderConfigured(provider, browserKey)) {
       const { apiKeyEnv } = providerDefaults(provider)
       return NextResponse.json(
-        { error: `${apiKeyEnv} is not configured. Add it to your environment variables (see .env.local.example).` },
+        { error: `${apiKeyEnv} is not configured. Add your key in the app (API keys in the menu) or set ${apiKeyEnv} in the environment.` },
         { status: 500 }
       )
     }
@@ -42,7 +57,7 @@ export async function POST(req: NextRequest) {
             // Send event as SSE
             const data = `data: ${JSON.stringify({ type: 'event', event: eventWithTimestamp })}\n\n`
             controller.enqueue(encoder.encode(data))
-          }, scopeDataset, firecrawlApiKey)
+          }, scopeDataset, firecrawlApiKey, chatOptions)
 
           // Send final response
           if (finalResponse) {
