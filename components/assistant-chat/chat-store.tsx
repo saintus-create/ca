@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Plus } from 'lucide-react'
 import { Sidebar, SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { SiteHeader } from '@/components/site-header'
 import { ConversationList } from '@/components/spectrum/ai-assistants/conversation-list'
 import { ThreadView } from './thread-view'
 import type { ChatMessage, ChatMessagePart, ChatSource, ChatThread } from './types'
@@ -458,6 +459,7 @@ export function AssistantChat() {
           <ThreadList {...sidebarProps} />
         </Sidebar>
         <SidebarInset className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <SiteHeader />
           <ThreadView
             key={current.id}
             thread={current}
