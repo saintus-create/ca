@@ -6,7 +6,7 @@ import type { ToolCall, ToolCallStatus } from './types';
 
 const DOT: Record<ToolCallStatus, string> = {
   pending: 'bg-neutral-300 dark:bg-neutral-600',
-  running: 'bg-sky-500/80 motion-safe:animate-pulse',
+  running: 'bg-citation motion-safe:animate-pulse',
   success: 'bg-emerald-500/80',
   error: 'bg-red-500/80',
   cancelled: 'bg-neutral-400 dark:bg-neutral-500',
@@ -46,8 +46,10 @@ export function ToolChips({ calls, variant = 'Row', className }: ToolChipsProps)
                 'transition-[border-color,background-color,transform] duration-150 active:scale-[0.98]',
                 'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400',
                 active
-                  ? 'border-black/[0.16] bg-black/[0.03] dark:border-white/[0.22] dark:bg-white/[0.05]'
-                  : 'border-black/[0.07] hover:border-black/[0.14] dark:border-white/[0.08] dark:hover:border-white/[0.16]',
+                  ? 'border-citation/40 bg-citation/10 dark:border-citation/50 dark:bg-citation/10'
+                  : call.status === 'running'
+                    ? 'border-citation/30 bg-citation/5 dark:border-citation/40'
+                    : 'border-black/[0.07] hover:border-black/[0.14] dark:border-white/[0.08] dark:hover:border-white/[0.16]',
                 variant === 'Stack' && 'w-full',
               )}
             >
@@ -56,7 +58,7 @@ export function ToolChips({ calls, variant = 'Row', className }: ToolChipsProps)
                 {call.name}
               </span>
               {call.status === 'running' ? (
-                <span className="ml-auto shrink-0 font-mono text-[10px] uppercase tracking-wide text-sky-600 dark:text-sky-400">
+                <span className="ml-auto shrink-0 font-mono text-[10px] uppercase tracking-wide text-citation dark:text-citation">
                   running
                 </span>
               ) : elapsed ? (
