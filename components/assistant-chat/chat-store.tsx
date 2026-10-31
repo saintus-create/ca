@@ -1,8 +1,10 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Plus, X } from 'lucide-react'
+import { Plus } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { Sidebar, SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { ConversationList, type ConversationEntry } from '@/components/spectrum/ai-assistants/conversation-list'
 import { ThreadView } from './thread-view'
 import { VoiceHead } from './voice-head'
 import type { ChatMessage, ChatMessagePart, ChatSource, ChatThread } from './types'
@@ -47,7 +49,6 @@ function threadTitle(text: string): string {
   return clean.length > 48 ? `${clean.slice(0, 48)}…` : clean
 }
 
-/** The same source parsing the old chat used: [n] title lines plus URL/Source/Description lines. */
 function parseSearchResults(resultText: string): ChatSource[] {
   const results: ChatSource[] = []
   let current: ChatSource | null = null
@@ -79,7 +80,6 @@ function parseSearchResults(resultText: string): ChatSource[] {
   return results
 }
 
-/** Map raw route errors to the plain visitor-facing messages the old chat used. */
 function friendlyError(error: unknown): string {
   if (error instanceof Error) {
     if (
@@ -123,7 +123,7 @@ function ThreadList({
   currentId,
   onSelect,
   onNew,
-  onDelete,
+  onDelete: _onDelete,
 }: {
   threads: ChatThread[]
   currentId: string
@@ -132,56 +132,35 @@ function ThreadList({
   onDelete: (id: string) => void
 }) {
   const visible = threads.filter((t) => t.messages.length > 0)
+  const conversations: ConversationEntry[] = visible.map((t) => ({
+    id: t.id,
+    title: t.title,
+    group: 'Threads',
+  }))
   return (
-    <div className="flex h-full flex-col">
-      <div className="p-3">
-        <button
-          type="button"
-          onClick={onNew}
-          className="flex w-full items-center gap-2 rounded-full border border-black/[0.08] bg-white px-4 py-2 text-sm text-neutral-700 shadow-xs transition-colors hover:text-neutral-900 dark:border-white/[0.09] dark:bg-[#0B0B0D] dark:text-neutral-200 dark:hover:text-neutral-50"
-        >
-          <Plus className="size-4" />
-          New thread
-        </button>
-      </div>
-      <div className="flex-1 space-y-0.5 overflow-y-auto px-3 pb-3">
-        {visible.map((t) => (
-          <div key={t.id} className="group relative">
-            <button
-              type="button"
-              onClick={() => onSelect(t.id)}
-              className={`w-full truncate rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-                t.id === currentId
-                  ? 'bg-black/[0.05] text-neutral-900 dark:bg-white/[0.07] dark:text-neutral-50'
-                  : 'text-neutral-500 hover:bg-black/[0.03] hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-white/[0.04] dark:hover:text-neutral-50'
-              }`}
-            >
-              {t.title}
-            </button>
-            {visible.length > 1 && (
-              <button
-                type="button"
-                aria-label="Delete thread"
-                onClick={() => onDelete(t.id)}
-                className={`absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-50 ${
-                  t.id === currentId ? 'block' : 'hidden group-hover:block'
-                }`}
-              >
-                <X className="size-3.5" />
-              </button>
-            )}
-          </div>
-        ))}
-      </div>
+    <div className="flex h-full flex-col gap-2 p-3">
+      <Button
+        type="button"
+        variant="outline"
+        onClick={onNew}
+        className="w-full justify-start gap-2 rounded-full"
+      >
+        <Plus className="size-4" />
+        New thread
+      </Button>
+      {conversations.length > 0 && (
+        <ConversationList
+          className="max-w-none flex-1 border-0 bg-transparent p-0 shadow-none"
+          conversations={conversations}
+          activeId={currentId}
+          onSelect={onSelect}
+          variant="Compact"
+        />
+      )}
     </div>
   )
 }
 
-/**
- * The chat application: a sidebar of threads plus the thread view.
- * The backend is unchanged: every send posts to /api/open-researcher and the
- * SSE events become reasoning, tool-call and text parts.
- */
 export function AssistantChat() {
   const [threads, setThreads] = useState<ChatThread[]>(() => [freshThread()])
   const [currentId, setCurrentId] = useState<string | null>(null)
@@ -233,7 +212,7 @@ export function AssistantChat() {
         }
       }
     } catch {
-      /* corrupted storage: start fresh */
+      /* corrupted storage */
     }
     setLoaded(true)
   }, [])
@@ -246,7 +225,7 @@ export function AssistantChat() {
         JSON.stringify(threads.map((t) => ({ ...t, running: false, errors: {} }))),
       )
     } catch {
-      /* storage full or unavailable */
+      /* storage full */
     }
   }, [threads, loaded])
 
@@ -345,7 +324,7 @@ export function AssistantChat() {
                 streamError = data.error ?? 'The research request failed.'
               }
             } catch {
-              /* skip a malformed SSE line */
+              /* skip malformed SSE */
             }
           }
         }
@@ -470,8 +449,8 @@ export function AssistantChat() {
   }
 
   return (
-    <SidebarProvider defaultOpen>
-      <div className="flex h-full min-h-0 w-full">
+    <SidebarProvider defaultOpen={false} className="flex min-h-0 flex-1 flex-col">
+      <div className="flex h-full min-h-0 w-full flex-1">
         <Sidebar side="left" collapsible="offcanvas" className="border-r border-black/[0.08] dark:border-white/[0.09]">
           <ThreadList {...sidebarProps} />
         </Sidebar>
