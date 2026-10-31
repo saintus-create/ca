@@ -1,23 +1,15 @@
 import Link from 'next/link'
 
-/** Plain top bar: brand on the left, sections on the right. No design system. */
+/** Site name only. Section links live in the footer — not a second brand strip. */
 export function SiteHeader() {
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between border-b border-border/80 px-3 sm:px-6">
+    <header className="flex h-12 shrink-0 items-center border-b border-border/80 px-4 sm:h-14 sm:px-6">
       <Link
         href="/"
-        className="truncate text-[13px] font-medium tracking-tight text-neutral-900 dark:text-neutral-50 sm:text-[0.95rem]"
+        className="truncate text-[14px] font-medium tracking-[-0.02em] text-neutral-900 dark:text-neutral-50 sm:text-[15px]"
       >
         California Legislative Information
       </Link>
-      <nav className="flex shrink-0 items-center gap-3 text-[13px] text-neutral-500 dark:text-neutral-400 sm:gap-4 sm:text-sm">
-        <Link href="/corpus" className="transition-colors hover:text-neutral-900 dark:hover:text-neutral-50">
-          California Law
-        </Link>
-        <Link href="/faq" className="transition-colors hover:text-neutral-900 dark:hover:text-neutral-50">
-          FAQ
-        </Link>
-      </nav>
     </header>
   )
 }
