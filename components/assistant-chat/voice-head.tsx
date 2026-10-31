@@ -1,11 +1,8 @@
 'use client'
 
-// Floating voice head: a dot-matrix head that listens, thinks and speaks.
-// Browser-native speech only, no provider keys: the microphone comes from
-// the Web Speech API and the spoken reply from speech synthesis. A voice
-// question goes through the same thread as a typed one, and only the reply
-// to a voice question is read aloud.
+// Floating voice control: same thread as typed questions; Spectrum VoiceInput for the control surface.
 import { useEffect, useRef, useState } from 'react'
+import { VoiceInput, type VoiceInputState } from '@/components/spectrum/ai-assistants/voice-input'
 import type { ChatMessage, ChatThread } from './types'
 
 type RecognitionResult = {
@@ -35,7 +32,6 @@ function getRecognitionConstructor(): RecognitionConstructor | null {
   return w.SpeechRecognition || w.webkitSpeechRecognition || null
 }
 
-/** Strip markdown formatting so the spoken reply sounds like sentences. */
 function stripForSpeech(text: string): string {
   return text
     .replace(/```[\s\S]*?```/g, (m) => m.replace(/```/g, ' '))
@@ -63,61 +59,6 @@ function assistantText(message: ChatMessage, errors: Record<string, string>): { 
 }
 
 type HeadState = 'idle' | 'listening' | 'thinking' | 'speaking' | 'unsupported' | 'error'
-
-const DOT_KEYFRAMES = `
-@keyframes head-pulse { 0%, 100% { opacity: 0.55; transform: scale(0.9) } 50% { opacity: 1; transform: scale(1) } }
-@keyframes head-wave { 0%, 100% { transform: translateY(0); opacity: 0.6 } 50% { transform: translateY(-3px); opacity: 1 } }
-`
-
-function DotHead({ state }: { state: HeadState }) {
-  const dots: Array<{ x: number; y: number; d: number }> = []
-  for (let y = 0; y < 9; y++) {
-    for (let x = 0; x < 9; x++) {
-      const d = Math.hypot(x - 4, y - 4)
-      if (d <= 3.6) dots.push({ x, y, d })
-    }
-  }
-  const color =
-    state === 'listening' || state === 'speaking'
-      ? 'bg-brand'
-      : state === 'thinking'
-        ? 'bg-[#8a6d1a] dark:bg-[#d3ab55]'
-        : 'bg-neutral-300 dark:bg-neutral-600'
-  const duration =
-    state === 'idle' || state === 'unsupported'
-      ? '3s'
-      : state === 'listening'
-        ? '1.2s'
-        : state === 'thinking'
-          ? '1.6s'
-          : '0.9s'
-  return (
-    <>
-      <style dangerouslySetInnerHTML={{ __html: DOT_KEYFRAMES }} />
-      <div className="grid grid-cols-9 gap-[3px]" aria-hidden>
-        {dots.map(({ x, y, d }) => {
-          const delay =
-            state === 'speaking'
-              ? `${x * 90}ms`
-              : state === 'thinking'
-                ? `${Math.round(d * 160)}ms`
-                : '0ms'
-          const animation =
-            state === 'idle' || state === 'unsupported'
-              ? `head-pulse ${duration} ease-in-out infinite`
-              : `head-wave ${duration} ease-in-out ${delay} infinite`
-          return (
-            <span
-              key={`${x}-${y}`}
-              className={`size-[5px] rounded-full ${color}`}
-              style={{ animation }}
-            />
-          )
-        })}
-      </div>
-    </>
-  )
-}
 
 export function VoiceHead({
   thread,
@@ -199,7 +140,6 @@ export function VoiceHead({
     }
   }
 
-  // When a voice run finishes, read the new reply aloud.
   useEffect(() => {
     const wasRunning = prevRunningRef.current
     prevRunningRef.current = thread.running
@@ -227,7 +167,6 @@ export function VoiceHead({
     }
   }, [thread, voiceAsked])
 
-  // A typed run cancels any speech in progress so it never talks over a new answer.
   useEffect(() => {
     if (thread.running && !voiceAsked) {
       stopSpeaking()
@@ -276,32 +215,30 @@ export function VoiceHead({
     startListening()
   }
 
+  const voiceState: VoiceInputState =
+    state === 'listening'
+      ? 'recording'
+      : state === 'thinking' || state === 'speaking'
+        ? 'processing'
+        : 'idle'
+
   return (
-    <div className="fixed bottom-48 right-4 z-50 flex flex-col items-end gap-2 sm:bottom-28">
+    <div className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-3 z-50 flex flex-col items-end gap-2 sm:bottom-28 sm:right-4">
       {state !== 'idle' && (
         <div className="w-64 max-w-[70vw] rounded-2xl border border-black/[0.08] bg-white p-3 text-sm leading-relaxed text-neutral-700 shadow-lg dark:border-white/[0.09] dark:bg-[#0B0B0D] dark:text-neutral-300">
           {state === 'listening' && (transcript || 'Listening…')}
           {state === 'thinking' && 'Researching…'}
-          {state === 'speaking' && 'Speaking… Tap the head to stop.'}
+          {state === 'speaking' && 'Speaking… Confirm to stop.'}
           {state === 'unsupported' && 'Voice is not supported in this browser.'}
           {state === 'error' && note}
         </div>
       )}
-      <button
-        type="button"
-        onClick={handleTap}
-        aria-label={
-          state === 'listening'
-            ? 'Stop listening'
-            : state === 'speaking'
-              ? 'Stop speaking'
-              : 'Talk with voice'
-        }
-        title="Talk with voice"
-        className="grid size-20 place-items-center rounded-full border border-black/[0.08] bg-white shadow-lg transition-transform hover:scale-105 dark:border-white/[0.09] dark:bg-[#0B0B0D]"
-      >
-        <DotHead state={state} />
-      </button>
+      <VoiceInput
+        state={voiceState}
+        onStart={handleTap}
+        onConfirm={handleTap}
+        onCancel={handleTap}
+      />
     </div>
   )
 }
