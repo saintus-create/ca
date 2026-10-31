@@ -1,16 +1,27 @@
 'use client'
 
-// Thread chrome comes from Spectrum + shadcn only — no parallel hand-rolled UI.
+// Compose Spectrum + shadcn only. No parallel hand-rolled chrome.
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
+import { AgentSteps } from '@/components/spectrum/ai-assistants/agent-steps'
 import { ChatEmptyState } from '@/components/spectrum/ai-assistants/chat-empty-state'
+import { CitationSources } from '@/components/spectrum/ai-assistants/citation-sources'
 import { ErrorState } from '@/components/spectrum/ai-assistants/error-state'
+import { LoadingState } from '@/components/spectrum/ai-assistants/loading-state'
 import { MessageActions } from '@/components/spectrum/ai-assistants/message-actions'
 import { PromptComposer } from '@/components/spectrum/ai-assistants/prompt-composer'
 import { ReasoningTrace } from '@/components/spectrum/ai-assistants/reasoning-trace'
+import { StreamingText } from '@/components/spectrum/ai-assistants/streaming-text'
+import { SuggestionBanner } from '@/components/spectrum/ai-assistants/suggestion-banner'
 import { ThinkingDots } from '@/components/spectrum/ai-assistants/thinking-dots'
 import { ToolChips } from '@/components/spectrum/ai-assistants/tool-chips'
-import type { ReasoningStep, SuggestedPrompt, ToolCall } from '@/components/spectrum/ai-assistants/types'
+import { WebSearch } from '@/components/spectrum/ai-assistants/web-search'
+import type {
+  Citation,
+  ReasoningStep,
+  SuggestedPrompt,
+  ToolCall,
+} from '@/components/spectrum/ai-assistants/types'
 import { SpeakButton } from '@/components/speak-button'
 import type { ChatMessage, ChatMessagePart, ChatSource, ChatThread } from './types'
 import type { DatasetInfo } from '@/components/corpus/datasets'
@@ -43,6 +54,24 @@ type ThreadViewProps = {
   onScopeChange: (scope: string) => void
 }
 
+function domainOf(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '')
+  } catch {
+    return url
+  }
+}
+
+function toCitations(sources: ChatSource[]): Citation[] {
+  return sources.map((source, index) => ({
+    id: `c-${index + 1}`,
+    index: index + 1,
+    url: source.url || '#',
+    title: source.title,
+    snippet: source.description,
+  }))
+}
+
 function UserMessageView({ message }: { message: ChatMessage }) {
   const text = message.content
     .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
@@ -63,12 +92,14 @@ function AssistantMessageView({
   error,
   running,
   onRetry,
+  onSendText,
 }: {
   message: ChatMessage
   sources: ChatSource[]
   error?: string
   running: boolean
   onRetry: () => void
+  onSendText: (text: string) => void
 }) {
   const reasoningText = message.content
     .filter((p): p is { type: 'reasoning'; text: string } => p.type === 'reasoning')
@@ -96,10 +127,27 @@ function AssistantMessageView({
     status: call.result !== undefined ? 'success' : running ? 'running' : 'success',
   }))
 
+  const citations = toCitations(sources)
+  const searchResults = sources.map((source, index) => ({
+    id: `s-${index}`,
+    title: source.title,
+    domain: domainOf(source.url || ''),
+    snippet: source.description,
+    state: (running ? 'reading' : 'read') as 'reading' | 'read',
+  }))
+  const searchQuery =
+    typeof calls.find((c) => /search|law|web/i.test(c.name))?.args?.query === 'string'
+      ? String(calls.find((c) => /search|law|web/i.test(c.name))?.args?.query)
+      : 'California law'
+
   if (error) {
     return (
       <ErrorState
-        title={error.includes('not set up') ? 'The research service is not set up yet' : 'That search did not finish'}
+        title={
+          error.includes('not set up')
+            ? 'The research service is not set up yet'
+            : 'That search did not finish'
+        }
         message={error}
         onRetry={onRetry}
         variant="Card"
@@ -109,6 +157,7 @@ function AssistantMessageView({
 
   const showThinking = running && !text
   const streamingAnswer = running && !!text
+  const idleLoading = showThinking && steps.length === 0 && calls.length === 0
 
   return (
     <div className="group/message space-y-3">
@@ -119,26 +168,72 @@ function AssistantMessageView({
               ? steps
               : [{ id: `${message.id}-thinking`, content: 'Working through the sources…' }]
           }
-          status={showThinking || (running && !text) ? 'thinking' : 'complete'}
+          status={showThinking ? 'thinking' : 'complete'}
           defaultOpen={showThinking}
         />
       )}
 
-      {calls.length > 0 && <ToolChips calls={calls} />}
+      {calls.length > 0 && (
+        <>
+          <ToolChips calls={calls} />
+          <AgentSteps steps={calls} variant="Compact" />
+        </>
+      )}
+
+      {searchResults.length > 0 && (
+        <WebSearch query={searchQuery} results={searchResults} variant="Compact" />
+      )}
+
+      {idleLoading && <LoadingState variant="Orbit" label="Researching California law" />}
+
+      {showThinking && !idleLoading && steps.length === 0 && (
+        <ThinkingDots label="Researching" variant="Dots" />
+      )}
 
       {text ? (
-        <div className="text-[15px] leading-[1.7] text-neutral-800 dark:text-neutral-200">
-          <MarkdownRenderer content={text} streaming={streamingAnswer} sources={sources} />
-        </div>
-      ) : showThinking && steps.length === 0 ? (
-        <ThinkingDots label="Researching" variant="Dots" />
+        streamingAnswer ? (
+          <StreamingText
+            className="max-w-none"
+            text={text}
+            streaming
+            citations={citations}
+            variant="Answer"
+          />
+        ) : (
+          <>
+            <div className="text-[15px] leading-[1.7] text-neutral-800 dark:text-neutral-200">
+              <MarkdownRenderer content={text} streaming={false} sources={sources} />
+            </div>
+            {citations.length > 0 && (
+              <CitationSources
+                className="max-w-none"
+                text={text}
+                citations={citations}
+                variant="Footnotes"
+              />
+            )}
+          </>
+        )
       ) : null}
 
       {text && !running && (
-        <div className="flex flex-wrap items-center gap-1 pt-0.5">
-          <MessageActions content={text} onRegenerate={onRetry} variant="Ghost" />
-          <SpeakButton id={message.id} text={text} />
-        </div>
+        <>
+          <div className="flex flex-wrap items-center gap-1 pt-0.5">
+            <MessageActions content={text} onRegenerate={onRetry} variant="Ghost" />
+            <SpeakButton id={message.id} text={text} />
+          </div>
+          <SuggestionBanner
+            suggestion="Ask a related follow-up"
+            detail="Compare another code section, deadline, or procedure."
+            applyLabel="Suggest a follow-up"
+            onApply={() =>
+              onSendText(
+                'What related California rules or deadlines should I know about for this topic?',
+              )
+            }
+            variant="Inline"
+          />
+        </>
       )}
     </div>
   )
@@ -181,6 +276,7 @@ export function ThreadView({
                   error={thread.errors[message.id]}
                   running={thread.running}
                   onRetry={onReload}
+                  onSendText={onSendText}
                 />
               ),
             )}
