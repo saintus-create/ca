@@ -85,6 +85,12 @@
   --color-chart-3: hsl(197 37% 24%);
   --color-chart-4: hsl(43 74% 66%);
   --color-chart-5: hsl(27 87% 67%);
+  --color-sidebar: hsl(0 0% 100%);
+  --color-sidebar-foreground: hsl(240 10% 3.9%);
+  --color-sidebar-accent: hsl(240 4.8% 95.9%);
+  --color-sidebar-accent-foreground: hsl(240 5.9% 10%);
+  --color-sidebar-border: hsl(240 6% 78%);
+  --color-sidebar-ring: hsl(240 10% 3.9%);
   --color-brand: #22364a;
   --color-brand-foreground: oklch(0.985 0 0);
   --color-citation: #8a6d1a;
@@ -98,6 +104,12 @@
   }
 
   .dark {
+    --color-sidebar: hsl(240 8% 6%);
+    --color-sidebar-foreground: hsl(0 0% 98%);
+    --color-sidebar-accent: hsl(240 3.7% 15.9%);
+    --color-sidebar-accent-foreground: hsl(0 0% 98%);
+    --color-sidebar-border: hsl(240 4% 28%);
+    --color-sidebar-ring: hsl(240 4.9% 83.9%);
     --color-background: hsl(240 10% 3.9%);
     --color-foreground: hsl(0 0% 98%);
     --color-card: hsl(240 10% 3.9%);
@@ -149,6 +161,17 @@
     color: var(--color-foreground);
     overflow-wrap: break-word;
   }
+
+  /* The renderer wraps its HTML in a div, so the rhythm rules have to reach
+     one level in or paragraphs run together. */
+  .markdown-content > div > :first-child { margin-top: 0; }
+  .markdown-content > div > :last-child { margin-bottom: 0; }
+  .markdown-content > div > * + * { margin-top: 0.875rem; }
+  .markdown-content > div > * + h2 { margin-top: 1.5rem; }
+  .markdown-content > div > * + h3 { margin-top: 1.25rem; }
+  .markdown-content > div > h1 + *,
+  .markdown-content > div > h2 + *,
+  .markdown-content > div > h3 + * { margin-top: 0.5rem; }
 
   .markdown-content > :first-child { margin-top: 0; }
   .markdown-content > :last-child { margin-bottom: 0; }

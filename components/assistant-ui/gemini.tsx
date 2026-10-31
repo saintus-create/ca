@@ -23,7 +23,9 @@ import {
   Mic,
   Paperclip,
   PencilIcon,
+  PenLine,
   PencilRuler,
+  Sparkles,
   PlusIcon,
   RefreshCwIcon,
   Telescope,
@@ -52,6 +54,7 @@ export const Gemini: FC<{ onOpenKeys?: () => void }> = ({ onOpenKeys }) => {
                 <p className="fade-in slide-in-from-bottom-3 motion-safe:animate-in fill-mode-both relative z-10 mb-6 text-center text-4xl font-normal text-[#1f1f1f] delay-500 duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] dark:text-white">
                   How can I help you today?
                 </p>
+                <Suggestions />
                 <div className="relative">
                   <div
                     aria-hidden="true"
@@ -69,7 +72,7 @@ export const Gemini: FC<{ onOpenKeys?: () => void }> = ({ onOpenKeys }) => {
         <AuiIf condition={(s) => s.thread.messages.length > 0}>
           <ThreadPrimitive.Viewport className="flex grow flex-col overflow-y-scroll pt-12">
             <ThreadPrimitive.Messages components={{ Message: ChatMessage }} />
-            <ThreadPrimitive.ViewportFooter className="sticky bottom-0 mt-auto flex w-full flex-col items-center gap-1.5 bg-[#fdfcfc] px-4 pb-3 dark:bg-[#0c0c0c]">
+            <ThreadPrimitive.ViewportFooter className="sticky bottom-0 mt-auto flex w-full flex-col items-center gap-1.5 bg-[#fdfcfc] px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] dark:bg-[#0c0c0c]">
               <Composer onOpenKeys={onOpenKeys} />
               <p className="text-center text-xs text-[#5e6063] dark:text-[#9aa0a6]">
                 Not legal advice. Check the cited section before relying on it.
@@ -78,6 +81,37 @@ export const Gemini: FC<{ onOpenKeys?: () => void }> = ({ onOpenKeys }) => {
           </ThreadPrimitive.Viewport>
         </AuiIf>
       </ThreadPrimitive.Root>
+  );
+};
+
+// Starter questions, so an empty thread offers a way in. These are the app's
+// own prompts, not Google's.
+const SUGGESTIONS = [
+  { Icon: Sparkles, label: "What is the most controversial law in California?" },
+  { Icon: PenLine, label: "How much notice must a landlord give before entering?" },
+  { Icon: Lightbulb, label: "Summarise Penal Code section 148" },
+];
+
+const Suggestions: FC = () => {
+  const aui = useAui();
+
+  return (
+    <div className="mb-5 flex w-full flex-col">
+      {SUGGESTIONS.map(({ Icon, label }) => (
+        <button
+          key={label}
+          type="button"
+          onClick={() => {
+            aui.composer().setText(label);
+            aui.composer().send();
+          }}
+          className="flex items-center gap-4 rounded-2xl px-4 py-2.5 text-left text-[15px] text-[#1f1f1f] transition-colors hover:bg-black/[0.04] dark:text-[#e3e3e3] dark:hover:bg-white/[0.06]"
+        >
+          <Icon className="size-[18px] shrink-0 text-[#444746] dark:text-[#c4c7c5]" />
+          <span>{label}</span>
+        </button>
+      ))}
+    </div>
   );
 };
 
