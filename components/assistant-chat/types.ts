@@ -25,3 +25,17 @@ export type ChatThread = {
   createdAt: number
   updatedAt: number
 }
+
+/** Display labels for tool names, so raw tool identifiers never reach the UI. */
+const TOOL_LABELS: Record<string, string> = {
+  search_california_law: 'California Law',
+  web_search: 'Web Search',
+  firecrawl_search: 'Web Search',
+  firecrawl_scrape: 'Deep Scrape',
+  deep_scrape: 'Deep Scrape',
+  analyze_content: 'Content Analysis',
+}
+
+export function toolLabel(tool?: string): string {
+  return (tool && TOOL_LABELS[tool]) || 'Research Step'
+}

@@ -2,32 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Plus } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { Sidebar, SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
-import { ConversationList, type ConversationEntry } from '@/components/spectrum/ai-assistants/conversation-list'
+import { ConversationList } from '@/components/spectrum/ai-assistants/conversation-list'
 import { ThreadView } from './thread-view'
-import { VoiceHead } from './voice-head'
 import type { ChatMessage, ChatMessagePart, ChatSource, ChatThread } from './types'
+import { toolLabel } from './types'
 import { fetchDatasets, type DatasetInfo } from '@/components/corpus/datasets'
-import { readSse, parseSseFrame } from '@/lib/sse'
-import { keyHeaders, readLlmKey } from '@/lib/browser-keys'
-import { ApiKeyDialog } from '@/components/api-key-dialog'
-import { KeyRound } from 'lucide-react'
 
 const STORAGE_KEY = 'california-law-threads-v1'
-
-const TOOL_LABELS: Record<string, string> = {
-  search_california_law: 'California Law',
-  web_search: 'Web Search',
-  firecrawl_search: 'Web Search',
-  firecrawl_scrape: 'Deep Scrape',
-  deep_scrape: 'Deep Scrape',
-  analyze_content: 'Content Analysis',
-}
-
-function toolLabel(tool?: string): string {
-  return (tool && TOOL_LABELS[tool]) || 'Research Step'
-}
 
 function newId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID()
@@ -53,22 +35,7 @@ function threadTitle(text: string): string {
   return clean.length > 48 ? `${clean.slice(0, 48)}…` : clean
 }
 
-function clip(text: string, max: number): string {
-  const clean = text.replace(/\s+/g, ' ').trim()
-  return clean.length > max ? `${clean.slice(0, max).trimEnd()}…` : clean
-}
-
-/** Corpus hits arrive as `CIV § 1950.5, CIV: Security deposits`. Keep the
- *  citation and drop a trailing title that only repeats it, so a footnote does
- *  not read "CIV § 1950.5, CIV: CIV § 1950.5". */
-function citationTitle(head: string): string {
-  const clean = head.replace(' (scraped)', '').trim()
-  const corpus = clean.match(/^([A-Z]{2,6} § [\w.()]+),\s*[A-Z]{2,6}:\s*(.*)$/)
-  if (!corpus) return clip(clean, 120)
-  const [, citation, rest] = corpus
-  return clip(rest && rest !== citation ? `${citation}: ${rest}` : citation, 120)
-}
-
+/** The same source parsing the old chat used: [n] title lines plus URL/Source/Description lines. */
 function parseSearchResults(resultText: string): ChatSource[] {
   const results: ChatSource[] = []
   let current: ChatSource | null = null
@@ -76,7 +43,7 @@ function parseSearchResults(resultText: string): ChatSource[] {
     const titleMatch = line.match(/^\[(\d+)\]\s+(.+)$/)
     if (titleMatch) {
       if (current && current.title) results.push(current)
-      current = { url: '', title: citationTitle(titleMatch[2]) }
+      current = { url: '', title: titleMatch[2].replace(' (scraped)', '') }
       continue
     }
     if (line.startsWith('URL: ') && current) {
@@ -88,12 +55,11 @@ function parseSearchResults(resultText: string): ChatSource[] {
       continue
     }
     if (line.startsWith('Description: ') && current) {
-      current.description = clip(line.substring(13), 240)
+      current.description = line.substring(13)
       continue
     }
     if (current && !current.description && line.trim().length > 40 && !/^[A-Za-z][A-Za-z ]{0,12}: /.test(line)) {
-      // First substantial line of the body: a preview, never the whole section.
-      current.description = clip(line, 240)
+      current.description = line.trim()
       continue
     }
   }
@@ -101,6 +67,7 @@ function parseSearchResults(resultText: string): ChatSource[] {
   return results
 }
 
+/** Map raw route errors to the plain visitor-facing messages the old chat used. */
 function friendlyError(error: unknown): string {
   if (error instanceof Error) {
     if (
@@ -144,7 +111,7 @@ function ThreadList({
   currentId,
   onSelect,
   onNew,
-  onDelete: _onDelete,
+  onDelete,
 }: {
   threads: ChatThread[]
   currentId: string
@@ -153,44 +120,55 @@ function ThreadList({
   onDelete: (id: string) => void
 }) {
   const visible = threads.filter((t) => t.messages.length > 0)
-  const conversations: ConversationEntry[] = visible.map((t) => ({
-    id: t.id,
-    title: t.title,
-    group: 'Threads',
-  }))
   return (
-    <div className="flex h-full flex-col gap-2 p-3">
-      <Button
-        type="button"
-        variant="outline"
-        onClick={onNew}
-        className="w-full justify-start gap-2 rounded-full"
-      >
-        <Plus className="size-4" />
-        New thread
-      </Button>
-      {conversations.length > 0 && (
+    <div className="flex h-full flex-col">
+      <div className="p-3">
+        <button
+          type="button"
+          onClick={onNew}
+          className="flex w-full items-center gap-2 rounded-full border border-black/[0.08] bg-white px-4 py-2 text-sm text-neutral-700 shadow-xs transition-colors hover:text-neutral-900 dark:border-white/[0.09] dark:bg-[#0B0B0D] dark:text-neutral-200 dark:hover:text-neutral-50"
+        >
+          <Plus className="size-4" />
+          New thread
+        </button>
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
         <ConversationList
-          className="max-w-none flex-1 border-0 bg-transparent p-0 shadow-none"
-          conversations={conversations}
+          conversations={visible.map((t) => ({
+            id: t.id,
+            title: t.title,
+            group: 'Conversations',
+          }))}
           activeId={currentId}
           onSelect={onSelect}
-          variant="Compact"
+          className="max-w-none rounded-none border-0 p-0 shadow-none"
         />
+      </div>
+      {visible.length > 1 && (
+        <div className="p-3">
+          <button
+            type="button"
+            onClick={() => onDelete(currentId)}
+            className="text-[12.5px] text-neutral-500 transition-colors hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-50"
+          >
+            Delete thread
+          </button>
+        </div>
       )}
     </div>
   )
 }
 
+/**
+ * The chat application: a sidebar of threads plus the thread view.
+ * The backend is unchanged: every send posts to /api/open-researcher and the
+ * SSE events become reasoning, tool-call and text parts.
+ */
 export function AssistantChat() {
   const [threads, setThreads] = useState<ChatThread[]>(() => [freshThread()])
   const [currentId, setCurrentId] = useState<string | null>(null)
   const [datasets, setDatasets] = useState<DatasetInfo[]>([])
   const [loaded, setLoaded] = useState(false)
-  const [keysOpen, setKeysOpen] = useState(false)
-  // Whether this browser or the deployment has a language model key. Checked
-  // after mount so the server and the first client render agree.
-  const [hasKey, setHasKey] = useState<boolean | null>(null)
   const abortRefs = useRef(new Map<string, AbortController>())
   const threadsRef = useRef(threads)
 
@@ -205,23 +183,6 @@ export function AssistantChat() {
       .then(setDatasets)
       .catch(() => setDatasets([]))
   }, [])
-
-  const checkKeys = useCallback(() => {
-    if (readLlmKey()) {
-      setHasKey(true)
-      return
-    }
-    fetch('/api/check-env')
-      .then((response) => response.json())
-      .then((data: { environmentStatus?: { LLM_KEY_CONFIGURED?: boolean } }) => {
-        setHasKey(Boolean(data.environmentStatus?.LLM_KEY_CONFIGURED))
-      })
-      .catch(() => setHasKey(false))
-  }, [])
-
-  useEffect(() => {
-    checkKeys()
-  }, [checkKeys])
 
   useEffect(() => {
     try {
@@ -254,7 +215,7 @@ export function AssistantChat() {
         }
       }
     } catch {
-      /* corrupted storage */
+      /* corrupted storage: start fresh */
     }
     setLoaded(true)
   }, [])
@@ -267,7 +228,7 @@ export function AssistantChat() {
         JSON.stringify(threads.map((t) => ({ ...t, running: false, errors: {} }))),
       )
     } catch {
-      /* storage full */
+      /* storage full or unavailable */
     }
   }, [threads, loaded])
 
@@ -310,7 +271,7 @@ export function AssistantChat() {
       try {
         const response = await fetch('/api/open-researcher', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...keyHeaders() },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ query, dataset }),
           signal: controller.signal,
         })
@@ -322,51 +283,52 @@ export function AssistantChat() {
               'Search failed',
           )
         }
-        if (!response.body) throw new Error('No response stream')
-        // lib/sse holds frames until they are complete and decodes multi-byte
-        // characters across chunk boundaries. Parsing each chunk on its own
-        // drops any frame the network splits, which truncates answers silently.
-        for await (const frame of readSse(response.body)) {
-          const payload = parseSseFrame(frame)
-          if (!payload) continue
-          let data: {
-            type?: string
-            event?: { type?: string; tool?: string; parameters?: Record<string, unknown>; content?: string; result?: string }
-            content?: string
-            error?: string
-          }
-          try {
-            data = JSON.parse(payload)
-          } catch {
-            /* skip malformed SSE */
-            continue
-          }
-          if (data.type === 'event' && data.event) {
-            const event = data.event
-            if (event.type === 'thinking' && event.content) {
-              reasoning += (reasoning ? '\n' : '') + event.content
-            } else if (event.type === 'tool_call') {
-              toolCalls.push({
-                id: `call-${toolCalls.length}`,
-                name: toolLabel(event.tool),
-                args: event.parameters ?? {},
-              })
-            } else if (event.type === 'tool_result') {
-              const open = [...toolCalls].reverse().find((c) => c.name === toolLabel(event.tool) && c.result === undefined)
-              if (open && event.result) {
-                open.result = event.result.length > 600 ? `${event.result.slice(0, 600)}...` : event.result
+        const reader = response.body?.getReader()
+        if (!reader) throw new Error('No response stream')
+        const decoder = new TextDecoder()
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          const chunk = decoder.decode(value)
+          for (const line of chunk.split('\n')) {
+            if (!line.startsWith('data: ')) continue
+            try {
+              const data = JSON.parse(line.slice(6)) as {
+                type?: string
+                event?: { type?: string; tool?: string; parameters?: Record<string, unknown>; content?: string; result?: string }
+                content?: string
+                error?: string
               }
-              if ((event.tool === 'web_search' || event.tool === 'search_california_law') && event.result) {
-                const parsed = parseSearchResults(event.result)
-                if (parsed.length > 0) sources = parsed
+              if (data.type === 'event' && data.event) {
+                const event = data.event
+                if (event.type === 'thinking' && event.content) {
+                  reasoning += (reasoning ? '\n' : '') + event.content
+                } else if (event.type === 'tool_call') {
+                  toolCalls.push({
+                    id: `call-${toolCalls.length}`,
+                    name: toolLabel(event.tool),
+                    args: event.parameters ?? {},
+                  })
+                } else if (event.type === 'tool_result') {
+                  const open = [...toolCalls].reverse().find((c) => c.name === toolLabel(event.tool) && c.result === undefined)
+                  if (open && event.result) {
+                    open.result = event.result.length > 600 ? `${event.result.slice(0, 600)}...` : event.result
+                  }
+                  if ((event.tool === 'web_search' || event.tool === 'search_california_law') && event.result) {
+                    const parsed = parseSearchResults(event.result)
+                    if (parsed.length > 0) sources = parsed
+                  }
+                }
+                applyParts()
+              } else if (data.type === 'response') {
+                text = data.content ?? ''
+                applyParts()
+              } else if (data.type === 'error') {
+                streamError = data.error ?? 'The research request failed.'
               }
+            } catch {
+              /* skip a malformed SSE line */
             }
-            applyParts()
-          } else if (data.type === 'response') {
-            text = data.content ?? ''
-            applyParts()
-          } else if (data.type === 'error') {
-            streamError = data.error ?? 'The research request failed.'
           }
         }
         if (streamError) throw new Error(streamError)
@@ -376,14 +338,6 @@ export function AssistantChat() {
           return
         }
         const message = friendlyError(error)
-        if (
-          error instanceof Error &&
-          (error.message.includes('not configured') ||
-            error.message.includes('API_KEY') ||
-            error.message.includes('Add your key'))
-        ) {
-          setKeysOpen(true)
-        }
         updateThread(threadId, (t) => ({
           ...t,
           running: false,
@@ -498,29 +452,12 @@ export function AssistantChat() {
   }
 
   return (
-    <SidebarProvider defaultOpen={false} className="flex min-h-0 flex-1 flex-col">
-      <div className="flex h-full min-h-0 w-full flex-1">
+    <SidebarProvider defaultOpen>
+      <div className="flex h-full min-h-0 w-full">
         <Sidebar side="left" collapsible="offcanvas" className="border-r border-black/[0.08] dark:border-white/[0.09]">
           <ThreadList {...sidebarProps} />
         </Sidebar>
         <SidebarInset className="flex min-h-0 min-w-0 flex-1 flex-col">
-          {hasKey === false && (
-            <div className="mx-auto mt-3 flex w-full max-w-[760px] items-center justify-between gap-3 rounded-xl border border-citation/30 bg-citation/[0.06] px-3 py-2 sm:px-4">
-              <p className="text-[12.5px] leading-[1.5] text-neutral-700 dark:text-neutral-300">
-                No API key yet. Add one to start asking questions.
-              </p>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => setKeysOpen(true)}
-                className="shrink-0 gap-1.5 rounded-full"
-              >
-                <KeyRound className="size-3.5" />
-                Add key
-              </Button>
-            </div>
-          )}
           <ThreadView
             key={current.id}
             thread={current}
@@ -532,16 +469,6 @@ export function AssistantChat() {
           />
         </SidebarInset>
       </div>
-      <ApiKeyDialog
-        open={keysOpen}
-        onOpenChange={setKeysOpen}
-        onSaved={() => checkKeys()}
-      />
-      <VoiceHead
-        thread={current}
-        onSendText={(text) => sendText(current.id, text)}
-        onCancel={() => cancelRun(current.id)}
-      />
     </SidebarProvider>
   )
 }
