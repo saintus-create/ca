@@ -1,13 +1,10 @@
-/* California Legislative Information — global styles + design tokens */
-
 @import "tailwindcss";
-@import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
-
-/* Public Sans / Source Serif are loaded in the root layout via next/font and
-   exposed as --font-sans / --font-serif CSS variables. */
-
+/* ---------------------------------------------------------------------------
+   Typography tokens
+   Public Sans is self-hosted (see app/layout.tsx). These are the families that
+   Tailwind utilities like font-sans / font-serif resolve to.
+   --------------------------------------------------------------------------- */
 @theme inline {
   --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-serif), ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
@@ -18,13 +15,8 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* Design-system colour tokens. They point at the variables in :root/.dark
-   so a single theme switch updates every utility. Alpha modifiers
-   such as bg-muted/60 or border-border/70 compile to color-mix() instead of
-   breaking. Registering them under @theme makes
-   `text-foreground`, `bg-muted`, `border-border`, `ring-ring` real utilities
-   rather than arbitrary values. */
-
+/* Design-system colour tokens. Higher-contrast muted text and borders so
+   secondary copy stays readable on white and on dark canvas. */
 @theme {
   --color-background: hsl(0 0% 100%);
   --color-foreground: hsl(240 10% 3.9%);
@@ -50,11 +42,8 @@
   --color-chart-3: hsl(197 37% 24%);
   --color-chart-4: hsl(43 74% 66%);
   --color-chart-5: hsl(27 87% 67%);
-  /* Brand charcoal-blue — kept slightly cooler than pure neutral
-     with the chroma kept low so the site stays neutral. */
   --color-brand: #22364a;
   --color-brand-foreground: oklch(0.985 0 0);
-  /* Warm gold for statutory citations and secondary links. */
   --color-citation: #8a6d1a;
   --color-citation-foreground: #8a6d1a;
   --radius: 0.5rem;
@@ -65,8 +54,6 @@
     --radius: 0.5rem;
   }
 
-  /* Dark theme overrides the @theme colour tokens so utilities like
-     `bg-card` and `bg-muted/60` both follow the theme (and keep their alpha). */
   .dark {
     --color-background: hsl(240 10% 3.9%);
     --color-foreground: hsl(0 0% 98%);
@@ -105,6 +92,12 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+  }
+
+  /* Scrollbars — token-based, not light gray on white */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--color-foreground) 25%, transparent) transparent;
   }
 
   /* ---------------------------------------------------------------- prose */
@@ -180,7 +173,6 @@
     color: var(--color-muted-foreground);
   }
 
-  /* Citation superscripts in rendered markdown */
   .markdown-content sup.citation,
   .markdown-content a.citation {
     color: var(--color-citation);
