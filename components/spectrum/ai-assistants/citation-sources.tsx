@@ -19,13 +19,13 @@ export function CitationSources({
   className,
 }: CitationSourcesProps) {
   const byIndex = new Map(citations.map((citation) => [citation.index, citation]));
-  const parts = text.split(/(\[\d+\])/g).filter(Boolean);
+  const parts = text.split(/(\[\d+\])/g);
 
   return (
-    <div className={cn('w-full max-w-[520px] text-[13.5px]', className)}>
-      <p className="leading-[1.7] text-neutral-700 dark:text-neutral-300">
+    <div className={cn('w-full max-w-[520px] text-[13.5px] leading-[1.7] text-neutral-700 dark:text-neutral-300', className)}>
+      <p>
         {parts.map((part, index) => {
-          const match = /^\[(\d+)\]$/.exec(part);
+          const match = part.match(/^\[(\d+)\]$/);
           if (!match) return <span key={index}>{part}</span>;
           const citation = byIndex.get(Number(match[1]));
           if (!citation) return <span key={index}>{part}</span>;
@@ -37,7 +37,7 @@ export function CitationSources({
         <ol className="mt-4 space-y-2 border-t border-black/[0.06] pt-3 dark:border-white/[0.07]">
           {citations.map((citation) => (
             <li key={citation.id} className="flex gap-2.5 text-[12.5px] leading-[1.55]">
-              <span className="grid size-[16px] shrink-0 translate-y-0.5 place-items-center rounded bg-black/[0.06] font-mono text-[9px] font-semibold text-neutral-600 dark:bg-white/[0.08] dark:text-neutral-300">
+              <span className="grid size-[16px] shrink-0 translate-y-0.5 place-items-center rounded bg-citation/15 font-mono text-[9px] font-semibold text-citation dark:bg-citation/20">
                 {citation.index}
               </span>
               <span className="min-w-0">
@@ -67,7 +67,7 @@ function CitationMarker({ citation }: { citation: Citation }) {
       <button
         type="button"
         aria-label={`Source ${citation.index}: ${citation.title}`}
-        className="mx-0.5 inline-grid size-[15px] -translate-y-1 place-items-center rounded bg-black/[0.07] font-mono text-[9px] font-semibold text-neutral-600 transition-[background-color,color,transform] duration-150 hover:bg-neutral-900 hover:text-white active:scale-[0.9] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400 dark:bg-white/[0.1] dark:text-neutral-300 dark:hover:bg-neutral-100 dark:hover:text-neutral-900"
+        className="mx-0.5 inline-grid size-[15px] -translate-y-1 place-items-center rounded bg-citation/15 font-mono text-[9px] font-semibold text-citation transition-[background-color,color,transform] duration-150 hover:bg-citation hover:text-white active:scale-[0.9] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400 dark:bg-white/[0.1] dark:text-neutral-300 dark:hover:bg-neutral-100 dark:hover:text-neutral-900"
       >
         {citation.index}
       </button>
@@ -81,14 +81,14 @@ function CitationMarker({ citation }: { citation: Citation }) {
           'group-focus-within/cite:scale-100 group-focus-within/cite:opacity-100 group-focus-within/cite:blur-0',
         )}
       >
-        <span className="block text-[12px] font-medium leading-snug text-neutral-900 dark:text-neutral-100">
+        <span className="block text-[12.5px] font-medium text-neutral-900 dark:text-neutral-50">
           {citation.title}
         </span>
-        <span className="mt-0.5 block font-mono text-[10px] text-neutral-400 dark:text-neutral-500">
+        <span className="mt-0.5 block font-mono text-[10.5px] text-neutral-400 dark:text-neutral-500">
           {new URL(citation.url).hostname}
         </span>
         {citation.snippet && (
-          <span className="mt-1.5 block text-[11.5px] leading-[1.55] text-neutral-500 dark:text-neutral-400">
+          <span className="mt-1.5 block text-[12px] leading-[1.5] text-neutral-500 dark:text-neutral-400">
             {citation.snippet}
           </span>
         )}
