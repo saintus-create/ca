@@ -1,8 +1,10 @@
 'use client'
 
-// Floating voice control: same thread as typed questions; Spectrum VoiceInput for the control surface.
+// Floating voice control: Spectrum VoiceInput + ElevenLabs waveforms on the live path.
 import { useEffect, useRef, useState } from 'react'
 import { VoiceInput, type VoiceInputState } from '@/components/spectrum/ai-assistants/voice-input'
+import { LiveWaveform } from '@/components/elevenlabs/live-waveform'
+import { BarVisualizer } from '@/components/elevenlabs/bar-visualizer'
 import type { ChatMessage, ChatThread } from './types'
 
 type RecognitionResult = {
@@ -225,12 +227,32 @@ export function VoiceHead({
   return (
     <div className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-3 z-50 flex flex-col items-end gap-2 sm:bottom-28 sm:right-4">
       {state !== 'idle' && (
-        <div className="w-64 max-w-[70vw] rounded-2xl border border-black/[0.08] bg-white p-3 text-sm leading-relaxed text-neutral-700 shadow-lg dark:border-white/[0.09] dark:bg-[#0B0B0D] dark:text-neutral-300">
-          {state === 'listening' && (transcript || 'Listening…')}
-          {state === 'thinking' && 'Researching…'}
-          {state === 'speaking' && 'Speaking… Confirm to stop.'}
-          {state === 'unsupported' && 'Voice is not supported in this browser.'}
-          {state === 'error' && note}
+        <div className="w-72 max-w-[80vw] space-y-2 rounded-2xl border border-black/[0.08] bg-white p-3 shadow-lg dark:border-white/[0.09] dark:bg-[#0B0B0D]">
+          <p className="text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">
+            {state === 'listening' && (transcript || 'Listening…')}
+            {state === 'thinking' && 'Researching…'}
+            {state === 'speaking' && 'Speaking… Confirm to stop.'}
+            {state === 'unsupported' && 'Voice is not supported in this browser.'}
+            {state === 'error' && note}
+          </p>
+          {state === 'listening' && (
+            <LiveWaveform
+              active
+              mode="static"
+              height={48}
+              className="w-full"
+              barColor="hsl(var(--brand))"
+            />
+          )}
+          {(state === 'speaking' || state === 'thinking') && (
+            <BarVisualizer
+              state={state === 'thinking' ? 'thinking' : 'speaking'}
+              demo
+              barCount={18}
+              className="h-10 w-full"
+              aria-hidden
+            />
+          )}
         </div>
       )}
       <VoiceInput
