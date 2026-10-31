@@ -548,7 +548,14 @@ export function AssistantChat() {
             onCancel={() => cancelRun(current.id)}
             onReload={() => reloadThread(current.id)}
           >
-            <Gemini onOpenKeys={() => setKeysOpen(true)} />
+            <Gemini
+              onOpenKeys={() => setKeysOpen(true)}
+              datasets={datasets}
+              scope={current.scope}
+              onScopeChange={(scope) =>
+                updateThread(current.id, (t) => ({ ...t, scope, updatedAt: Date.now() }))
+              }
+            />
           </ResearchRuntimeProvider>
         </SidebarInset>
       </div>

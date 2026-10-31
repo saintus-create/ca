@@ -13,6 +13,7 @@ import {
 } from "@assistant-ui/react";
 import {
   ArrowUpIcon,
+  BookOpen,
   CheckIcon,
   ChevronDownIcon,
   CopyIcon,
@@ -41,10 +42,18 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export const Gemini: FC<{ onOpenKeys?: () => void }> = ({ onOpenKeys }) => {
+export const Gemini: FC<{
+  onOpenKeys?: () => void;
+  datasets?: Array<{ code: string; name: string; group: string }>;
+  scope?: string;
+  onScopeChange?: (scope: string) => void;
+}> = ({ onOpenKeys, datasets = [], scope = "", onScopeChange }) => {
   return (
       <ThreadPrimitive.Root className="flex h-full flex-col overflow-hidden bg-[#fdfcfc] text-[#1f1f1f] dark:bg-[#0c0c0c] dark:text-[#e3e3e3]">
         <AuiIf condition={(s) => s.thread.messages.length === 0}>
@@ -61,7 +70,7 @@ export const Gemini: FC<{ onOpenKeys?: () => void }> = ({ onOpenKeys }) => {
                     className="fade-in zoom-in-40 blur-in-[90px] motion-safe:animate-in fill-mode-both pointer-events-none absolute top-1/2 left-1/2 h-[260px] w-[680px] max-w-[92%] -translate-x-1/2 -translate-y-1/2 rounded-[140px] bg-[#a9d1fb]/60 blur-[90px] duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] dark:bg-[#1b2f9c]/50"
                   />
                   <div className="relative z-10">
-                    <Composer onOpenKeys={onOpenKeys} />
+                    <Composer onOpenKeys={onOpenKeys} datasets={datasets} scope={scope} onScopeChange={onScopeChange} />
                   </div>
                 </div>
               </div>
@@ -73,7 +82,7 @@ export const Gemini: FC<{ onOpenKeys?: () => void }> = ({ onOpenKeys }) => {
           <ThreadPrimitive.Viewport className="flex grow flex-col overflow-y-scroll pt-12">
             <ThreadPrimitive.Messages components={{ Message: ChatMessage }} />
             <ThreadPrimitive.ViewportFooter className="sticky bottom-0 mt-auto flex w-full flex-col items-center gap-1.5 bg-[#fdfcfc] px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] dark:bg-[#0c0c0c]">
-              <Composer onOpenKeys={onOpenKeys} />
+              <Composer onOpenKeys={onOpenKeys} datasets={datasets} scope={scope} onScopeChange={onScopeChange} />
               <p className="text-center text-xs text-[#5e6063] dark:text-[#9aa0a6]">
                 Not legal advice. Check the cited section before relying on it.
               </p>
@@ -118,7 +127,12 @@ const Suggestions: FC = () => {
 const ghostBtnClass =
   "flex shrink-0 items-center justify-center rounded-full text-[#444746] transition-colors hover:bg-[#444746]/8 hover:text-[#1f1f1f] dark:text-[#c4c7c5] dark:hover:bg-[#c4c7c5]/10 dark:hover:text-[#e3e3e3]";
 
-const Composer: FC<{ onOpenKeys?: () => void }> = ({ onOpenKeys }) => {
+const Composer: FC<{
+  onOpenKeys?: () => void;
+  datasets?: Array<{ code: string; name: string; group: string }>;
+  scope?: string;
+  onScopeChange?: (scope: string) => void;
+}> = ({ onOpenKeys, datasets = [], scope = "", onScopeChange }) => {
   return (
     <ComposerPrimitive.Root className="mx-auto flex w-full max-w-2xl flex-col rounded-4xl bg-white p-3 dark:bg-[#1e1f20]">
       <AuiIf condition={(s) => s.composer.attachments.length > 0}>
@@ -130,7 +144,7 @@ const Composer: FC<{ onOpenKeys?: () => void }> = ({ onOpenKeys }) => {
       </AuiIf>
 
       <div className="flex items-end gap-1">
-        <GeminiPlusMenu onOpenKeys={onOpenKeys} />
+        <GeminiPlusMenu onOpenKeys={onOpenKeys} datasets={datasets} scope={scope} onScopeChange={onScopeChange} />
         <ComposerPrimitive.Input
           rows={1}
           placeholder="Ask about California law"
@@ -149,7 +163,12 @@ const APP_LINKS = [
   { id: "corpus", label: "Codes & sources", Icon: Telescope, href: "/corpus" },
 ];
 
-const GeminiPlusMenu: FC<{ onOpenKeys?: () => void }> = ({ onOpenKeys }) => {
+const GeminiPlusMenu: FC<{
+  onOpenKeys?: () => void;
+  datasets?: Array<{ code: string; name: string; group: string }>;
+  scope?: string;
+  onScopeChange?: (scope: string) => void;
+}> = ({ onOpenKeys, datasets = [], scope = "", onScopeChange }) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -167,6 +186,33 @@ const GeminiPlusMenu: FC<{ onOpenKeys?: () => void }> = ({ onOpenKeys }) => {
             </a>
           </DropdownMenuItem>
         ))}
+        <DropdownMenuSeparator />
+        {/* Scoping the search to one code was lost when the old thread view
+            went; it lives here now. */}
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>
+            <BookOpen className="size-4" />
+            Search scope
+            <span className="text-muted-foreground ml-auto text-xs">
+              {scope || "All"}
+            </span>
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent className="max-h-72 overflow-y-auto">
+            <DropdownMenuItem onSelect={() => onScopeChange?.("")}>
+              <CheckIcon className={scope ? "size-4 opacity-0" : "size-4"} />
+              All California law
+            </DropdownMenuItem>
+            {datasets.map((dataset) => (
+              <DropdownMenuItem
+                key={dataset.code}
+                onSelect={() => onScopeChange?.(dataset.code)}
+              >
+                <CheckIcon className={scope === dataset.code ? "size-4" : "size-4 opacity-0"} />
+                {dataset.name}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => onOpenKeys?.()}>
           <KeyRound className="size-4" />
