@@ -301,7 +301,7 @@ export function ResearchChat({ onMessagesChange, voiceEnabled = false }: Researc
           const isLive = message.searchData?.status === 'searching'
           return (
             <div key={message.id} className="space-y-3">
-              {steps.length > 0 && <ReasoningTrace steps={steps} defaultOpen={isLive} />}
+              {steps.length > 0 && <ReasoningTrace steps={steps} status={isLive ? "thinking" : "complete"} defaultOpen={isLive} />}
               {calls.length > 0 && <ToolChips calls={calls} />}
               {isLive && !message.content && <ThinkingDots />}
               {message.searchData?.status === 'error' && <ErrorState onRetry={() => { /* retry last */ }} />}
@@ -311,7 +311,7 @@ export function ResearchChat({ onMessagesChange, voiceEnabled = false }: Researc
                   {!isLive && (
                     <div className="flex items-center gap-2">
                       <MessageActions content={message.content} />
-                      <SpeakButton text={message.content} messageId={message.id} />
+                      <SpeakButton id={message.id} text={message.content} />
                       <SpeakingBar messageId={message.id} />
                     </div>
                   )}

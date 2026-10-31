@@ -2,8 +2,8 @@
 
 // Compose Spectrum + shadcn only. No parallel hand-rolled chrome.
 import { SidebarTrigger } from '@/components/ui/sidebar'
+import { hostnameOf } from '@/lib/utils'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
-import { AgentSteps } from '@/components/spectrum/ai-assistants/agent-steps'
 import { ChatEmptyState } from '@/components/spectrum/ai-assistants/chat-empty-state'
 import { CitationSources } from '@/components/spectrum/ai-assistants/citation-sources'
 import { ErrorState } from '@/components/spectrum/ai-assistants/error-state'
@@ -55,11 +55,7 @@ type ThreadViewProps = {
 }
 
 function domainOf(url: string): string {
-  try {
-    return new URL(url).hostname.replace(/^www\./, '')
-  } catch {
-    return url
-  }
+  return hostnameOf(url)
 }
 
 function toCitations(sources: ChatSource[]): Citation[] {
@@ -68,7 +64,13 @@ function toCitations(sources: ChatSource[]): Citation[] {
     index: index + 1,
     url: source.url || '#',
     title: source.title,
-    snippet: source.description,
+    // Corpus hits carry the section text, which is far too long for a
+    // footnote. Keep a readable preview and let the reader open the source.
+    snippet: source.description
+      ? source.description.length > 220
+        ? `${source.description.slice(0, 220).trimEnd()}…`
+        : source.description
+      : undefined,
   }))
 }
 
@@ -173,12 +175,7 @@ function AssistantMessageView({
         />
       )}
 
-      {calls.length > 0 && (
-        <>
-          <ToolChips calls={calls} />
-          <AgentSteps steps={calls} variant="Compact" />
-        </>
-      )}
+      {calls.length > 0 && <ToolChips calls={calls} />}
 
       {searchResults.length > 0 && (
         <WebSearch query={searchQuery} results={searchResults} variant="Compact" />

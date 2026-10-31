@@ -80,7 +80,14 @@ export function VoiceHead({
   const prevRunningRef = useRef(false)
   const voiceThreadIdRef = useRef('')
   const voiceKnownIdsRef = useRef<Set<string>>(new Set())
-  const supported = typeof window !== 'undefined' && getRecognitionConstructor() !== null
+  // Speech recognition only exists in the browser, so this cannot be read
+  // during render: the server would always say "unsupported" and the first
+  // client render would disagree, which is a hydration mismatch. null means
+  // "not determined yet" and is treated as idle.
+  const [supported, setSupported] = useState<boolean | null>(null)
+  useEffect(() => {
+    setSupported(getRecognitionConstructor() !== null)
+  }, [])
 
   const stopSpeaking = () => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -184,7 +191,7 @@ export function VoiceHead({
     [],
   )
 
-  const state: HeadState = !supported
+  const state: HeadState = supported === false
     ? 'unsupported'
     : listening
       ? 'listening'
@@ -210,7 +217,7 @@ export function VoiceHead({
       setVoiceAsked(false)
       return
     }
-    if (!supported) {
+    if (supported !== true) {
       setNote('Voice is not supported in this browser.')
       return
     }

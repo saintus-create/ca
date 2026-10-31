@@ -17,7 +17,7 @@ A powerful AI-powered research tool that combines Firecrawl's web scraping capab
 
 ## Prerequisites
 
-- Node.js 18+ and npm
+- Node.js 22+ and npm (the test scripts use `--experimental-strip-types`, and `@mendable/firecrawl-js` requires Node 22)
 - API Keys (at least one model-provider key required):
   - `SARVAM_API_KEY` - For AI functionality (default model: `sarvam-105b`)
   - `VENICE_API_KEY` - Optional uncensored alternative provider
@@ -63,6 +63,7 @@ A powerful AI-powered research tool that combines Firecrawl's web scraping capab
 |----------|----------|-------------|
 | `SARVAM_API_KEY` | Yes | Sarvam AI key; the agent runs on `sarvam-105b` |
 | `FIRECRAWL_API_KEY` | No* | Firecrawl API key for web search and scraping |
+| `FIRECRAWL_BASE_URL` | No | Point the Firecrawl SDK at a proxy or self-hosted deployment (default `https://api.firecrawl.dev`) |
 | `SARVAM_MODEL` | No | Sarvam model id (default `sarvam-105b`) |
 | `SARVAM_BASE_URL` | No | Default `https://api.sarvam.ai/v1` |
 | `SARVAM_REASONING_EFFORT` | No | `low` \| `medium` \| `high` \| `none` |
@@ -122,6 +123,10 @@ npm start
 
 # Run linting
 npm run lint
+
+# End-to-end tests (needs Node 22; every upstream API is a local stand-in,
+# so no keys or network access are required)
+npm run test
 ```
 
 ## Tech Stack
