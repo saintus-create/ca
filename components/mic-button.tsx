@@ -110,7 +110,11 @@ export function MicButton({ onTranscript, disabled, className }: MicButtonProps)
     // and does not require a separately configured transcription API.
     if (typeof window !== 'undefined') {
       const browserWindow = window as SpeechWindow
-      const Recognition = browserWindow.SpeechRecognition || browserWindow.webkitSpeechRecognition
+      // The DOM lib declares its own SpeechRecognition, so the intersection with
+      // SpeechWindow widens the constructor type; pin it back to the shape used
+      // below.
+      const Recognition = (browserWindow.SpeechRecognition ||
+        browserWindow.webkitSpeechRecognition) as (new () => BrowserSpeechRecognition) | undefined
       if (Recognition) {
         try {
           const recognition = new Recognition()
