@@ -64,7 +64,7 @@ export function MessageActions({
       aria-label="Message actions"
       className={cn(
         'flex w-fit items-center gap-0.5 text-neutral-400 dark:text-neutral-500',
-        'opacity-100 transition-opacity duration-150 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/message:opacity-100 [@media(hover:hover)]:focus-within:opacity-100',
+        'opacity-100',
         variant === 'Pill' &&
           'rounded-full border border-black/[0.07] bg-white p-0.5 shadow-xs dark:border-white/[0.08] dark:bg-neutral-900',
         className,
@@ -104,7 +104,7 @@ export function MessageActions({
         <ThumbsUp
           className={cn(
             'size-3.5 transition-[transform,color] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]',
-            feedback === 'positive' && 'scale-110 fill-current text-neutral-800 dark:text-neutral-100',
+            feedback === 'positive' && 'scale-110 fill-current text-citation',
           )}
         />
       </ActionButton>
@@ -117,7 +117,7 @@ export function MessageActions({
         <ThumbsDown
           className={cn(
             'size-3.5 transition-[transform,color] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]',
-            feedback === 'negative' && 'scale-110 fill-current text-neutral-800 dark:text-neutral-100',
+            feedback === 'negative' && 'scale-110 fill-current text-citation',
           )}
         />
       </ActionButton>
