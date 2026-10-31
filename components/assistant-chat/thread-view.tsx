@@ -7,8 +7,11 @@ import { ArrowUp, Square } from 'lucide-react'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
 import { MessageActions } from '@/components/spectrum/ai-assistants/message-actions'
+import { ReasoningTrace } from '@/components/spectrum/ai-assistants/reasoning-trace'
+import { ToolChips } from '@/components/spectrum/ai-assistants/tool-chips'
+import { ThinkingDots } from '@/components/spectrum/ai-assistants/thinking-dots'
+import type { ReasoningStep, ToolCall } from '@/components/spectrum/ai-assistants/types'
 import { SpeakButton } from '@/components/speak-button'
-import { ThinkingDots } from './thinking-dots'
 import type { ChatMessage, ChatMessagePart, ChatSource, ChatThread } from './types'
 import type { DatasetInfo } from '@/components/corpus/datasets'
 
@@ -66,17 +69,31 @@ function AssistantMessageView({
   running: boolean
   onRetry: () => void
 }) {
-  const reasoning = message.content
+  const reasoningText = message.content
     .filter((p): p is { type: 'reasoning'; text: string } => p.type === 'reasoning')
     .map((p) => p.text)
     .join('\n')
-  const toolCalls = message.content.filter(
+  const toolParts = message.content.filter(
     (p): p is Extract<ChatMessagePart, { type: 'tool-call' }> => p.type === 'tool-call',
   )
   const text = message.content
     .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
     .map((p) => p.text)
     .join('')
+
+  const steps: ReasoningStep[] = reasoningText
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((content, i) => ({ id: `${message.id}-r-${i}`, content }))
+
+  const calls: ToolCall[] = toolParts.map((call) => ({
+    id: call.toolCallId,
+    name: call.toolName,
+    args: call.args,
+    result: call.result,
+    status: call.result !== undefined ? 'success' : running ? 'running' : 'success',
+  }))
 
   if (error) {
     return (
@@ -96,45 +113,36 @@ function AssistantMessageView({
     )
   }
 
+  const showThinking = running && !text
+  const streamingAnswer = running && !!text
+
   return (
     <div className="group/message space-y-3">
-      {reasoning && (
-        <details
-          open={running}
-          className="rounded-xl border border-black/[0.06] bg-black/[0.02] px-3 py-2 dark:border-white/[0.07] dark:bg-white/[0.03]"
-        >
-          <summary className="cursor-pointer text-[13px] text-neutral-500 dark:text-neutral-400">
-            {running ? 'Researching…' : 'Research steps'}
-          </summary>
-          <div className="mt-2 whitespace-pre-wrap text-[13px] leading-relaxed text-neutral-500 dark:text-neutral-400">
-            {reasoning}
-          </div>
-        </details>
+      {(steps.length > 0 || showThinking) && (
+        <ReasoningTrace
+          steps={
+            steps.length > 0
+              ? steps
+              : [{ id: `${message.id}-thinking`, content: 'Working through the sources…' }]
+          }
+          status={showThinking || (running && !text) ? 'thinking' : 'complete'}
+          defaultOpen={showThinking}
+        />
       )}
-      {toolCalls.map((call) => (
-        <div key={call.toolCallId} className="flex items-center gap-2 text-[13px] text-neutral-500 dark:text-neutral-400">
-          <span
-            className={`size-2 shrink-0 rounded-full ${
-              call.result !== undefined ? 'bg-neutral-400' : 'animate-pulse bg-brand'
-            }`}
-          />
-          {call.toolName}
-        </div>
-      ))}
+
+      {calls.length > 0 && <ToolChips calls={calls} />}
+
       {text ? (
         <div className="text-[15px] leading-[1.7] text-neutral-800 dark:text-neutral-200">
-          <MarkdownRenderer content={text} sources={sources} />
+          <MarkdownRenderer content={text} streaming={streamingAnswer} sources={sources} />
         </div>
-      ) : running ? (
-        <ThinkingDots label="Researching" />
+      ) : showThinking && steps.length === 0 ? (
+        <ThinkingDots label="Researching" variant="Dots" />
       ) : null}
+
       {text && !running && (
         <div className="flex flex-wrap items-center gap-1 pt-0.5">
-          <MessageActions
-            content={text}
-            onRegenerate={onRetry}
-            variant="Ghost"
-          />
+          <MessageActions content={text} onRegenerate={onRetry} variant="Ghost" />
           <SpeakButton id={message.id} text={text} />
         </div>
       )}
