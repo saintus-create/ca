@@ -8,5 +8,9 @@ import { AssistantChat } from '@/components/assistant-chat/chat-store'
  * needs no key; Cartesia stays optional, never required.
  */
 export default function OpenResearcherContent() {
-  return <AssistantChat />
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <AssistantChat />
+    </div>
+  )
 }
