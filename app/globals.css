@@ -3,20 +3,32 @@
 /* ---------------------------------------------------------------------------
    Typography tokens
    Public Sans is self-hosted (see app/layout.tsx). These are the families that
-   Tailwind utilities like font-sans / font-serif resolve to.
-   --------------------------------------------------------------------------- */
+   Tailwind's `font-sans` / `font-mono` utilities resolve to. Previously
+   tailwind.config.ts pointed `sans` at `--font-inter`, which nothing defines,
+   and Tailwind v4 never loads that config anyway - so every glyph in the app
+   was falling back to the OS UI font.
+--------------------------------------------------------------------------- */
 @theme inline {
-  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-serif), ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-sans: "Public Sans Variable", "Public Sans", ui-sans-serif, system-ui,
+    -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+
+  --text-xs--line-height: 1.25rem;
+  --text-sm--line-height: 1.375rem;
+  --text-base--line-height: 1.55;
+  --text-lg--line-height: 1.55;
+  --text-xl--line-height: 1.4;
+  --text-2xl--line-height: 1.3;
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* Design-system colour tokens. Higher-contrast muted text and borders so
-   secondary copy stays readable on white and on dark canvas. */
+/* Design-system colour tokens. Higher-contrast muted text and borders. */
 @theme {
   --color-background: hsl(0 0% 100%);
   --color-foreground: hsl(240 10% 3.9%);
@@ -94,13 +106,11 @@
     color: var(--color-foreground);
   }
 
-  /* Scrollbars — token-based, not light gray on white */
   * {
     scrollbar-width: thin;
     scrollbar-color: color-mix(in oklab, var(--color-foreground) 25%, transparent) transparent;
   }
 
-  /* ---------------------------------------------------------------- prose */
   .markdown-content {
     font-size: 1rem;
     line-height: 1.7;
@@ -111,7 +121,6 @@
 
   .markdown-content > :first-child { margin-top: 0; }
   .markdown-content > :last-child { margin-bottom: 0; }
-
   .markdown-content > * + * { margin-top: 0.875rem; }
   .markdown-content > * + h1 { margin-top: 1.75rem; }
   .markdown-content > * + h2 { margin-top: 1.5rem; }
@@ -121,9 +130,7 @@
   .markdown-content > h2 + *,
   .markdown-content > h3 + *,
   .markdown-content > h4 + * { margin-top: 0.5rem; }
-
   .markdown-content p { text-wrap: pretty; }
-
   .markdown-content h1,
   .markdown-content h2,
   .markdown-content h3,
@@ -138,18 +145,15 @@
   .markdown-content h2 { font-size: 1.2rem; }
   .markdown-content h3 { font-size: 1.05rem; }
   .markdown-content h4 { font-size: 1rem; }
-
   .markdown-content a {
     color: var(--color-citation);
     text-decoration: underline;
     text-underline-offset: 2px;
   }
-
   .markdown-content code {
     font-family: var(--font-mono);
     font-size: 0.875em;
   }
-
   .markdown-content pre {
     overflow-x: auto;
     border-radius: var(--radius);
@@ -157,22 +161,14 @@
     background: var(--color-muted);
     padding: 0.75rem 1rem;
   }
-
-  .markdown-content ul {
-    list-style: disc;
-    padding-left: 1.25rem;
-  }
-  .markdown-content ol {
-    list-style: decimal;
-    padding-left: 1.25rem;
-  }
-
+  .markdown-content ul { list-style: disc; padding-left: 1.25rem; }
+  .markdown-content ol { list-style: decimal; padding-left: 1.25rem; }
+  .markdown-content li::marker { color: var(--color-muted-foreground); }
   .markdown-content blockquote {
     border-left: 3px solid var(--color-border);
     padding-left: 0.875rem;
     color: var(--color-muted-foreground);
   }
-
   .markdown-content sup.citation,
   .markdown-content a.citation {
     color: var(--color-citation);
