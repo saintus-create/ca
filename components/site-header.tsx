@@ -43,6 +43,9 @@ export function SiteHeader() {
             <Link href="/corpus">Codes &amp; sources</Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
+            <Link href="/search">Search the web</Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
             <a href="https://leginfo.legislature.ca.gov/" target="_blank" rel="noreferrer">
               Official LegInfo
             </a>
