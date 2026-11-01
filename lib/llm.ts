@@ -19,7 +19,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 
-export type LlmProvider = 'sarvam' | 'venice' | 'anthropic';
+export type LlmProvider = 'sarvam' | 'venice' | 'anthropic' | 'cloudflare';
 
 export interface LlmTool {
   name: string;
@@ -70,6 +70,9 @@ const SARVAM_DEFAULT_MODEL = 'sarvam-105b';
 const VENICE_DEFAULT_BASE_URL = 'https://api.venice.ai/api/v1';
 const VENICE_DEFAULT_MODEL = 'venice-uncensored-1-2';
 const ANTHROPIC_DEFAULT_MODEL = 'claude-opus-4-8';
+// Workers AI's OpenAI-compatible endpoint. The model must support tool calling,
+// because the research agent reaches the corpus through a tool.
+const CLOUDFLARE_DEFAULT_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 const DEFAULT_MAX_TOKENS = 8192;
 const DEFAULT_TIMEOUT_MS = 180_000;
 
@@ -80,8 +83,16 @@ function envValue(name: string): string | undefined {
 
 export function resolveProvider(): LlmProvider {
   const explicit = envValue('LLM_PROVIDER')?.toLowerCase();
-  if (explicit === 'sarvam' || explicit === 'venice' || explicit === 'anthropic') return explicit;
+  if (
+    explicit === 'sarvam' ||
+    explicit === 'venice' ||
+    explicit === 'anthropic' ||
+    explicit === 'cloudflare'
+  ) {
+    return explicit;
+  }
   if (envValue('SARVAM_API_KEY')) return 'sarvam';
+  if (envValue('CLOUDFLARE_API_TOKEN')) return 'cloudflare';
   if (envValue('ANTHROPIC_API_KEY')) return 'anthropic';
   if (envValue('VENICE_API_KEY')) return 'venice';
   return 'sarvam';
@@ -89,6 +100,11 @@ export function resolveProvider(): LlmProvider {
 
 export function providerDefaults(provider: LlmProvider): { model: string; apiKeyEnv: string } {
   switch (provider) {
+    case 'cloudflare':
+      return {
+        model: envValue('CLOUDFLARE_MODEL') ?? CLOUDFLARE_DEFAULT_MODEL,
+        apiKeyEnv: 'CLOUDFLARE_API_TOKEN',
+      };
     case 'venice':
       return { model: envValue('VENICE_MODEL') ?? VENICE_DEFAULT_MODEL, apiKeyEnv: 'VENICE_API_KEY' };
     case 'anthropic':
@@ -109,17 +125,21 @@ export function isProviderConfigured(provider: LlmProvider, apiKeyOverride?: str
 export interface ChatOptions {
   apiKey?: string;
   provider?: LlmProvider;
+  /** Cloudflare account id, needed only by the Cloudflare provider. */
+  accountId?: string;
 }
 
 export async function createChat(request: ChatRequest, options?: ChatOptions): Promise<ChatResult> {
   const provider = options?.provider ?? resolveProvider();
   const { model } = providerDefaults(provider);
   const blocks =
-    provider === 'venice'
-      ? await veniceChat(model, request, options?.apiKey)
-      : provider === 'anthropic'
-        ? await anthropicChat(model, request, options?.apiKey)
-        : await sarvamChat(model, request, options?.apiKey);
+    provider === 'cloudflare'
+      ? await cloudflareChat(model, request, options?.apiKey, options?.accountId)
+      : provider === 'venice'
+        ? await veniceChat(model, request, options?.apiKey)
+        : provider === 'anthropic'
+          ? await anthropicChat(model, request, options?.apiKey)
+          : await sarvamChat(model, request, options?.apiKey);
 
   return {
     blocks,
@@ -328,6 +348,148 @@ async function sarvamChat(model: string, request: ChatRequest, apiKeyOverride?: 
 
   if (blocks.length === 0) {
     throw new Error('Sarvam returned an empty message (no text, reasoning, or tool calls).');
+  }
+
+  return blocks;
+}
+
+// ---------------------------------------------------------------------------
+// Cloudflare Workers AI (OpenAI-compatible chat completions)
+// ---------------------------------------------------------------------------
+
+/**
+ * Cloudflare's AI gateway speaks the OpenAI chat-completions shape, so the
+ * request and response handling mirrors Sarvam's. What differs is the URL,
+ * which is scoped to an account, and the single bearer credential.
+ *
+ * The model has to support tool calling: the research agent reaches California
+ * law through a tool, and a model that ignores tools cannot answer from the
+ * corpus at all.
+ */
+async function cloudflareChat(
+  model: string,
+  request: ChatRequest,
+  apiKeyOverride?: string,
+  accountIdOverride?: string,
+): Promise<LlmBlock[]> {
+  const apiKey = apiKeyOverride?.trim() || envValue('CLOUDFLARE_API_TOKEN');
+  if (!apiKey) {
+    throw new Error('Authentication error: CLOUDFLARE_API_TOKEN is not set.');
+  }
+
+  const accountId = accountIdOverride?.trim() || envValue('CLOUDFLARE_ACCOUNT_ID');
+  if (!accountId) {
+    throw new Error(
+      'Cloudflare needs an account id. Set CLOUDFLARE_ACCOUNT_ID, or add it with the key in the app.',
+    );
+  }
+
+  const timeoutMs = Number.parseInt(envValue('LLM_TIMEOUT_MS') ?? '', 10) || DEFAULT_TIMEOUT_MS;
+  // CLOUDFLARE_BASE_URL exists so the provider can be pointed at a local
+  // stand-in in tests, and at a gateway proxy in a locked-down network.
+  const base = envValue('CLOUDFLARE_BASE_URL') ?? 'https://api.cloudflare.com/client/v4';
+  const url = `${base.replace(/\/+$/, '')}/accounts/${encodeURIComponent(accountId)}/ai/v1/chat/completions`;
+
+  const body: Record<string, unknown> = {
+    model,
+    messages: toOpenAiMessages(request.system, request.messages),
+    max_tokens: request.maxTokens ?? DEFAULT_MAX_TOKENS,
+  };
+  if (request.tools?.length) {
+    body.tools = request.tools.map((tool) => ({
+      type: 'function',
+      function: {
+        name: tool.name,
+        description: tool.description,
+        parameters: tool.input_schema,
+      },
+    }));
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : 'Unknown error';
+    throw new Error(`Network error calling Cloudflare: ${reason}`);
+  }
+
+  const raw = await response.text();
+
+  if (!response.ok) {
+    let detail = raw.slice(0, 600);
+    try {
+      const parsed = JSON.parse(raw) as {
+        errors?: Array<{ message?: string }>;
+        error?: { message?: string } | string;
+        message?: string;
+      };
+      const message =
+        (typeof parsed.error === 'string' ? parsed.error : parsed.error?.message) ??
+        parsed.errors?.[0]?.message ??
+        parsed.message;
+      if (message) detail = message;
+    } catch {
+      // keep the raw body snippet
+    }
+
+    if (response.status === 401 || response.status === 403) {
+      throw new Error(`Authentication error: Cloudflare rejected CLOUDFLARE_API_TOKEN. ${detail}`);
+    }
+    if (response.status === 404 || /model/i.test(detail)) {
+      throw new Error(
+        `Model error: Cloudflare model "${model}" is not available for this account. Set CLOUDFLARE_MODEL. ${detail}`,
+      );
+    }
+    throw new Error(`Cloudflare API error (${response.status}): ${detail}`);
+  }
+
+  let payload: {
+    choices?: Array<{
+      message?: {
+        content?: string | null;
+        reasoning_content?: string | null;
+        tool_calls?: OpenAiToolCall[];
+      };
+    }>;
+  };
+  try {
+    payload = JSON.parse(raw);
+  } catch {
+    throw new Error('Cloudflare returned a response that was not valid JSON.');
+  }
+
+  const message = payload.choices?.[0]?.message;
+  if (!message) {
+    throw new Error('Cloudflare returned no completion choices.');
+  }
+
+  const blocks: LlmBlock[] = [];
+  const reasoning = message.reasoning_content?.trim();
+  if (reasoning) blocks.push({ type: 'thinking', thinking: reasoning });
+
+  for (const [index, call] of (message.tool_calls ?? []).entries()) {
+    blocks.push({
+      type: 'tool_use',
+      id: call.id ?? `call_${index}`,
+      name: call.function?.name ?? '',
+      input: safeParseArguments(call.function?.arguments),
+    });
+  }
+
+  const text = message.content?.trim();
+  if (text) blocks.push({ type: 'text', text });
+
+  if (blocks.length === 0) {
+    throw new Error('Cloudflare returned an empty message (no text, reasoning, or tool calls).');
   }
 
   return blocks;

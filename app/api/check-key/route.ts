@@ -12,13 +12,16 @@ const TIMEOUT_MS = 20_000
 
 function providerFrom(value: string | null): LlmProvider | undefined {
   const provider = value?.trim().toLowerCase()
-  return provider === 'sarvam' || provider === 'venice' || provider === 'anthropic'
+  return provider === 'sarvam' ||
+    provider === 'venice' ||
+    provider === 'anthropic' ||
+    provider === 'cloudflare'
     ? provider
     : undefined
 }
 
 export async function POST(req: NextRequest) {
-  let body: { apiKey?: string; provider?: string } = {}
+  let body: { apiKey?: string; provider?: string; accountId?: string } = {}
   try {
     body = (await req.json()) as typeof body
   } catch {
@@ -31,6 +34,12 @@ export async function POST(req: NextRequest) {
   }
 
   const provider = providerFrom(req.headers.get('X-LLM-Provider') || body.provider || null) ?? resolveProvider()
+  const accountId = (
+    req.headers.get('X-Cloudflare-Account') ||
+    body.accountId ||
+    process.env.CLOUDFLARE_ACCOUNT_ID ||
+    ''
+  ).trim()
   const { model } = providerDefaults(provider)
 
   const controller = new AbortController()
@@ -41,7 +50,18 @@ export async function POST(req: NextRequest) {
     let headers: Record<string, string>
     let payload: unknown
 
-    if (provider === 'anthropic') {
+    if (provider === 'cloudflare') {
+      if (!accountId) {
+        return NextResponse.json(
+          { ok: false, error: 'Cloudflare needs an account id as well as the token.' },
+          { status: 200 },
+        )
+      }
+      const base = process.env.CLOUDFLARE_BASE_URL || 'https://api.cloudflare.com/client/v4'
+      url = `${base.replace(/\/+$/, '')}/accounts/${encodeURIComponent(accountId)}/ai/v1/chat/completions`
+      headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` }
+      payload = { model, max_tokens: 1, messages: [{ role: 'user', content: 'ping' }] }
+    } else if (provider === 'anthropic') {
       url = 'https://api.anthropic.com/v1/messages'
       headers = {
         'x-api-key': apiKey,

@@ -73,7 +73,10 @@ A powerful AI-powered research tool that combines Firecrawl's web scraping capab
 | `SARVAM_MODEL` | No | Sarvam model id (default `sarvam-105b`) |
 | `SARVAM_BASE_URL` | No | Default `https://api.sarvam.ai/v1` |
 | `SARVAM_REASONING_EFFORT` | No | `low` \| `medium` \| `high` \| `none` |
-| `LLM_PROVIDER` | No | `sarvam` (default), `venice`, or `anthropic` |
+| `LLM_PROVIDER` | No | `sarvam` (default), `cloudflare`, `venice`, or `anthropic` |
+| `CLOUDFLARE_API_TOKEN` | No | Cloudflare Workers AI token; provider `cloudflare` |
+| `CLOUDFLARE_ACCOUNT_ID` | No | Cloudflare account id, required with the token above |
+| `CLOUDFLARE_MODEL` | No | Workers AI model (default `@cf/meta/llama-3.3-70b-instruct-fp8-fast`); must support tool calling |
 | `VENICE_API_KEY` | No | Venice key; uncensored alternative provider (`venice-uncensored-1-2`) |
 | `VENICE_MODEL` | No | Venice model id (default `venice-uncensored-1-2`) |
 | `ANTHROPIC_API_KEY` | No | Fallback provider, used when no Sarvam key is set |
