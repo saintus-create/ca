@@ -783,6 +783,45 @@ async function runResearch(
     }
 
     const toolCalls = result.blocks.filter((block) => block.type === 'tool_use');
+
+    // A model that ignores the tool would otherwise answer California law from
+    // memory, which is the one thing this app must not do. On the first turn,
+    // when the model called nothing, search the corpus on its behalf and hand
+    // it the sections, then let it answer with those in hand.
+    if (toolCalls.length === 0 && step === 0 && toolCallCount === 0) {
+      const fallbackInput: Record<string, unknown> = { query, limit: 6 };
+      if (scopeDataset) fallbackInput.dataset = scopeDataset;
+      toolCallCount++;
+      onEvent({
+        type: 'tool_call',
+        number: toolCallCount,
+        tool: displayToolName('search_california_law'),
+        parameters: fallbackInput,
+      });
+      const startedAt = Date.now();
+      const fallbackResult = await executeTool('search_california_law', fallbackInput, firecrawlApiKey);
+      onEvent({
+        type: 'tool_result',
+        tool: 'search_california_law',
+        duration: Date.now() - startedAt,
+        result: fallbackResult.content,
+        screenshots: fallbackResult.screenshots,
+      });
+      messages.push({
+        role: 'user',
+        content: [
+          {
+            type: 'tool_result',
+            tool_use_id: 'search_california_law_fallback',
+            content:
+              `${fallbackResult.content}\n\nThese are the California sections for the question above. ` +
+              'Answer from them, citing the section numbers. If they do not cover the question, say so plainly.',
+          },
+        ],
+      });
+      continue;
+    }
+
     if (toolCalls.length === 0) break;
 
     for (const call of toolCalls) {
