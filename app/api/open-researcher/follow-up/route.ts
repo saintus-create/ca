@@ -38,7 +38,12 @@ Only return the JSON array, nothing else.`
       system: 'You write concise follow-up research questions and reply with JSON only.',
       messages: [{ role: 'user', content: prompt }],
       maxTokens: 400,
-    }, browserKey ? { apiKey: browserKey } : undefined)
+    }, browserKey
+      ? {
+          apiKey: browserKey,
+          accountId: req.headers.get('X-Cloudflare-Account')?.trim() || undefined,
+        }
+      : undefined)
 
     // Reasoning-capable models may return thinking blocks before the answer,
     // so use the concatenated text rather than the first block.

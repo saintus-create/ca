@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
+  readCloudflareAccount,
   readFirecrawlKey,
   readLlmKey,
   readLlmProvider,
@@ -43,6 +44,7 @@ export interface ApiKeyDialogProps {
 
 const PROVIDERS: Array<{ value: BrowserProvider; label: string }> = [
   { value: 'sarvam', label: 'Sarvam AI (default)' },
+  { value: 'cloudflare', label: 'Cloudflare Workers AI' },
   { value: 'venice', label: 'Venice (uncensored)' },
   { value: 'anthropic', label: 'Anthropic (Claude)' },
 ]
@@ -51,6 +53,7 @@ export function ApiKeyDialog({ open, onOpenChange, onSaved }: ApiKeyDialogProps)
   const [llmKey, setLlmKey] = useState('')
   const [provider, setProvider] = useState<BrowserProvider | ''>('')
   const [firecrawlKey, setFirecrawlKey] = useState('')
+  const [accountId, setAccountId] = useState('')
   // Result of asking the provider whether the typed key works.
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null)
@@ -62,6 +65,7 @@ export function ApiKeyDialog({ open, onOpenChange, onSaved }: ApiKeyDialogProps)
     setLlmKey(readLlmKey())
     setProvider(readLlmProvider())
     setFirecrawlKey(readFirecrawlKey())
+    setAccountId(readCloudflareAccount())
   }, [open])
 
   const testKey = async () => {
@@ -75,7 +79,11 @@ export function ApiKeyDialog({ open, onOpenChange, onSaved }: ApiKeyDialogProps)
       const response = await fetch('/api/check-key', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apiKey: llmKey.trim(), provider: provider || 'sarvam' }),
+        body: JSON.stringify({
+          apiKey: llmKey.trim(),
+          provider: provider || 'sarvam',
+          accountId: accountId.trim(),
+        }),
       })
       const data = (await response.json()) as {
         ok?: boolean
@@ -95,13 +103,13 @@ export function ApiKeyDialog({ open, onOpenChange, onSaved }: ApiKeyDialogProps)
   }
 
   const save = () => {
-    saveKeys({ llmKey, provider, firecrawlKey })
+    saveKeys({ llmKey, provider, firecrawlKey, cloudflareAccount: accountId })
     onSaved?.()
     onOpenChange(false)
   }
 
   const clear = () => {
-    saveKeys({ llmKey: '', provider: '', firecrawlKey: '' })
+    saveKeys({ llmKey: '', provider: '', firecrawlKey: '', cloudflareAccount: '' })
     setLlmKey('')
     setProvider('')
     setFirecrawlKey('')
@@ -147,6 +155,29 @@ export function ApiKeyDialog({ open, onOpenChange, onSaved }: ApiKeyDialogProps)
             </Select>
           </div>
 
+          {provider === 'cloudflare' && (
+            <div className="space-y-1.5">
+              <Label htmlFor="cf-account" className="text-[12.5px]">
+                Cloudflare account ID
+              </Label>
+              <Input
+                id="cf-account"
+                autoComplete="off"
+                spellCheck={false}
+                placeholder="94271e3283e12efb56b539b2397e8e9a"
+                value={accountId}
+                onChange={(event) => {
+                  setAccountId(event.target.value)
+                  setTestResult(null)
+                }}
+              />
+              <p className="text-[11.5px] leading-[1.5] text-muted-foreground">
+                From the Workers AI dashboard. The model must support tool calling, which the
+                research agent needs to search the corpus.
+              </p>
+            </div>
+          )}
+
           <div className="space-y-1.5">
             <Label htmlFor="llm-key" className="text-[12.5px]">
               Language model key
@@ -164,8 +195,8 @@ export function ApiKeyDialog({ open, onOpenChange, onSaved }: ApiKeyDialogProps)
               }}
             />
             <p className="text-[11.5px] leading-[1.5] text-muted-foreground">
-              Required for answers. Get one from dashboard.sarvam.ai, or use a Venice or Anthropic
-              key with the provider above.
+              Required for answers. Get one from dashboard.sarvam.ai, or pick Cloudflare, Venice or
+              Anthropic above.
             </p>
             {testResult && (
               <p

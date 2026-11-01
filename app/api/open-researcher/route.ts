@@ -20,9 +20,13 @@ export async function POST(req: NextRequest) {
       ? {
           apiKey: browserKey,
           provider:
-            browserProvider === 'sarvam' || browserProvider === 'venice' || browserProvider === 'anthropic'
+            browserProvider === 'sarvam' ||
+            browserProvider === 'venice' ||
+            browserProvider === 'anthropic' ||
+            browserProvider === 'cloudflare'
               ? (browserProvider as LlmProvider)
               : undefined,
+          accountId: req.headers.get('X-Cloudflare-Account')?.trim() || undefined,
         }
       : undefined
 
