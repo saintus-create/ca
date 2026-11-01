@@ -190,8 +190,13 @@ export function ApiKeyDialog({ open, onOpenChange, onSaved }: ApiKeyDialogProps)
               placeholder="sk_..."
               value={llmKey}
               onChange={(event) => {
-                setLlmKey(event.target.value)
+                const value = event.target.value
+                setLlmKey(value)
                 setTestResult(null)
+                // A Cloudflare token is not a Sarvam key; pick the provider from
+                // the key so it cannot be sent to the wrong service.
+                if (value.trim().startsWith('cfat_')) setProvider('cloudflare')
+                else if (value.trim().startsWith('sk-ant-')) setProvider('anthropic')
               }}
             />
             <p className="text-[11.5px] leading-[1.5] text-muted-foreground">

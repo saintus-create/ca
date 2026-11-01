@@ -98,6 +98,20 @@ export function resolveProvider(): LlmProvider {
   return 'sarvam';
 }
 
+/**
+ * Guess the provider from the shape of a key, so a credential cannot be sent to
+ * the wrong service. A Cloudflare token starts cfat_, an Anthropic key sk-ant-.
+ * Returns undefined when the shape says nothing, and the caller falls back to
+ * the configured provider.
+ */
+export function providerForKey(key: string | undefined): LlmProvider | undefined {
+  const value = key?.trim();
+  if (!value) return undefined;
+  if (value.startsWith('cfat_')) return 'cloudflare';
+  if (value.startsWith('sk-ant-')) return 'anthropic';
+  return undefined;
+}
+
 export function providerDefaults(provider: LlmProvider): { model: string; apiKeyEnv: string } {
   switch (provider) {
     case 'cloudflare':
