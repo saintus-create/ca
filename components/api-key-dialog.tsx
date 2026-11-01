@@ -51,6 +51,9 @@ export function ApiKeyDialog({ open, onOpenChange, onSaved }: ApiKeyDialogProps)
   const [llmKey, setLlmKey] = useState('')
   const [provider, setProvider] = useState<BrowserProvider | ''>('')
   const [firecrawlKey, setFirecrawlKey] = useState('')
+  // Result of asking the provider whether the typed key works.
+  const [testing, setTesting] = useState(false)
+  const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null)
 
   // Read the stored values when the dialog opens, not during render, so the
   // server and the first client render agree.
@@ -60,6 +63,36 @@ export function ApiKeyDialog({ open, onOpenChange, onSaved }: ApiKeyDialogProps)
     setProvider(readLlmProvider())
     setFirecrawlKey(readFirecrawlKey())
   }, [open])
+
+  const testKey = async () => {
+    if (!llmKey.trim()) {
+      setTestResult({ ok: false, message: 'Enter a key first.' })
+      return
+    }
+    setTesting(true)
+    setTestResult(null)
+    try {
+      const response = await fetch('/api/check-key', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey: llmKey.trim(), provider: provider || 'sarvam' }),
+      })
+      const data = (await response.json()) as {
+        ok?: boolean
+        model?: string
+        error?: string
+      }
+      setTestResult(
+        data.ok
+          ? { ok: true, message: `Works. The provider answered with ${data.model}.` }
+          : { ok: false, message: data.error || 'The key did not work.' },
+      )
+    } catch {
+      setTestResult({ ok: false, message: 'Could not reach the app to run the test.' })
+    } finally {
+      setTesting(false)
+    }
+  }
 
   const save = () => {
     saveKeys({ llmKey, provider, firecrawlKey })
@@ -96,7 +129,10 @@ export function ApiKeyDialog({ open, onOpenChange, onSaved }: ApiKeyDialogProps)
             </Label>
             <Select
               value={provider || 'sarvam'}
-              onValueChange={(value) => setProvider(value as BrowserProvider)}
+              onValueChange={(value) => {
+                setProvider(value as BrowserProvider)
+                setTestResult(null)
+              }}
             >
               <SelectTrigger id="llm-provider" className="w-full">
                 <SelectValue placeholder="Sarvam AI" />
@@ -122,12 +158,23 @@ export function ApiKeyDialog({ open, onOpenChange, onSaved }: ApiKeyDialogProps)
               spellCheck={false}
               placeholder="sk_..."
               value={llmKey}
-              onChange={(event) => setLlmKey(event.target.value)}
+              onChange={(event) => {
+                setLlmKey(event.target.value)
+                setTestResult(null)
+              }}
             />
             <p className="text-[11.5px] leading-[1.5] text-muted-foreground">
               Required for answers. Get one from dashboard.sarvam.ai, or use a Venice or Anthropic
               key with the provider above.
             </p>
+            {testResult && (
+              <p
+                role="status"
+                className={`text-[11.5px] leading-[1.5] ${testResult.ok ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400'}`}
+              >
+                {testResult.message}
+              </p>
+            )}
           </div>
 
           <div className="space-y-1.5">
@@ -156,9 +203,14 @@ export function ApiKeyDialog({ open, onOpenChange, onSaved }: ApiKeyDialogProps)
         </div>
 
         <DialogFooter className="gap-2 sm:justify-between">
-          <Button type="button" variant="ghost" onClick={clear} className="text-muted-foreground">
-            Clear
-          </Button>
+          <div className="flex gap-2">
+            <Button type="button" variant="ghost" onClick={clear} className="text-muted-foreground">
+              Clear
+            </Button>
+            <Button type="button" variant="secondary" onClick={testKey} disabled={testing}>
+              {testing ? 'Testing…' : 'Test key'}
+            </Button>
+          </div>
           <div className="flex gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
