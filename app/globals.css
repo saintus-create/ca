@@ -91,6 +91,14 @@
   --color-sidebar-accent-foreground: hsl(240 5.9% 10%);
   --color-sidebar-border: hsl(240 6% 78%);
   --color-sidebar-ring: hsl(240 10% 3.9%);
+  /* Motion: one duration scale and two easings, used instead of ad-hoc
+     duration-[160ms] / ease-[cubic-bezier(...)] values at call sites. */
+  --duration-fast: 140ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+  --ease-standard: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.32, 0.72, 0, 1);
+
   --color-brand: #22364a;
   --color-brand-foreground: oklch(0.985 0 0);
   --color-citation: #8a6d1a;
@@ -154,15 +162,28 @@
     scrollbar-color: color-mix(in oklab, var(--color-foreground) 25%, transparent) transparent;
   }
 
+  /* Keyboard focus is visible everywhere, from one rule, on the ring token. */
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+
+  /* Motion that carries meaning is suppressed for anyone who asked for less. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
   .markdown-content {
-    /* Sized for reading, not for fitting. 16px across a 736px measure reads
-       as small and is hard to track; 17px with more leading and a ~70ch
-       measure is the difference between a wall of text and something you can
-       actually scan. */
-    font-size: 1.125rem;
-    line-height: 1.75;
+    font-size: 1rem;
+    line-height: 1.7;
     letter-spacing: -0.003em;
-    max-width: 68ch !important;
     color: var(--color-foreground);
     overflow-wrap: break-word;
   }
@@ -171,7 +192,7 @@
      one level in or paragraphs run together. */
   .markdown-content > div > :first-child { margin-top: 0; }
   .markdown-content > div > :last-child { margin-bottom: 0; }
-  .markdown-content > div > * + * { margin-top: 1rem; }
+  .markdown-content > div > * + * { margin-top: 0.875rem; }
   .markdown-content > div > * + h2 { margin-top: 1.5rem; }
   .markdown-content > div > * + h3 { margin-top: 1.25rem; }
   .markdown-content > div > h1 + *,
@@ -200,19 +221,10 @@
     letter-spacing: -0.02em;
     text-wrap: balance;
   }
-  .markdown-content h1 { font-size: 1.5rem; }
-  .markdown-content h2 { font-size: 1.3rem; }
-  .markdown-content h3 { font-size: 1.125rem; }
-  /* Corpus answers arrive as one section per hit. A rule above each heading
-     gives the answer document structure instead of one undifferentiated slab. */
-  .markdown-content h3 {
-    margin-top: 2rem;
-    padding-top: 0.9rem;
-    border-top: 1px solid var(--color-border);
-  }
-  .markdown-content h1 + h3,
-  .markdown-content h2 + h3 { margin-top: 1.25rem; border-top: 0; padding-top: 0; }
-  .markdown-content h4 { font-size: 1.0625rem; }
+  .markdown-content h1 { font-size: 1.375rem; }
+  .markdown-content h2 { font-size: 1.2rem; }
+  .markdown-content h3 { font-size: 1.05rem; }
+  .markdown-content h4 { font-size: 1rem; }
   .markdown-content a {
     color: var(--color-citation);
     text-decoration: underline;
@@ -233,20 +245,10 @@
   .markdown-content ol { list-style: decimal; padding-left: 1.25rem; }
   .markdown-content li::marker { color: var(--color-muted-foreground); }
   .markdown-content blockquote {
-    /* Indented against a rule so quoted statute reads as a quotation, not as
-       more body copy. */
-    margin-left: 0;
-    padding-left: 1.1rem;
     border-left: 3px solid var(--color-border);
+    padding-left: 0.875rem;
     color: var(--color-muted-foreground);
-    font-size: 1rem;
-    line-height: 1.7;
   }
-  .markdown-content blockquote p { margin: 0; }
-  .markdown-content ul,
-  .markdown-content ol { list-style-position: outside; }
-  .markdown-content li { padding-left: 0.25rem; }
-  .markdown-content li + li { margin-top: 0.35rem; }
   .markdown-content sup.citation,
   .markdown-content a.citation {
     color: var(--color-citation);

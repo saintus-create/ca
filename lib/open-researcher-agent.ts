@@ -814,8 +814,11 @@ async function runResearch(
             type: 'tool_result',
             tool_use_id: 'search_california_law_fallback',
             content:
-              `${fallbackResult.content}\n\nThese are the California sections for the question above. ` +
-              'Answer from them, citing the section numbers. If they do not cover the question, say so plainly.',
+              `${fallbackResult.content}\n\n` +
+              'These are the California sections for the question above. Write the answer now, in ' +
+              'plain prose paragraphs. Use the sections, do not copy them out: no list of section ' +
+              'titles, no quoting a heading back, no restating a title you were given. Cite each ' +
+              'claim inline as "CIV § 1950.5". If the sections do not cover the question, say so plainly.',
           },
         ],
       });

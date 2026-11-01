@@ -42,6 +42,7 @@ Only return the JSON array, nothing else.`
       ? {
           apiKey: browserKey,
           accountId: req.headers.get('X-Cloudflare-Account')?.trim() || undefined,
+          model: req.headers.get('X-LLM-Model')?.trim() || undefined,
         }
       : undefined)
 

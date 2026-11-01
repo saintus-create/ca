@@ -13,8 +13,11 @@ export const metadata: Metadata = {
 
 export default function Home() {
   return (
-    <div className="flex h-dvh flex-col bg-background font-sans text-foreground">
+    <main className="flex h-dvh flex-col bg-background font-sans text-foreground">
+      {/* The visible chrome is a toolbar and a composer, so the page would
+          otherwise have no heading for a screen reader to announce. */}
+      <h1 className="sr-only">California Legislative Information</h1>
       <OpenResearcherContent />
-    </div>
+    </main>
   )
 }
