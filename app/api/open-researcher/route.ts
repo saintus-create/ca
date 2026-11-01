@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { performResearchWithStreaming } from '@/lib/open-researcher-agent'
-import { isProviderConfigured, providerDefaults, resolveProvider, type LlmProvider } from '@/lib/llm'
+import {
+  isProviderConfigured,
+  providerDefaults,
+  providerForKey,
+  resolveProvider,
+  type LlmProvider,
+} from '@/lib/llm'
 
 export async function POST(req: NextRequest) {
   try {
@@ -32,7 +38,7 @@ export async function POST(req: NextRequest) {
 
     // Check the language model key for the active provider (Sarvam by
     // default, Anthropic as a fallback).
-    const provider = chatOptions?.provider ?? resolveProvider()
+    const provider = chatOptions?.provider ?? providerForKey(browserKey) ?? resolveProvider()
     if (!isProviderConfigured(provider, browserKey)) {
       const { apiKeyEnv } = providerDefaults(provider)
       return NextResponse.json(

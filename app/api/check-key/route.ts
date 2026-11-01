@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { providerDefaults, resolveProvider, type LlmProvider } from '@/lib/llm'
+import { providerDefaults, providerForKey, resolveProvider, type LlmProvider } from '@/lib/llm'
 
 // Answers one question: does this key actually work with this provider?
 //
@@ -33,7 +33,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'No key provided.' }, { status: 400 })
   }
 
-  const provider = providerFrom(req.headers.get('X-LLM-Provider') || body.provider || null) ?? resolveProvider()
+  const provider =
+    providerFrom(req.headers.get('X-LLM-Provider') || body.provider || null) ??
+    providerForKey(apiKey) ??
+    resolveProvider()
   const accountId = (
     req.headers.get('X-Cloudflare-Account') ||
     body.accountId ||
