@@ -1,12 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // The upstream Open Researcher template ships with pre-existing
-  // no-unused-vars lint errors in its own files; don't let its lint
-  // debt fail production builds. Template code itself is untouched.
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  // Lint runs during the build. The previous setting silenced it to hide
+  // findings in vendored components; those are excluded in eslint.config.mjs
+  // instead, so a real problem in application code fails the build again.
   // Keep the ~73MB corpus out of the serverless functions. The corpus
   // ships as static assets (public/corpus) and the corpus tool loads
   // it as data at runtime (fs locally, the site's own static URLs on

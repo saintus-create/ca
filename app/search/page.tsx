@@ -25,10 +25,10 @@ export default function SearchPage() {
       <SiteHeader />
       <main className="px-6 py-16 sm:py-20 lg:px-8">
         <div className="mx-auto max-w-3xl">
-          <h1 className="text-3xl font-medium tracking-tight text-neutral-900 dark:text-neutral-50 sm:text-4xl">
+          <h1 className="text-3xl font-medium tracking-tight text-foreground sm:text-4xl">
             Search the web
           </h1>
-          <p className="mt-3 text-[15px] leading-relaxed text-neutral-600 dark:text-neutral-400">
+          <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">
             Google results for anything outside the corpus. For California law, ask the
             assistant on the home page, which searches the codes directly.
           </p>
@@ -37,7 +37,7 @@ export default function SearchPage() {
       </main>
       <Script
         async
-        src={`https://cse.google.com/cse.js
+        src={`https://cse.google.com/cse.js?cx=${CSE_CX}`}
         strategy="afterInteractive"
       />
       <SiteFooter />

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { providerDefaults, providerForKey, resolveProvider, type LlmProvider } from '@/lib/llm'
+import { LIMITS, optionalString, readJsonObject } from '@/lib/validate'
 
 // Answers one question: does this key actually work with this provider?
 //
@@ -21,29 +22,45 @@ function providerFrom(value: string | null): LlmProvider | undefined {
 }
 
 export async function POST(req: NextRequest) {
-  let body: { apiKey?: string; provider?: string; accountId?: string; model?: string } = {}
-  try {
-    body = (await req.json()) as typeof body
-  } catch {
-    /* an empty body is fine; the key can come from the header */
+  // An empty body is allowed: the key may arrive in the header instead. A body
+  // that is present but malformed is still an error.
+  let body: Record<string, unknown> = {}
+  const hasBody = req.headers.get('content-length') !== '0' && req.method === 'POST'
+  if (hasBody) {
+    const parsed = await readJsonObject(req)
+    if (!parsed.ok) {
+      // No body at all is fine; a body of the wrong shape is not.
+      const text = parsed.error
+      if (!text.includes('required')) return NextResponse.json({ ok: false, error: text }, { status: 400 })
+    } else {
+      body = parsed.value
+    }
   }
 
-  const apiKey = (req.headers.get('X-LLM-API-Key') || body.apiKey || '').trim()
+  const apiKey = (req.headers.get('X-LLM-API-Key') || String(body.apiKey ?? '')).trim()
   if (!apiKey) {
     return NextResponse.json({ ok: false, error: 'No key provided.' }, { status: 400 })
   }
+  if (apiKey.length > LIMITS.apiKey) {
+    return NextResponse.json({ ok: false, error: 'That key is too long to be a real key.' }, { status: 400 })
+  }
 
   const provider =
-    providerFrom(req.headers.get('X-LLM-Provider') || body.provider || null) ??
+    providerFrom(req.headers.get('X-LLM-Provider') || String(body.provider ?? '') || null) ??
     providerForKey(apiKey) ??
     resolveProvider()
-  const accountId = (
-    req.headers.get('X-Cloudflare-Account') ||
-    body.accountId ||
-    process.env.CLOUDFLARE_ACCOUNT_ID ||
-    ''
-  ).trim()
-  const model = (req.headers.get('X-LLM-Model') || body.model || '').trim() || providerDefaults(provider).model
+  const accountResult = optionalString(
+    req.headers.get('X-Cloudflare-Account') ?? body.accountId ?? process.env.CLOUDFLARE_ACCOUNT_ID,
+    'Cloudflare account id',
+    { max: LIMITS.accountId, pattern: /^[a-f0-9]{32}$/, patternHint: 'a 32-character hex account id' },
+  )
+  if (!accountResult.ok) return NextResponse.json({ ok: false, error: accountResult.error }, { status: 400 })
+  const accountId = accountResult.value ?? ''
+  const modelResult = optionalString(req.headers.get('X-LLM-Model') ?? body.model, 'model', {
+    max: LIMITS.model,
+  })
+  if (!modelResult.ok) return NextResponse.json({ ok: false, error: modelResult.error }, { status: 400 })
+  const model = modelResult.value ?? providerDefaults(provider).model
 
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
