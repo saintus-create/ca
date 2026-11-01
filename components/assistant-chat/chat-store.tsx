@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Sidebar, SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { Sidebar, SidebarInset, SidebarProvider, useSidebar } from '@/components/ui/sidebar'
 import { ConversationList, type ConversationEntry } from '@/components/spectrum/ai-assistants/conversation-list'
 import { ResearchRuntimeProvider } from '@/components/assistant-ui/research-runtime'
 import { Gemini } from '@/components/assistant-ui/gemini'
 import { SidebarTrigger } from '@/components/ui/sidebar'
-import { SquarePen } from 'lucide-react'
+import { SquarePen, X } from 'lucide-react'
 import type { ChatMessage, ChatMessagePart, ChatSource, ChatThread } from './types'
 import { fetchDatasets, type DatasetInfo } from '@/components/corpus/datasets'
 import { readSse, parseSseFrame } from '@/lib/sse'
@@ -154,6 +154,14 @@ function ThreadList({
   onNew: () => void
   onDelete: (id: string) => void
 }) {
+  // On a phone the list is a drawer. Choosing a thread or starting one has to
+  // close it: shadcn hides the sheet's own close button, and the list items are
+  // not SidebarMenuButtons, so nothing else would dismiss it and the drawer
+  // stayed over the conversation.
+  const { setOpenMobile, isMobile } = useSidebar()
+  const closeDrawer = () => {
+    if (isMobile) setOpenMobile(false)
+  }
   const visible = threads.filter((t) => t.messages.length > 0)
   const conversations: ConversationEntry[] = visible.map((t) => ({
     id: t.id,
@@ -162,21 +170,43 @@ function ThreadList({
   }))
   return (
     <div className="flex h-full flex-col gap-2 p-3">
-      <Button
-        type="button"
-        variant="outline"
-        onClick={onNew}
-        className="w-full justify-start gap-2 rounded-full"
-      >
-        <Plus className="size-4" />
-        New thread
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            onNew()
+            closeDrawer()
+          }}
+          className="w-full justify-start gap-2 rounded-full"
+        >
+          <Plus className="size-4" />
+          New thread
+        </Button>
+        {/* shadcn hides the sheet's own close button, so the drawer carries its
+            own way out on a phone. */}
+        {isMobile && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Close threads"
+            onClick={closeDrawer}
+            className="size-9 shrink-0 rounded-full text-muted-foreground"
+          >
+            <X className="size-[18px]" />
+          </Button>
+        )}
+      </div>
       {conversations.length > 0 && (
         <ConversationList
           className="max-w-none flex-1 border-0 bg-transparent p-0 shadow-none"
           conversations={conversations}
           activeId={currentId}
-          onSelect={onSelect}
+          onSelect={(id) => {
+            onSelect(id)
+            closeDrawer()
+          }}
           variant="Compact"
         />
       )}
@@ -508,7 +538,7 @@ export function AssistantChat() {
         <SidebarInset className="flex min-h-0 min-w-0 flex-1 flex-col">
           {hasKey === false && (
             <div className="mx-auto mt-3 flex w-full max-w-[760px] items-center justify-between gap-3 rounded-xl border border-citation/30 bg-citation/[0.06] px-3 py-2 sm:px-4">
-              <p className="text-[12.5px] leading-[1.5] text-neutral-700 dark:text-neutral-300">
+              <p className="text-[12.5px] leading-[1.5] text-foreground/80">
                 No API key yet. Add one to start asking questions.
               </p>
               <Button
@@ -526,16 +556,16 @@ export function AssistantChat() {
           <div className="flex h-12 shrink-0 items-center justify-between px-2">
             <SidebarTrigger
               aria-label="Threads"
-              className="grid size-9 place-items-center rounded-full text-neutral-600 transition-colors hover:bg-black/[0.05] dark:text-neutral-300 dark:hover:bg-white/[0.08]"
+              className="grid size-9 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             />
-            <span className="truncate px-2 text-[15px] font-medium tracking-[-0.01em] text-neutral-800 dark:text-neutral-100">
+            <span className="truncate px-2 text-[15px] font-medium tracking-[-0.01em] text-foreground">
               {current.title}
             </span>
             <button
               type="button"
               aria-label="New thread"
               onClick={newThread}
-              className="grid size-9 place-items-center rounded-full text-neutral-600 transition-colors hover:bg-black/[0.05] dark:text-neutral-300 dark:hover:bg-white/[0.08]"
+              className="grid size-9 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
               <SquarePen className="size-[18px]" />
             </button>

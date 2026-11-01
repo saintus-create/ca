@@ -35,6 +35,7 @@ import {
   XIcon,
 } from "lucide-react";
 import { type FC, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { useAttachmentSrc } from "@/hooks/use-attachment-src";
 import { MarkdownText } from "@/components/assistant-ui/markdown-text";
 import {
@@ -55,19 +56,19 @@ export const Gemini: FC<{
   onScopeChange?: (scope: string) => void;
 }> = ({ onOpenKeys, datasets = [], scope = "", onScopeChange }) => {
   return (
-      <ThreadPrimitive.Root className="flex h-full flex-col overflow-hidden bg-[#fdfcfc] text-[#1f1f1f] dark:bg-[#0c0c0c] dark:text-[#e3e3e3]">
+      <ThreadPrimitive.Root className="flex h-full flex-col overflow-hidden bg-background text-foreground">
         <AuiIf condition={(s) => s.thread.messages.length === 0}>
           <div className="relative flex grow flex-col">
             <div className="flex grow flex-col items-center justify-center px-4">
               <div className="flex w-full max-w-3xl flex-col">
-                <p className="fade-in slide-in-from-bottom-3 motion-safe:animate-in fill-mode-both relative z-10 mb-6 text-center text-4xl font-normal text-[#1f1f1f] delay-500 duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] dark:text-white">
+                <h2 className="fade-in slide-in-from-bottom-3 motion-safe:animate-in fill-mode-both relative z-10 mb-6 text-center text-4xl font-normal text-foreground delay-500 duration-400 ease-[cubic-bezier(0.22,1,0.36,1)]">
                   How can I help you today?
-                </p>
+                </h2>
                 <Suggestions />
                 <div className="relative">
                   <div
                     aria-hidden="true"
-                    className="fade-in zoom-in-40 blur-in-[90px] motion-safe:animate-in fill-mode-both pointer-events-none absolute top-1/2 left-1/2 h-[260px] w-[680px] max-w-[92%] -translate-x-1/2 -translate-y-1/2 rounded-[140px] bg-[#a9d1fb]/60 blur-[90px] duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] dark:bg-[#1b2f9c]/50"
+                    className="fade-in zoom-in-40 blur-in-[90px] motion-safe:animate-in fill-mode-both pointer-events-none absolute top-1/2 left-1/2 h-[260px] w-[680px] max-w-[92%] -translate-x-1/2 -translate-y-1/2 rounded-[140px] bg-brand/15 blur-[90px] duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] dark:bg-brand/25"
                   />
                   <div className="relative z-10">
                     <Composer onOpenKeys={onOpenKeys} datasets={datasets} scope={scope} onScopeChange={onScopeChange} />
@@ -81,9 +82,9 @@ export const Gemini: FC<{
         <AuiIf condition={(s) => s.thread.messages.length > 0}>
           <ThreadPrimitive.Viewport className="flex grow flex-col overflow-y-scroll pt-12">
             <ThreadPrimitive.Messages components={{ Message: ChatMessage }} />
-            <ThreadPrimitive.ViewportFooter className="sticky bottom-0 mt-auto flex w-full flex-col items-center gap-1.5 bg-[#fdfcfc] px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] dark:bg-[#0c0c0c]">
+            <ThreadPrimitive.ViewportFooter className="sticky bottom-0 mt-auto flex w-full flex-col items-center gap-1.5 bg-background px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
               <Composer onOpenKeys={onOpenKeys} datasets={datasets} scope={scope} onScopeChange={onScopeChange} />
-              <p className="text-center text-xs text-[#5e6063] dark:text-[#9aa0a6]">
+              <p className="text-center text-xs text-muted-foreground">
                 Not legal advice. Check the cited section before relying on it.
               </p>
             </ThreadPrimitive.ViewportFooter>
@@ -114,9 +115,9 @@ const Suggestions: FC = () => {
             aui.composer().setText(label);
             aui.composer().send();
           }}
-          className="flex items-center gap-4 rounded-2xl px-4 py-2.5 text-left text-[15px] text-[#1f1f1f] transition-colors hover:bg-black/[0.04] dark:text-[#e3e3e3] dark:hover:bg-white/[0.06]"
+          className="flex items-center gap-4 rounded-2xl px-4 py-2.5 text-left text-[15px] text-foreground transition-colors hover:bg-muted"
         >
-          <Icon className="size-[18px] shrink-0 text-[#444746] dark:text-[#c4c7c5]" />
+          <Icon className="size-[18px] shrink-0 text-muted-foreground" />
           <span>{label}</span>
         </button>
       ))}
@@ -125,7 +126,7 @@ const Suggestions: FC = () => {
 };
 
 const ghostBtnClass =
-  "flex shrink-0 items-center justify-center rounded-full text-[#444746] transition-colors hover:bg-[#444746]/8 hover:text-[#1f1f1f] dark:text-[#c4c7c5] dark:hover:bg-[#c4c7c5]/10 dark:hover:text-[#e3e3e3]";
+  "flex shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground";
 
 const Composer: FC<{
   onOpenKeys?: () => void;
@@ -134,7 +135,7 @@ const Composer: FC<{
   onScopeChange?: (scope: string) => void;
 }> = ({ onOpenKeys, datasets = [], scope = "", onScopeChange }) => {
   return (
-    <ComposerPrimitive.Root className="mx-auto flex w-full max-w-2xl flex-col rounded-4xl bg-white p-3 dark:bg-[#1e1f20]">
+    <ComposerPrimitive.Root className="mx-auto flex w-full max-w-2xl flex-col rounded-4xl border border-border/70 bg-card p-3">
       <AuiIf condition={(s) => s.composer.attachments.length > 0}>
         <div className="flex flex-row gap-2.5 overflow-x-auto px-1 pt-1 pb-2.5">
           <ComposerPrimitive.Attachments
@@ -148,7 +149,7 @@ const Composer: FC<{
         <ComposerPrimitive.Input
           rows={1}
           placeholder="Ask about California law"
-          className="max-h-40 flex-1 resize-none bg-transparent px-2 py-1.5 text-[17px] leading-6 text-[#1f1f1f] outline-none placeholder:text-[#575b5f] dark:text-[#e3e3e3] dark:placeholder:text-[#9aa0a6]"
+          className="max-h-40 flex-1 resize-none rounded-md bg-transparent px-2 py-1.5 text-[17px] leading-6 text-foreground placeholder:text-muted-foreground"
         />
         <VoiceButton />
         <GeminiSendButton />
@@ -171,11 +172,16 @@ const GeminiPlusMenu: FC<{
 }> = ({ onOpenKeys, datasets = [], scope = "", onScopeChange }) => {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        aria-label="More"
-        className={`${ghostBtnClass} size-9`}
-      >
-        <PlusIcon width={20} height={20} />
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label="More"
+          className="size-9 shrink-0 rounded-full text-muted-foreground hover:text-foreground"
+        >
+          <PlusIcon width={20} height={20} />
+        </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" side="bottom" className="min-w-56">
         {APP_LINKS.map(({ id, label, Icon, href }) => (
@@ -238,7 +244,7 @@ const GeminiModelPicker: FC = () => {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="h-9 shrink-0 gap-0.5 rounded-full pr-1.5 pl-3 text-sm whitespace-nowrap text-[#444746] transition-colors hover:bg-[#444746]/8 hover:text-[#1f1f1f] dark:text-[#c4c7c5] dark:hover:bg-[#c4c7c5]/10 dark:hover:text-[#e3e3e3]">
+      <DropdownMenuTrigger className="h-9 shrink-0 gap-0.5 rounded-full pr-1.5 pl-3 text-sm whitespace-nowrap text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
         <span>{current?.name}</span>
         <ChevronDownIcon width={16} height={16} className="opacity-70" />
       </DropdownMenuTrigger>
@@ -249,7 +255,7 @@ const GeminiModelPicker: FC = () => {
             onClick={() => setModel(m.id)}
             className="items-start gap-3"
           >
-            <span className="mt-0.5 flex size-4 items-center justify-center text-[#0b57d0] dark:text-[#a8c7fa]">
+            <span className="mt-0.5 flex size-4 items-center justify-center text-brand">
               {m.id === model ? <CheckIcon /> : null}
             </span>
             <span className="flex flex-col">
@@ -266,7 +272,7 @@ const GeminiModelPicker: FC = () => {
 };
 
 const sendBtnClass =
-  "flex size-9 shrink-0 items-center justify-center rounded-full bg-[#1f3b9b] text-white transition-colors hover:bg-[#274aad]";
+  "flex size-9 shrink-0 items-center justify-center rounded-full bg-brand text-brand-foreground transition-colors hover:bg-brand/90";
 
 const GeminiSendButton: FC = () => {
   return (
@@ -274,7 +280,7 @@ const GeminiSendButton: FC = () => {
       <AuiIf condition={(s) => !s.thread.isRunning && !s.composer.isEmpty}>
         <ComposerPrimitive.Send
           aria-label="Send message"
-          className={`${sendBtnClass} disabled:bg-[#e8eaed] disabled:text-[#1f1f1f]/40 dark:disabled:bg-[#2b2c2e] dark:disabled:text-white/30`}
+          className={`${sendBtnClass} disabled:bg-muted disabled:text-muted-foreground`}
         >
           <ArrowUpIcon width={20} height={20} />
         </ComposerPrimitive.Send>
@@ -346,20 +352,22 @@ const VoiceButton: FC = () => {
   };
 
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
+      size="icon"
       aria-label={listening ? "Stop dictation" : "Dictate"}
       aria-pressed={listening}
       onClick={toggle}
-      className={`${ghostBtnClass} size-9 ${listening ? "bg-[#444746]/10 text-[#1f1f1f] dark:bg-[#c4c7c5]/15 dark:text-white" : ""}`}
+      className={`size-9 shrink-0 rounded-full text-muted-foreground hover:text-foreground ${listening ? "bg-muted text-foreground" : ""}`}
     >
       <Mic width={20} height={20} />
-    </button>
+    </Button>
   );
 };
 
 const actionBtnClass =
-  "flex size-8 items-center justify-center rounded-full text-[#444746] transition-colors hover:bg-[#444746]/8 hover:text-[#1f1f1f] dark:text-[#c4c7c5] dark:hover:bg-[#c4c7c5]/10 dark:hover:text-[#e3e3e3]";
+  "flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground";
 
 const ChatMessage: FC = () => {
   return (
@@ -374,7 +382,7 @@ const ChatMessage: FC = () => {
               <PencilIcon width={16} height={16} />
             </ActionBarPrimitive.Edit>
           </ActionBarPrimitive.Root>
-          <div className="max-w-[75%] rounded-3xl bg-[#f2f0f0] px-5 py-3 wrap-break-word text-[#1f1f1f] dark:bg-[#333537] dark:text-[#e3e3e3]">
+          <div className="max-w-[75%] rounded-3xl bg-muted px-5 py-3 wrap-break-word text-foreground">
             <MessagePrimitive.Parts components={{ Text: MarkdownText }} />
           </div>
         </div>
@@ -382,11 +390,11 @@ const ChatMessage: FC = () => {
 
       <AuiIf condition={(s) => s.message.role === "assistant"}>
         <div className="flex flex-col">
-          <div className="wrap-break-word text-[#1f1f1f] dark:text-[#e3e3e3]">
+          <div className="wrap-break-word text-foreground">
             <MessagePrimitive.Parts components={{ Text: MarkdownText }} />
           </div>
           <MessagePrimitive.Error>
-            <ErrorPrimitive.Root className="mt-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200">
+            <ErrorPrimitive.Root className="mt-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
               <ErrorPrimitive.Message className="line-clamp-3" />
             </ErrorPrimitive.Root>
           </MessagePrimitive.Error>
@@ -424,17 +432,17 @@ const GeminiAttachment: FC = () => {
 
   return (
     <AttachmentPrimitive.Root className="group/thumbnail relative">
-      <div className="size-[72px] overflow-hidden rounded-xl border border-[#dadce0] bg-[#f1f3f4] dark:border-[#3c4043] dark:bg-[#282a2c]">
+      <div className="size-[72px] overflow-hidden rounded-xl border border-border bg-muted">
         {isImage && src ? (
           <img className="size-full object-cover" alt="Attachment" src={src} />
         ) : (
-          <div className="flex size-full items-center justify-center text-[#5e6063] dark:text-[#9aa0a6]">
+          <div className="flex size-full items-center justify-center text-muted-foreground">
             <AttachmentPrimitive.unstable_Thumb className="text-xs" />
           </div>
         )}
       </div>
       <AttachmentPrimitive.Remove
-        className="absolute -top-1.5 -right-1.5 flex size-6 items-center justify-center rounded-full border border-[#dadce0] bg-white text-[#5e6063] opacity-0 transition-all group-focus-within/thumbnail:opacity-100 group-hover/thumbnail:opacity-100 hover:bg-[#f1f3f4] hover:text-[#1f1f1f] dark:border-[#3c4043] dark:bg-[#1e1f20] dark:text-[#9aa0a6] dark:hover:bg-[#2b2c2f] dark:hover:text-[#e3e3e3]"
+        className="absolute -top-1.5 -right-1.5 flex size-6 items-center justify-center rounded-full border border-border bg-card text-muted-foreground opacity-0 transition-all group-focus-within/thumbnail:opacity-100 group-hover/thumbnail:opacity-100 hover:bg-muted hover:text-foreground"
         aria-label="Remove attachment"
       >
         <XIcon width={14} height={14} />

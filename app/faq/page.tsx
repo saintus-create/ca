@@ -39,6 +39,7 @@ export default function FaqPage() {
   return (
     <div className="min-h-screen bg-background font-sans text-foreground">
       <SiteHeader />
+      <main>
       <main className="px-6 py-16 sm:py-20 lg:px-8">
         <div className="mx-auto max-w-3xl">
           <h1 className="text-3xl font-medium tracking-tight text-neutral-900 dark:text-neutral-50 sm:text-4xl">
@@ -57,6 +58,7 @@ export default function FaqPage() {
             ))}
           </div>
         </div>
+      </main>
       </main>
       <SiteFooter />
     </div>

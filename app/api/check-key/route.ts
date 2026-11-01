@@ -21,7 +21,7 @@ function providerFrom(value: string | null): LlmProvider | undefined {
 }
 
 export async function POST(req: NextRequest) {
-  let body: { apiKey?: string; provider?: string; accountId?: string } = {}
+  let body: { apiKey?: string; provider?: string; accountId?: string; model?: string } = {}
   try {
     body = (await req.json()) as typeof body
   } catch {
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     process.env.CLOUDFLARE_ACCOUNT_ID ||
     ''
   ).trim()
-  const { model } = providerDefaults(provider)
+  const model = (req.headers.get('X-LLM-Model') || body.model || '').trim() || providerDefaults(provider).model
 
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)

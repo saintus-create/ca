@@ -16,7 +16,9 @@ export default function CorpusPage() {
   return (
     <div className="min-h-screen bg-background font-sans text-foreground">
       <SiteHeader />
+      <main>
       <CorpusBrowser />
+      </main>
       <SiteFooter />
     </div>
   )

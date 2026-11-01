@@ -139,13 +139,15 @@ export function isProviderConfigured(provider: LlmProvider, apiKeyOverride?: str
 export interface ChatOptions {
   apiKey?: string;
   provider?: LlmProvider;
+  /** Overrides the provider's default model for this request. */
+  model?: string;
   /** Cloudflare account id, needed only by the Cloudflare provider. */
   accountId?: string;
 }
 
 export async function createChat(request: ChatRequest, options?: ChatOptions): Promise<ChatResult> {
   const provider = options?.provider ?? resolveProvider();
-  const { model } = providerDefaults(provider);
+  const model = options?.model?.trim() || providerDefaults(provider).model;
   const blocks =
     provider === 'cloudflare'
       ? await cloudflareChat(model, request, options?.apiKey, options?.accountId)
