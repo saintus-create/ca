@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { DATASET_PATTERN, LIMITS, optionalString, readJsonObject, requiredString } from '@/lib/validate'
 import { performResearchWithStreaming } from '@/lib/open-researcher-agent'
 import {
   isProviderConfigured,
@@ -10,12 +11,20 @@ import {
 
 export async function POST(req: NextRequest) {
   try {
-    const { query, dataset } = await req.json()
-    const scopeDataset = typeof dataset === 'string' && dataset.trim() ? dataset.trim() : undefined
+    const body = await readJsonObject(req)
+    if (!body.ok) return NextResponse.json({ error: body.error }, { status: 400 })
 
-    if (!query) {
-      return NextResponse.json({ error: 'Query is required' }, { status: 400 })
-    }
+    const queryResult = requiredString(body.value.query, 'query', { max: LIMITS.query })
+    if (!queryResult.ok) return NextResponse.json({ error: queryResult.error }, { status: 400 })
+    const query = queryResult.value
+
+    const datasetResult = optionalString(body.value.dataset, 'dataset', {
+      max: 6,
+      pattern: DATASET_PATTERN,
+      patternHint: 'a dataset code such as CIV or PEN',
+    })
+    if (!datasetResult.ok) return NextResponse.json({ error: datasetResult.error }, { status: 400 })
+    const scopeDataset = datasetResult.value
 
     // A key supplied by the browser for this request only. It takes precedence
     // over the deployment's environment variable and is never written into
@@ -57,7 +66,27 @@ export async function POST(req: NextRequest) {
 
     // Create a streaming response
     const encoder = new TextEncoder()
+    // A disconnected browser cancels the stream; that has to stop the research
+    // loop and any in-flight model call. Without this the run kept going to
+    // completion, spending tokens for a client that had gone, and only stopped
+    // when enqueue threw into the middle of the agent.
+    const abort = new AbortController()
+    let closed = false
+    const send = (controller: ReadableStreamDefaultController<Uint8Array>, payload: string) => {
+      if (closed) return
+      try {
+        controller.enqueue(encoder.encode(payload))
+      } catch {
+        closed = true
+        abort.abort()
+      }
+    }
+
     const stream = new ReadableStream({
+      cancel() {
+        closed = true
+        abort.abort()
+      },
       async start(controller) {
         try {
           // Perform research with streaming events
@@ -67,19 +96,22 @@ export async function POST(req: NextRequest) {
             
             // Send event as SSE
             const data = `data: ${JSON.stringify({ type: 'event', event: eventWithTimestamp })}\n\n`
-            controller.enqueue(encoder.encode(data))
-          }, scopeDataset, firecrawlApiKey, chatOptions)
+            send(controller, data)
+          }, scopeDataset, firecrawlApiKey, chatOptions, abort.signal)
 
           // Send final response
           if (finalResponse) {
-            const responseData = `data: ${JSON.stringify({ type: 'response', content: finalResponse })}\n\n`
-            controller.enqueue(encoder.encode(responseData))
+            send(controller, `data: ${JSON.stringify({ type: 'response', content: finalResponse })}\n\n`)
           }
 
           // Send done event
-          const doneData = `data: ${JSON.stringify({ type: 'done' })}\n\n`
-          controller.enqueue(encoder.encode(doneData))
-          controller.close()
+          send(controller, `data: ${JSON.stringify({ type: 'done' })}\n\n`)
+          closed = true
+          try {
+            controller.close()
+          } catch {
+            /* already closed by the cancel handler */
+          }
         } catch (error) {
           // Research error occurred
           const errorMessage = error instanceof Error ? error.message : 'Unknown error'
@@ -92,19 +124,29 @@ export async function POST(req: NextRequest) {
           if (errorMessage.includes('Authentication error')) {
             userFriendlyError = `The language model API key was rejected. Check ${providerDefaults(provider).apiKeyEnv}.`
           } else if (errorMessage.includes('Model error')) {
-            userFriendlyError = `The configured model is not available for this API key (${providerDefaults(provider).model}). Set SARVAM_MODEL (or VENICE_MODEL / ANTHROPIC_MODEL).`
+            const { model, apiKeyEnv } = providerDefaults(provider)
+            const modelEnv = apiKeyEnv.replace(/_API_(KEY|TOKEN)$/, '_MODEL')
+            userFriendlyError = `The configured model is not available for this key (${model}). Set ${modelEnv}, or pick another model in the app.`
           } else if (errorMessage.includes('FIRECRAWL_API_KEY')) {
             userFriendlyError = 'The Firecrawl API key is not configured. Add it in the app or as FIRECRAWL_API_KEY.'
           }
           
-          const errorData = `data: ${JSON.stringify({ 
-            type: 'error', 
-            error: userFriendlyError,
-            originalError: errorMessage,
-            details: process.env.NODE_ENV === 'development' ? errorDetails : undefined
-          })}\n\n`
-          controller.enqueue(encoder.encode(errorData))
-          controller.close()
+          // A cancelled run is not a failure to report to a client that left.
+          if (!abort.signal.aborted) {
+            const errorData = `data: ${JSON.stringify({
+              type: 'error',
+              error: userFriendlyError,
+              originalError: errorMessage,
+              details: process.env.NODE_ENV === 'development' ? errorDetails : undefined
+            })}\n\n`
+            send(controller, errorData)
+          }
+          closed = true
+          try {
+            controller.close()
+          } catch {
+            /* already closed */
+          }
         }
       }
     })

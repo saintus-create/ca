@@ -15,17 +15,13 @@ import {
   ArrowUpIcon,
   BookOpen,
   CheckIcon,
-  ChevronDownIcon,
   CopyIcon,
   EllipsisVertical,
-  ImageIcon,
   Lightbulb,
   KeyRound,
   Mic,
-  Paperclip,
   PencilIcon,
   PenLine,
-  PencilRuler,
   Sparkles,
   PlusIcon,
   RefreshCwIcon,
@@ -125,8 +121,6 @@ const Suggestions: FC = () => {
   );
 };
 
-const ghostBtnClass =
-  "flex shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground";
 
 const Composer: FC<{
   onOpenKeys?: () => void;
@@ -224,48 +218,6 @@ const GeminiPlusMenu: FC<{
           <KeyRound className="size-4" />
           API keys
         </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-};
-
-const GEMINI_MODELS = [
-  { id: "flash", name: "Flash", description: "Fast all-around help" },
-  {
-    id: "thinking",
-    name: "Thinking",
-    description: "Reasoning, math & code",
-  },
-];
-
-const GeminiModelPicker: FC = () => {
-  const [model, setModel] = useState(GEMINI_MODELS[0]!.id);
-  const current = GEMINI_MODELS.find((m) => m.id === model);
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger className="h-9 shrink-0 gap-0.5 rounded-full pr-1.5 pl-3 text-sm whitespace-nowrap text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
-        <span>{current?.name}</span>
-        <ChevronDownIcon width={16} height={16} className="opacity-70" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" side="bottom" className="min-w-64">
-        {GEMINI_MODELS.map((m) => (
-          <DropdownMenuItem
-            key={m.id}
-            onClick={() => setModel(m.id)}
-            className="items-start gap-3"
-          >
-            <span className="mt-0.5 flex size-4 items-center justify-center text-brand">
-              {m.id === model ? <CheckIcon /> : null}
-            </span>
-            <span className="flex flex-col">
-              <span className="text-foreground text-sm">{m.name}</span>
-              <span className="text-muted-foreground text-xs">
-                {m.description}
-              </span>
-            </span>
-          </DropdownMenuItem>
-        ))}
       </DropdownMenuContent>
     </DropdownMenu>
   );

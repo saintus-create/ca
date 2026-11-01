@@ -76,6 +76,12 @@ const CLOUDFLARE_DEFAULT_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 const DEFAULT_MAX_TOKENS = 8192;
 const DEFAULT_TIMEOUT_MS = 180_000;
 
+/** The request timeout and the caller's cancellation, as one signal. */
+function requestSignal(timeoutMs: number, caller?: AbortSignal): AbortSignal {
+  const timeout = AbortSignal.timeout(timeoutMs);
+  return caller ? AbortSignal.any([caller, timeout]) : timeout;
+}
+
 function envValue(name: string): string | undefined {
   const value = process.env[name]?.trim();
   return value ? value : undefined;
@@ -139,6 +145,8 @@ export function isProviderConfigured(provider: LlmProvider, apiKeyOverride?: str
 export interface ChatOptions {
   apiKey?: string;
   provider?: LlmProvider;
+  /** Cancels an in-flight provider request, so a closed browser stops the work. */
+  signal?: AbortSignal;
   /** Overrides the provider's default model for this request. */
   model?: string;
   /** Cloudflare account id, needed only by the Cloudflare provider. */
@@ -150,12 +158,12 @@ export async function createChat(request: ChatRequest, options?: ChatOptions): P
   const model = options?.model?.trim() || providerDefaults(provider).model;
   const blocks =
     provider === 'cloudflare'
-      ? await cloudflareChat(model, request, options?.apiKey, options?.accountId)
+      ? await cloudflareChat(model, request, options?.apiKey, options?.accountId, options)
       : provider === 'venice'
-        ? await veniceChat(model, request, options?.apiKey)
+        ? await veniceChat(model, request, options?.apiKey, options)
         : provider === 'anthropic'
           ? await anthropicChat(model, request, options?.apiKey)
-          : await sarvamChat(model, request, options?.apiKey);
+          : await sarvamChat(model, request, options?.apiKey, options);
 
   return {
     blocks,
@@ -249,7 +257,12 @@ function safeParseArguments(raw: string | undefined): Record<string, unknown> {
   }
 }
 
-async function sarvamChat(model: string, request: ChatRequest, apiKeyOverride?: string): Promise<LlmBlock[]> {
+async function sarvamChat(
+  model: string,
+  request: ChatRequest,
+  apiKeyOverride?: string,
+  options?: ChatOptions,
+): Promise<LlmBlock[]> {
   const apiKey = apiKeyOverride?.trim() || envValue('SARVAM_API_KEY');
   if (!apiKey) {
     throw new Error('Authentication error: SARVAM_API_KEY is not set.');
@@ -293,7 +306,7 @@ async function sarvamChat(model: string, request: ChatRequest, apiKeyOverride?: 
         authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(timeoutMs),
+      signal: requestSignal(timeoutMs, options?.signal),
     });
   } catch (error) {
     const reason = error instanceof Error ? error.message : 'Unknown error';
@@ -387,6 +400,7 @@ async function cloudflareChat(
   request: ChatRequest,
   apiKeyOverride?: string,
   accountIdOverride?: string,
+  options?: ChatOptions,
 ): Promise<LlmBlock[]> {
   const apiKey = apiKeyOverride?.trim() || envValue('CLOUDFLARE_API_TOKEN');
   if (!apiKey) {
@@ -431,7 +445,7 @@ async function cloudflareChat(
         authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(timeoutMs),
+      signal: requestSignal(timeoutMs, options?.signal),
     });
   } catch (error) {
     const reason = error instanceof Error ? error.message : 'Unknown error';
@@ -515,7 +529,12 @@ async function cloudflareChat(
 // Venice (OpenAI-compatible chat completions; uncensored models)
 // ---------------------------------------------------------------------------
 
-async function veniceChat(model: string, request: ChatRequest, apiKeyOverride?: string): Promise<LlmBlock[]> {
+async function veniceChat(
+  model: string,
+  request: ChatRequest,
+  apiKeyOverride?: string,
+  options?: ChatOptions,
+): Promise<LlmBlock[]> {
   const apiKey = apiKeyOverride?.trim() || envValue('VENICE_API_KEY');
   if (!apiKey) {
     throw new Error('Authentication error: VENICE_API_KEY is not set.');
@@ -555,7 +574,7 @@ async function veniceChat(model: string, request: ChatRequest, apiKeyOverride?: 
         authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(timeoutMs),
+      signal: requestSignal(timeoutMs, options?.signal),
     });
   } catch (error) {
     const reason = error instanceof Error ? error.message : 'Unknown error';
@@ -637,7 +656,19 @@ async function veniceChat(model: string, request: ChatRequest, apiKeyOverride?: 
 
 // One client per key, so a request that carries its own key does not reuse
 // (or overwrite) the one built from the environment.
+// Bounded: a key that is used once should not stay in memory forever, and an
+// unbounded map keyed by credentials is a slow leak on a long-lived server.
 const anthropicClients = new Map<string, Anthropic>();
+const CLIENT_CACHE_LIMIT = 20;
+
+function rememberClient<T>(cache: Map<string, T>, key: string, value: T): T {
+  cache.set(key, value);
+  if (cache.size > CLIENT_CACHE_LIMIT) {
+    const oldest = cache.keys().next().value;
+    if (oldest !== undefined) cache.delete(oldest);
+  }
+  return value;
+}
 
 function getAnthropicClient(apiKeyOverride?: string): Anthropic {
   const apiKey = apiKeyOverride?.trim() || envValue('ANTHROPIC_API_KEY');
@@ -648,9 +679,11 @@ function getAnthropicClient(apiKeyOverride?: string): Anthropic {
   if (cached) return cached;
   // Long generations need headroom, and a streaming request keeps bytes
   // flowing so idle-connection timeouts don't kill it (see anthropicChat).
-  const client = new Anthropic({ apiKey, timeout: 600_000, maxRetries: 1 });
-  anthropicClients.set(apiKey, client);
-  return client;
+  return rememberClient(
+    anthropicClients,
+    apiKey,
+    new Anthropic({ apiKey, timeout: 600_000, maxRetries: 1 }),
+  );
 }
 
 type AnthropicCreateParams = Parameters<Anthropic['messages']['create']>[0];

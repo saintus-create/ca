@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { LIMITS, readJsonObject, requiredString } from '@/lib/validate'
 import { createChat, isProviderConfigured, providerDefaults, resolveProvider } from '@/lib/llm'
 
 export async function POST(req: NextRequest) {
   try {
-    const { query } = await req.json()
+    const body = await readJsonObject(req)
+    if (!body.ok) return NextResponse.json({ error: body.error }, { status: 400 })
 
-    if (!query) {
-      return NextResponse.json({ error: 'Query is required' }, { status: 400 })
-    }
+    const queryResult = requiredString(body.value.query, 'query', { max: LIMITS.followUpQuery })
+    if (!queryResult.ok) return NextResponse.json({ error: queryResult.error }, { status: 400 })
+    const query = queryResult.value
 
     // The research provider (Sarvam by default, Anthropic as a fallback)
     // answers follow-up generation too, so one key covers both routes. A key

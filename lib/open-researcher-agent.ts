@@ -20,6 +20,11 @@ function getFirecrawlClient(apiKeyOverride?: string): FirecrawlApp {
   if (cached) return cached;
   const client = new FirecrawlApp({ apiKey, apiUrl });
   firecrawlClients.set(cacheKey, client);
+  // Keep the cache small: one entry per key in use, not one per key ever seen.
+  if (firecrawlClients.size > 20) {
+    const oldest = firecrawlClients.keys().next().value;
+    if (oldest !== undefined) firecrawlClients.delete(oldest);
+  }
   return client;
 }
 
@@ -741,7 +746,8 @@ async function runResearch(
   onEvent: (event: ResearchEvent) => void,
   scopeDataset?: string,
   firecrawlApiKey?: string,
-  chatOptions?: ChatOptions
+  chatOptions?: ChatOptions,
+  signal?: AbortSignal
 ): Promise<string> {
   onEvent({ type: 'start', query });
 
@@ -751,6 +757,10 @@ async function runResearch(
   let toolCallCount = 0;
 
   for (let step = 0; step < MAX_RESEARCH_STEPS; step++) {
+    // A closed browser or a cancelled run must stop the loop here, not midway
+    // through a write to a stream that no longer has a reader.
+    if (signal?.aborted) break;
+
     const toolset = availableTools(firecrawlApiKey);
     const system = scopeDataset
       ? `${systemPromptFor(toolset)}\n\nScope: the user has restricted this conversation to the ${scopeDataset} dataset. Every California law search is limited to it. If the question falls outside that dataset, say so plainly instead of guessing.`
@@ -760,7 +770,7 @@ async function runResearch(
       messages,
       tools: toolset,
       maxTokens: RESEARCH_MAX_TOKENS,
-    }, chatOptions);
+    }, { ...chatOptions, signal });
 
     // Keep the assistant turn (including any thinking blocks and their
     // signatures) so tool results can be sent back in the same conversation.
@@ -873,9 +883,10 @@ export async function performResearchWithStreaming(
   onEvent: (event: ResearchEvent) => void,
   scopeDataset?: string,
   firecrawlApiKey?: string,
-  chatOptions?: ChatOptions
+  chatOptions?: ChatOptions,
+  signal?: AbortSignal
 ): Promise<string> {
-  return runResearch(query, onEvent, scopeDataset, firecrawlApiKey, chatOptions);
+  return runResearch(query, onEvent, scopeDataset, firecrawlApiKey, chatOptions, signal);
 }
 
 export async function performResearch(
