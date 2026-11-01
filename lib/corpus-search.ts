@@ -170,19 +170,47 @@ function scoreRecord(rec: CorpusRecord, terms: string[]): number {
   const citation = rec.citation.toLowerCase();
   const title = rec.title.toLowerCase();
   const text = rec.text.toLowerCase();
-  let score = 0;
+
+  // Coverage beats repetition. Summing raw term frequency lets one common word
+  // ("security", which is everywhere in the Business & Professions Code)
+  // outrank a section that actually answers the question. Instead each term
+  // counts once per field, with a small bonus for repeated body hits.
+  let citationHits = 0;
+  let titleHits = 0;
+  let textHits = 0;
+  let frequency = 0;
+
   for (const t of terms) {
-    if (citation.includes(t)) score += 10;
-    if (title.includes(t)) score += 5;
-    let i = text.indexOf(t);
-    let n = 0;
-    while (i >= 0 && n < 4) {
-      score += 1;
-      n++;
-      i = text.indexOf(t, i + t.length);
-    }
+    // A section number must match as a whole token: "459" must not score a hit
+    // inside "2459", which is a different section in a different code.
+    const numeric = /^[\d.]+[a-z]?$/i.test(t);
+    const escaped = numeric ? t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : null;
+    const test = (hay: string): number => {
+      if (!numeric) return hay.includes(t) ? 1 : 0;
+      const re = new RegExp(`(^|[^\\d.])${escaped}([^\\d.]|$)`);
+      return re.test(hay) ? 1 : 0;
+    };
+    const countIn = (hay: string): number => {
+      if (!numeric) {
+        let i = hay.indexOf(t);
+        let n = 0;
+        while (i >= 0 && n < 4) {
+          n++;
+          i = hay.indexOf(t, i + t.length);
+        }
+        return n;
+      }
+      const re = new RegExp(`(^|[^\\d.])${escaped}([^\\d.]|$)`, 'g');
+      return Math.min((hay.match(re) || []).length, 4);
+    };
+
+    if (test(citation)) citationHits++;
+    if (test(title)) titleHits++;
+    if (test(text)) textHits++;
+    frequency += countIn(text);
   }
-  return score;
+
+  return citationHits * 12 + titleHits * 6 + textHits * 3 + Math.min(frequency, 6) * 0.5;
 }
 
 // Resolve which dataset asset keys to search. A specific code ("PEN",
@@ -204,10 +232,52 @@ async function targetKeys(datasetCode?: string): Promise<string[]> {
   return [...keys].sort((a, b) => rank(a) - rank(b));
 }
 
+/** How people name a code, mapped to the corpus dataset code. */
+const CODE_NAME_TO_DATASET: Array<[RegExp, string]> = [
+  [/\bcode of civil procedure\b|\bccp\b/i, 'CCP'],
+  [/\bcivil code\b/i, 'CIV'],
+  [/\bpenal\b/i, 'PEN'],
+  [/\bfamily\b/i, 'FAM'],
+  [/\bevidence\b/i, 'EVID'],
+  [/\bvehicle\b/i, 'VEH'],
+  [/\bhealth (and|&) safety\b/i, 'HSC'],
+  [/\bgovernment\b/i, 'GOV'],
+  [/\bbusiness (and|&) professions\b/i, 'BPC'],
+  [/\bwelfare (and|&) institutions\b|\bwelfare\b/i, 'WIC'],
+  [/\blabor\b/i, 'LAB'],
+  [/\binsurance\b/i, 'INS'],
+  [/\beducation\b/i, 'EDC'],
+  [/\brevenue (and|&) taxation\b/i, 'RTC'],
+  [/\bpublic resources\b/i, 'PRC'],
+  [/\bwater\b/i, 'WAT'],
+  [/\belections\b/i, 'ELEC'],
+  [/\bprobate\b/i, 'PROB'],
+  [/\bcommercial\b/i, 'COM'],
+  [/\bpublic utilities\b/i, 'PUC'],
+  [/\bunemployment insurance\b/i, 'UIC'],
+  [/\bfish (and|&) game\b/i, 'FGC'],
+  [/\bfood (and|&) agricultural\b/i, 'FAC'],
+  [/\bstreets (and|&) highways\b/i, 'SHC'],
+  [/\bmilitary (and|&) veterans\b/i, 'MVC'],
+  [/\bcorporations\b/i, 'CORP'],
+  [/\bfinancial\b/i, 'FIN'],
+  [/\bharbors (and|&) navigation\b/i, 'HNC'],
+]
+
+/** "Penal Code 459" should search PEN, not every code that contains "459". */
+function inferDataset(query: string): string | undefined {
+  for (const [pattern, code] of CODE_NAME_TO_DATASET) {
+    if (pattern.test(query)) return code
+  }
+  return undefined
+}
+
 export async function searchCorpus(query: string, datasetCode?: string, limit = 5): Promise<CorpusHit[]> {
   const terms = queryTerms(query);
+  // If the question names a code, search that code rather than all of them.
+  const scope = datasetCode ?? inferDataset(query);
   if (terms.length === 0) return [];
-  const keys = await targetKeys(datasetCode);
+  const keys = await targetKeys(scope);
   const hits: CorpusHit[] = [];
 
   for (const key of keys) {
