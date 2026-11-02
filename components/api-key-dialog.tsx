@@ -30,7 +30,6 @@ import {
   readCloudflareAccount,
   readFirecrawlKey,
   readLlmKey,
-  readLlmModel,
   readLlmProvider,
   saveKeys,
   type BrowserProvider,
@@ -43,18 +42,12 @@ export interface ApiKeyDialogProps {
   onSaved?: () => void
 }
 
-const MODEL_HINTS: Record<BrowserProvider, string> = {
-  sarvam: 'sarvam-105b',
-  cloudflare: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
-  venice: 'venice-uncensored-1-2',
-  anthropic: 'claude-opus-4-8',
-}
-
 const PROVIDERS: Array<{ value: BrowserProvider; label: string }> = [
   { value: 'sarvam', label: 'Sarvam AI (default)' },
   { value: 'cloudflare', label: 'Cloudflare Workers AI' },
   { value: 'venice', label: 'Venice (uncensored)' },
   { value: 'anthropic', label: 'Anthropic (Claude)' },
+  { value: 'orchestrate', label: 'IBM watsonx Orchestrate' },
 ]
 
 export function ApiKeyDialog({ open, onOpenChange, onSaved }: ApiKeyDialogProps) {
@@ -62,7 +55,6 @@ export function ApiKeyDialog({ open, onOpenChange, onSaved }: ApiKeyDialogProps)
   const [provider, setProvider] = useState<BrowserProvider | ''>('')
   const [firecrawlKey, setFirecrawlKey] = useState('')
   const [accountId, setAccountId] = useState('')
-  const [model, setModel] = useState('')
   // Result of asking the provider whether the typed key works.
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null)
@@ -75,7 +67,6 @@ export function ApiKeyDialog({ open, onOpenChange, onSaved }: ApiKeyDialogProps)
     setProvider(readLlmProvider())
     setFirecrawlKey(readFirecrawlKey())
     setAccountId(readCloudflareAccount())
-    setModel(readLlmModel())
   }, [open])
 
   const testKey = async () => {
@@ -93,7 +84,6 @@ export function ApiKeyDialog({ open, onOpenChange, onSaved }: ApiKeyDialogProps)
           apiKey: llmKey.trim(),
           provider: provider || 'sarvam',
           accountId: accountId.trim(),
-          model: model.trim(),
         }),
       })
       const data = (await response.json()) as {
@@ -114,13 +104,13 @@ export function ApiKeyDialog({ open, onOpenChange, onSaved }: ApiKeyDialogProps)
   }
 
   const save = () => {
-    saveKeys({ llmKey, provider, firecrawlKey, cloudflareAccount: accountId, model })
+    saveKeys({ llmKey, provider, firecrawlKey, cloudflareAccount: accountId })
     onSaved?.()
     onOpenChange(false)
   }
 
   const clear = () => {
-    saveKeys({ llmKey: '', provider: '', firecrawlKey: '', cloudflareAccount: '', model: '' })
+    saveKeys({ llmKey: '', provider: '', firecrawlKey: '', cloudflareAccount: '' })
     setLlmKey('')
     setProvider('')
     setFirecrawlKey('')
@@ -164,27 +154,6 @@ export function ApiKeyDialog({ open, onOpenChange, onSaved }: ApiKeyDialogProps)
                 ))}
               </SelectContent>
             </Select>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="llm-model" className="text-[12.5px]">
-              Model <span className="text-muted-foreground">(optional)</span>
-            </Label>
-            <Input
-              id="llm-model"
-              autoComplete="off"
-              spellCheck={false}
-              placeholder={MODEL_HINTS[provider || 'sarvam']}
-              value={model}
-              onChange={(event) => {
-                setModel(event.target.value)
-                setTestResult(null)
-              }}
-            />
-            <p className="text-[11.5px] leading-[1.5] text-muted-foreground">
-              Leave blank for the provider default. A stronger model follows the answer style
-              rules far better than a small one.
-            </p>
           </div>
 
           {provider === 'cloudflare' && (

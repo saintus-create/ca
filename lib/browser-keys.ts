@@ -15,9 +15,8 @@ export const LLM_KEY_STORAGE = 'ca-llm-key'
 export const LLM_PROVIDER_STORAGE = 'ca-llm-provider'
 export const FIRECRAWL_KEY_STORAGE = 'ca-firecrawl-key'
 export const CLOUDFLARE_ACCOUNT_STORAGE = 'ca-cloudflare-account'
-export const LLM_MODEL_STORAGE = 'ca-llm-model'
 
-export type BrowserProvider = 'sarvam' | 'venice' | 'anthropic' | 'cloudflare'
+export type BrowserProvider = 'sarvam' | 'venice' | 'anthropic' | 'cloudflare' | 'orchestrate'
 
 function read(name: string): string {
   if (typeof window === 'undefined') return ''
@@ -54,10 +53,6 @@ export function readCloudflareAccount(): string {
   return read(CLOUDFLARE_ACCOUNT_STORAGE)
 }
 
-export function readLlmModel(): string {
-  return read(LLM_MODEL_STORAGE)
-}
-
 export function readFirecrawlKey(): string {
   return read(FIRECRAWL_KEY_STORAGE)
 }
@@ -73,8 +68,6 @@ export function keyHeaders(): Record<string, string> {
   if (firecrawlKey) headers['X-Firecrawl-API-Key'] = firecrawlKey
   const account = readCloudflareAccount()
   if (account) headers['X-Cloudflare-Account'] = account
-  const model = readLlmModel()
-  if (model) headers['X-LLM-Model'] = model
   return headers
 }
 
@@ -83,7 +76,6 @@ export function saveKeys(input: {
   provider: BrowserProvider | ''
   firecrawlKey: string
   cloudflareAccount?: string
-  model?: string
 }): void {
   write(LLM_KEY_STORAGE, input.llmKey)
   write(LLM_PROVIDER_STORAGE, input.provider)
@@ -91,5 +83,4 @@ export function saveKeys(input: {
   if (input.cloudflareAccount !== undefined) {
     write(CLOUDFLARE_ACCOUNT_STORAGE, input.cloudflareAccount)
   }
-  if (input.model !== undefined) write(LLM_MODEL_STORAGE, input.model)
 }

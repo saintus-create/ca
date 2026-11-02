@@ -19,7 +19,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 
-export type LlmProvider = 'sarvam' | 'venice' | 'anthropic' | 'cloudflare';
+export type LlmProvider = 'sarvam' | 'venice' | 'anthropic' | 'cloudflare' | 'orchestrate';
 
 export interface LlmTool {
   name: string;
@@ -73,14 +73,15 @@ const ANTHROPIC_DEFAULT_MODEL = 'claude-opus-4-8';
 // Workers AI's OpenAI-compatible endpoint. The model must support tool calling,
 // because the research agent reaches the corpus through a tool.
 const CLOUDFLARE_DEFAULT_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
+// IBM watsonx Orchestrate. The agent runs on IBM's side, so this provider is a
+// plain chat completion: the agent owns its own tools and does not do
+// OpenAI-style tool calling. The agent id is an embed identifier, not a secret
+// (IBM documents embed identifiers as public); only the bearer token is.
+const ORCHESTRATE_DEFAULT_BASE_URL = 'https://eu-west-2.dl.watson-orchestrate.ibm.com';
+const ORCHESTRATE_DEFAULT_AGENT_ID = '91a09905-7ee4-41ed-acf2-324b6e0a7125';
+const ORCHESTRATE_MODEL_LABEL = 'watsonx-orchestrate';
 const DEFAULT_MAX_TOKENS = 8192;
 const DEFAULT_TIMEOUT_MS = 180_000;
-
-/** The request timeout and the caller's cancellation, as one signal. */
-function requestSignal(timeoutMs: number, caller?: AbortSignal): AbortSignal {
-  const timeout = AbortSignal.timeout(timeoutMs);
-  return caller ? AbortSignal.any([caller, timeout]) : timeout;
-}
 
 function envValue(name: string): string | undefined {
   const value = process.env[name]?.trim();
@@ -93,12 +94,14 @@ export function resolveProvider(): LlmProvider {
     explicit === 'sarvam' ||
     explicit === 'venice' ||
     explicit === 'anthropic' ||
-    explicit === 'cloudflare'
+    explicit === 'cloudflare' ||
+    explicit === 'orchestrate'
   ) {
     return explicit;
   }
   if (envValue('SARVAM_API_KEY')) return 'sarvam';
   if (envValue('CLOUDFLARE_API_TOKEN')) return 'cloudflare';
+  if (envValue('ORCHESTRATE_API_KEY')) return 'orchestrate';
   if (envValue('ANTHROPIC_API_KEY')) return 'anthropic';
   if (envValue('VENICE_API_KEY')) return 'venice';
   return 'sarvam';
@@ -129,6 +132,11 @@ export function providerDefaults(provider: LlmProvider): { model: string; apiKey
       return { model: envValue('VENICE_MODEL') ?? VENICE_DEFAULT_MODEL, apiKeyEnv: 'VENICE_API_KEY' };
     case 'anthropic':
       return { model: envValue('ANTHROPIC_MODEL') ?? ANTHROPIC_DEFAULT_MODEL, apiKeyEnv: 'ANTHROPIC_API_KEY' };
+    case 'orchestrate':
+      return {
+        model: envValue('ORCHESTRATE_MODEL') ?? ORCHESTRATE_MODEL_LABEL,
+        apiKeyEnv: 'ORCHESTRATE_API_KEY',
+      };
     default:
       return { model: envValue('SARVAM_MODEL') ?? SARVAM_DEFAULT_MODEL, apiKeyEnv: 'SARVAM_API_KEY' };
   }
@@ -145,25 +153,23 @@ export function isProviderConfigured(provider: LlmProvider, apiKeyOverride?: str
 export interface ChatOptions {
   apiKey?: string;
   provider?: LlmProvider;
-  /** Cancels an in-flight provider request, so a closed browser stops the work. */
-  signal?: AbortSignal;
-  /** Overrides the provider's default model for this request. */
-  model?: string;
   /** Cloudflare account id, needed only by the Cloudflare provider. */
   accountId?: string;
 }
 
 export async function createChat(request: ChatRequest, options?: ChatOptions): Promise<ChatResult> {
   const provider = options?.provider ?? resolveProvider();
-  const model = options?.model?.trim() || providerDefaults(provider).model;
+  const { model } = providerDefaults(provider);
   const blocks =
-    provider === 'cloudflare'
-      ? await cloudflareChat(model, request, options?.apiKey, options?.accountId, options)
+    provider === 'orchestrate'
+      ? await orchestrateChat(model, request, options?.apiKey)
+      : provider === 'cloudflare'
+      ? await cloudflareChat(model, request, options?.apiKey, options?.accountId)
       : provider === 'venice'
-        ? await veniceChat(model, request, options?.apiKey, options)
+        ? await veniceChat(model, request, options?.apiKey)
         : provider === 'anthropic'
           ? await anthropicChat(model, request, options?.apiKey)
-          : await sarvamChat(model, request, options?.apiKey, options);
+          : await sarvamChat(model, request, options?.apiKey);
 
   return {
     blocks,
@@ -257,12 +263,7 @@ function safeParseArguments(raw: string | undefined): Record<string, unknown> {
   }
 }
 
-async function sarvamChat(
-  model: string,
-  request: ChatRequest,
-  apiKeyOverride?: string,
-  options?: ChatOptions,
-): Promise<LlmBlock[]> {
+async function sarvamChat(model: string, request: ChatRequest, apiKeyOverride?: string): Promise<LlmBlock[]> {
   const apiKey = apiKeyOverride?.trim() || envValue('SARVAM_API_KEY');
   if (!apiKey) {
     throw new Error('Authentication error: SARVAM_API_KEY is not set.');
@@ -306,7 +307,7 @@ async function sarvamChat(
         authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify(body),
-      signal: requestSignal(timeoutMs, options?.signal),
+      signal: AbortSignal.timeout(timeoutMs),
     });
   } catch (error) {
     const reason = error instanceof Error ? error.message : 'Unknown error';
@@ -400,7 +401,6 @@ async function cloudflareChat(
   request: ChatRequest,
   apiKeyOverride?: string,
   accountIdOverride?: string,
-  options?: ChatOptions,
 ): Promise<LlmBlock[]> {
   const apiKey = apiKeyOverride?.trim() || envValue('CLOUDFLARE_API_TOKEN');
   if (!apiKey) {
@@ -445,7 +445,7 @@ async function cloudflareChat(
         authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify(body),
-      signal: requestSignal(timeoutMs, options?.signal),
+      signal: AbortSignal.timeout(timeoutMs),
     });
   } catch (error) {
     const reason = error instanceof Error ? error.message : 'Unknown error';
@@ -529,12 +529,7 @@ async function cloudflareChat(
 // Venice (OpenAI-compatible chat completions; uncensored models)
 // ---------------------------------------------------------------------------
 
-async function veniceChat(
-  model: string,
-  request: ChatRequest,
-  apiKeyOverride?: string,
-  options?: ChatOptions,
-): Promise<LlmBlock[]> {
+async function veniceChat(model: string, request: ChatRequest, apiKeyOverride?: string): Promise<LlmBlock[]> {
   const apiKey = apiKeyOverride?.trim() || envValue('VENICE_API_KEY');
   if (!apiKey) {
     throw new Error('Authentication error: VENICE_API_KEY is not set.');
@@ -574,7 +569,7 @@ async function veniceChat(
         authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify(body),
-      signal: requestSignal(timeoutMs, options?.signal),
+      signal: AbortSignal.timeout(timeoutMs),
     });
   } catch (error) {
     const reason = error instanceof Error ? error.message : 'Unknown error';
@@ -656,19 +651,7 @@ async function veniceChat(
 
 // One client per key, so a request that carries its own key does not reuse
 // (or overwrite) the one built from the environment.
-// Bounded: a key that is used once should not stay in memory forever, and an
-// unbounded map keyed by credentials is a slow leak on a long-lived server.
 const anthropicClients = new Map<string, Anthropic>();
-const CLIENT_CACHE_LIMIT = 20;
-
-function rememberClient<T>(cache: Map<string, T>, key: string, value: T): T {
-  cache.set(key, value);
-  if (cache.size > CLIENT_CACHE_LIMIT) {
-    const oldest = cache.keys().next().value;
-    if (oldest !== undefined) cache.delete(oldest);
-  }
-  return value;
-}
 
 function getAnthropicClient(apiKeyOverride?: string): Anthropic {
   const apiKey = apiKeyOverride?.trim() || envValue('ANTHROPIC_API_KEY');
@@ -679,11 +662,9 @@ function getAnthropicClient(apiKeyOverride?: string): Anthropic {
   if (cached) return cached;
   // Long generations need headroom, and a streaming request keeps bytes
   // flowing so idle-connection timeouts don't kill it (see anthropicChat).
-  return rememberClient(
-    anthropicClients,
-    apiKey,
-    new Anthropic({ apiKey, timeout: 600_000, maxRetries: 1 }),
-  );
+  const client = new Anthropic({ apiKey, timeout: 600_000, maxRetries: 1 });
+  anthropicClients.set(apiKey, client);
+  return client;
 }
 
 type AnthropicCreateParams = Parameters<Anthropic['messages']['create']>[0];
@@ -745,4 +726,84 @@ async function anthropicChat(model: string, request: ChatRequest, apiKeyOverride
         block.type === 'thinking' || block.type === 'text' || block.type === 'tool_use'
     )
     .map((block) => ({ ...block }) as unknown as LlmBlock);
+}
+
+// ---------------------------------------------------------------------------
+// IBM watsonx Orchestrate (agent chat completions)
+// ---------------------------------------------------------------------------
+
+/**
+ * Posts the conversation to a deployed Orchestrate agent.
+ *
+ * Contract: POST {base}/v1/orchestrate/{agent_id}/chat/completions with a
+ * bearer token. Orchestrate runs the agent itself, so there is no tool-calling
+ * loop here: the agent's answer is the answer.
+ */
+async function orchestrateChat(
+  model: string,
+  request: ChatRequest,
+  apiKeyOverride?: string
+): Promise<LlmBlock[]> {
+  const apiKey = apiKeyOverride?.trim() || envValue('ORCHESTRATE_API_KEY');
+  if (!apiKey) {
+    throw new Error('Authentication error: ORCHESTRATE_API_KEY is not set.');
+  }
+
+  const base = (envValue('ORCHESTRATE_API_URL') ?? ORCHESTRATE_DEFAULT_BASE_URL).replace(/\/+$/, '');
+  const agentId = envValue('ORCHESTRATE_AGENT_ID') ?? ORCHESTRATE_DEFAULT_AGENT_ID;
+  const url = `${base}/v1/orchestrate/${encodeURIComponent(agentId)}/chat/completions`;
+
+  const messages: Array<{ role: string; content: string }> = [];
+  if (request.system?.trim()) messages.push({ role: 'system', content: request.system.trim() });
+  for (const message of request.messages) {
+    const content = typeof message.content === 'string' ? message.content : '';
+    if (!content.trim()) continue;
+    // The system prompt is added above from request.system; LlmMessage only
+    // carries user and assistant turns.
+    messages.push({ role: message.role, content });
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({ messages, stream: false }),
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => '');
+    if (response.status === 401 || response.status === 403) {
+      throw new Error(`Authentication error: Orchestrate rejected the token (HTTP ${response.status}). ${detail.slice(0, 200)}`);
+    }
+    throw new Error(`Model error: Orchestrate returned HTTP ${response.status} for "${model}". ${detail.slice(0, 200)}`);
+  }
+
+  const data = (await response.json()) as {
+    choices?: Array<{ message?: { content?: unknown } }>;
+  };
+  const raw = data.choices?.[0]?.message?.content;
+  const text =
+    typeof raw === 'string'
+      ? raw
+      : Array.isArray(raw)
+        ? raw
+            .map((part) =>
+              part && typeof part === 'object' && typeof (part as { text?: unknown }).text === 'string'
+                ? (part as { text: string }).text
+                : ''
+            )
+            .join('')
+        : '';
+
+  return [{ type: 'text', text: text.trim() }];
 }
