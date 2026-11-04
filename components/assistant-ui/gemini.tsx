@@ -112,7 +112,7 @@ const Suggestions: FC = () => {
             aui.composer().setText(label);
             aui.composer().send();
           }}
-          className="flex items-center gap-4 rounded-2xl px-4 py-2.5 text-left text-[15px] text-foreground transition-colors hover:bg-muted"
+          className="suggestion-row flex items-center gap-4 rounded-2xl border border-border/60 bg-muted/40 px-4 py-2.5 text-left text-[15px] text-foreground"
         >
           <Icon className="size-[18px] shrink-0 text-muted-foreground" />
           <span>{label}</span>
@@ -142,10 +142,10 @@ const Composer: FC<{
       <div className="flex items-end gap-1">
         <GeminiPlusMenu onOpenKeys={onOpenKeys} datasets={datasets} scope={scope} onScopeChange={onScopeChange} />
         <ComposerPrimitive.Input
-          rows={1}
-          placeholder="Ask about California law"
-          className="max-h-40 flex-1 resize-none rounded-md bg-transparent px-2 py-1.5 text-[17px] leading-6 text-foreground placeholder:text-muted-foreground"
-        />
+            rows={1}
+            placeholder="Ask about California law"
+            className="composer-input max-h-40 flex-1 resize-none rounded-md bg-transparent px-2 py-1.5 text-[17px] leading-6 text-foreground placeholder:text-muted-foreground focus-visible:outline-none"
+          />
         <VoiceButton />
         <GeminiSendButton />
       </div>

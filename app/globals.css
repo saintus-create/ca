@@ -245,12 +245,80 @@
   .markdown-content ol { list-style: decimal; padding-left: 1.25rem; }
   .markdown-content li::marker { color: var(--color-muted-foreground); }
   .markdown-content blockquote {
-    border-left: 3px solid var(--color-border);
+    border-left: 3px solid color-mix(in oklab, var(--color-citation) 40%, transparent);
     padding-left: 0.875rem;
     color: var(--color-muted-foreground);
   }
   .markdown-content sup.citation,
   .markdown-content a.citation {
     color: var(--color-citation);
+  }
+  /* Citations inside prose use brand colour so they read as interactive. */
+  .markdown-content a {
+    text-decoration-color: color-mix(in oklab, var(--color-citation) 45%, transparent);
+    text-underline-offset: 3px;
+    transition: text-decoration-color var(--duration-fast) ease;
+  }
+  .markdown-content a:hover {
+    text-decoration-color: var(--color-citation);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Chat surface polish — one visual language for the research experience
+--------------------------------------------------------------------------- */
+
+/* Short, intentional transitions feel responsive. */
+.animate-fade-in {
+  animation-duration: 220ms;
+  animation-timing-function: ease-out;
+}
+.animate-slide-up {
+  animation-duration: 280ms;
+  animation-timing-function: cubic-bezier(0.2, 0.75, 0.25, 1);
+}
+
+/* Suggested-prompt chips in the empty state. Scoped tightly so other button
+   groups in the app are unaffected. */
+@layer components {
+  /* The composer input ring should follow the brand token, not the generic ring. */
+  .composer-input:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-brand) 18%, transparent),
+                0 0 0 1px var(--color-brand);
+  }
+
+  /* Suggestion row buttons in the empty-thread state. */
+  .suggestion-row {
+    border-radius: 0.8rem;
+    border-color: color-mix(in oklab, var(--color-border) 80%, transparent);
+    background: color-mix(in oklab, var(--color-muted) 38%, transparent);
+    transition:
+      border-color var(--duration-fast) var(--ease-standard),
+      background-color var(--duration-fast) var(--ease-standard),
+      transform var(--duration-fast) var(--ease-standard);
+  }
+  .suggestion-row:hover {
+    border-color: color-mix(in oklab, var(--color-brand) 35%, var(--color-border));
+    background: color-mix(in oklab, var(--color-brand) 5%, var(--color-background));
+    transform: translateY(-1px);
+  }
+
+  /* Tool-call step chips inside an assistant message. */
+  .tool-chip {
+    border-radius: 0.8rem;
+    border-color: color-mix(in oklab, var(--color-border) 75%, transparent);
+    background: color-mix(in oklab, var(--color-muted) 45%, transparent);
+    transition:
+      border-color var(--duration-fast) var(--ease-standard),
+      background-color var(--duration-fast) var(--ease-standard);
+  }
+}
+
+/* Two-pane research stacks vertically on phones. */
+@media (max-width: 1023px) {
+  .animate-slide-up [class~="h-[45vh]"] {
+    height: min(38dvh, 360px);
+    min-height: 220px;
   }
 }

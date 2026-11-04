@@ -223,6 +223,9 @@ export function AssistantChat() {
   // Whether this browser or the deployment has a language model key. Checked
   // after mount so the server and the first client render agree.
   const [hasKey, setHasKey] = useState<boolean | null>(null)
+  // Manual dismiss: the banner hides until the next page load if the visitor
+  // dismisses it without adding a key (e.g. they know it's intentional).
+  const [bannerDismissed, setBannerDismissed] = useState(false)
   const abortRefs = useRef(new Map<string, AbortController>())
   const threadsRef = useRef(threads)
 
@@ -536,21 +539,31 @@ export function AssistantChat() {
           <ThreadList {...sidebarProps} />
         </Sidebar>
         <SidebarInset className="flex min-h-0 min-w-0 flex-1 flex-col">
-          {hasKey === false && (
+          {hasKey === false && !bannerDismissed && (
             <div className="mx-auto mt-3 flex w-full max-w-[760px] items-center justify-between gap-3 rounded-xl border border-citation/30 bg-citation/[0.06] px-3 py-2 sm:px-4">
               <p className="text-[12.5px] leading-[1.5] text-foreground/80">
                 No API key yet. Add one to start asking questions.
               </p>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => setKeysOpen(true)}
-                className="shrink-0 gap-1.5 rounded-full"
-              >
-                <KeyRound className="size-3.5" />
-                Add key
-              </Button>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setKeysOpen(true)}
+                  className="gap-1.5 rounded-full"
+                >
+                  <KeyRound className="size-3.5" />
+                  Add key
+                </Button>
+                <button
+                  type="button"
+                  aria-label="Dismiss"
+                  onClick={() => setBannerDismissed(true)}
+                  className="grid size-7 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <X className="size-3.5" />
+                </button>
+              </div>
             </div>
           )}
           <div className="flex h-12 shrink-0 items-center justify-between px-2">
@@ -591,8 +604,16 @@ export function AssistantChat() {
       </div>
       <ApiKeyDialog
         open={keysOpen}
-        onOpenChange={setKeysOpen}
-        onSaved={() => checkKeys()}
+        onOpenChange={(open) => {
+          setKeysOpen(open)
+          // Re-check when the dialog closes (covers both Save and Cancel paths,
+          // so a key added elsewhere and then cancelled still refreshes state).
+          if (!open) checkKeys()
+        }}
+        onSaved={() => {
+          checkKeys()
+          setBannerDismissed(false) // re-show if key was cleared
+        }}
       />
     </SidebarProvider>
   )

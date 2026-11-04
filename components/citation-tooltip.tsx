@@ -90,18 +90,21 @@ export function CitationTooltip({ sources }: CitationTooltipProps) {
 
   return (
     <div
-      className="fixed z-50 pointer-events-none"
+      className="fixed z-50"
       style={{
         left: clampedX,
         top: tooltip.y - 8,
         transform: 'translate(-50%, -100%)',
+        pointerEvents: 'none',
       }}
-      onMouseEnter={() => {
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      }}
-      onMouseLeave={() => setTooltip(null)}
     >
-      <div className="pointer-events-auto max-w-[calc(100vw-2rem)] w-sm rounded-lg border border-border bg-popover p-3 text-popover-foreground shadow-xs">
+      <div
+        className="pointer-events-auto max-w-[calc(100vw-2rem)] w-sm rounded-lg border border-border bg-popover p-3 text-popover-foreground shadow-xs"
+        onMouseEnter={() => {
+          if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        }}
+        onMouseLeave={() => setTooltip(null)}
+      >
         <p className="ui-subtitle break-words">
           {tooltip.source.title}
         </p>
