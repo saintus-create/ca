@@ -44,7 +44,11 @@ export function readLlmKey(): string {
 
 export function readLlmProvider(): BrowserProvider | '' {
   const value = read(LLM_PROVIDER_STORAGE)
-  return value === 'sarvam' || value === 'venice' || value === 'anthropic' || value === 'cloudflare'
+  return value === 'sarvam' ||
+    value === 'venice' ||
+    value === 'anthropic' ||
+    value === 'cloudflare' ||
+    value === 'orchestrate'
     ? value
     : ''
 }

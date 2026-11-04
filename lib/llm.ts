@@ -155,21 +155,24 @@ export interface ChatOptions {
   provider?: LlmProvider;
   /** Cloudflare account id, needed only by the Cloudflare provider. */
   accountId?: string;
+  /** Optional AbortSignal to cancel the in-flight request. */
+  signal?: AbortSignal;
 }
 
 export async function createChat(request: ChatRequest, options?: ChatOptions): Promise<ChatResult> {
   const provider = options?.provider ?? resolveProvider();
   const { model } = providerDefaults(provider);
+  const signal = options?.signal;
   const blocks =
     provider === 'orchestrate'
-      ? await orchestrateChat(model, request, options?.apiKey)
+      ? await orchestrateChat(model, request, options?.apiKey, signal)
       : provider === 'cloudflare'
-      ? await cloudflareChat(model, request, options?.apiKey, options?.accountId)
+      ? await cloudflareChat(model, request, options?.apiKey, options?.accountId, signal)
       : provider === 'venice'
-        ? await veniceChat(model, request, options?.apiKey)
+        ? await veniceChat(model, request, options?.apiKey, signal)
         : provider === 'anthropic'
-          ? await anthropicChat(model, request, options?.apiKey)
-          : await sarvamChat(model, request, options?.apiKey);
+          ? await anthropicChat(model, request, options?.apiKey, signal)
+          : await sarvamChat(model, request, options?.apiKey, signal);
 
   return {
     blocks,
@@ -263,7 +266,7 @@ function safeParseArguments(raw: string | undefined): Record<string, unknown> {
   }
 }
 
-async function sarvamChat(model: string, request: ChatRequest, apiKeyOverride?: string): Promise<LlmBlock[]> {
+async function sarvamChat(model: string, request: ChatRequest, apiKeyOverride?: string, abortSignal?: AbortSignal): Promise<LlmBlock[]> {
   const apiKey = apiKeyOverride?.trim() || envValue('SARVAM_API_KEY');
   if (!apiKey) {
     throw new Error('Authentication error: SARVAM_API_KEY is not set.');
@@ -296,6 +299,8 @@ async function sarvamChat(model: string, request: ChatRequest, apiKeyOverride?: 
   }
 
   const timeoutMs = Number.parseInt(envValue('LLM_TIMEOUT_MS') ?? '', 10) || DEFAULT_TIMEOUT_MS;
+  const timeoutSignal = AbortSignal.timeout(timeoutMs);
+  const fetchSignal = abortSignal ? AbortSignal.any([timeoutSignal, abortSignal]) : timeoutSignal;
 
   let response: Response;
   try {
@@ -307,7 +312,7 @@ async function sarvamChat(model: string, request: ChatRequest, apiKeyOverride?: 
         authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(timeoutMs),
+      signal: fetchSignal,
     });
   } catch (error) {
     const reason = error instanceof Error ? error.message : 'Unknown error';
@@ -401,6 +406,7 @@ async function cloudflareChat(
   request: ChatRequest,
   apiKeyOverride?: string,
   accountIdOverride?: string,
+  abortSignal?: AbortSignal,
 ): Promise<LlmBlock[]> {
   const apiKey = apiKeyOverride?.trim() || envValue('CLOUDFLARE_API_TOKEN');
   if (!apiKey) {
@@ -415,6 +421,8 @@ async function cloudflareChat(
   }
 
   const timeoutMs = Number.parseInt(envValue('LLM_TIMEOUT_MS') ?? '', 10) || DEFAULT_TIMEOUT_MS;
+  const timeoutSignal = AbortSignal.timeout(timeoutMs);
+  const fetchSignal = abortSignal ? AbortSignal.any([timeoutSignal, abortSignal]) : timeoutSignal;
   // CLOUDFLARE_BASE_URL exists so the provider can be pointed at a local
   // stand-in in tests, and at a gateway proxy in a locked-down network.
   const base = envValue('CLOUDFLARE_BASE_URL') ?? 'https://api.cloudflare.com/client/v4';
@@ -445,7 +453,7 @@ async function cloudflareChat(
         authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(timeoutMs),
+      signal: fetchSignal,
     });
   } catch (error) {
     const reason = error instanceof Error ? error.message : 'Unknown error';
@@ -529,7 +537,7 @@ async function cloudflareChat(
 // Venice (OpenAI-compatible chat completions; uncensored models)
 // ---------------------------------------------------------------------------
 
-async function veniceChat(model: string, request: ChatRequest, apiKeyOverride?: string): Promise<LlmBlock[]> {
+async function veniceChat(model: string, request: ChatRequest, apiKeyOverride?: string, abortSignal?: AbortSignal): Promise<LlmBlock[]> {
   const apiKey = apiKeyOverride?.trim() || envValue('VENICE_API_KEY');
   if (!apiKey) {
     throw new Error('Authentication error: VENICE_API_KEY is not set.');
@@ -559,6 +567,8 @@ async function veniceChat(model: string, request: ChatRequest, apiKeyOverride?: 
   }
 
   const timeoutMs = Number.parseInt(envValue('LLM_TIMEOUT_MS') ?? '', 10) || DEFAULT_TIMEOUT_MS;
+  const timeoutSignal = AbortSignal.timeout(timeoutMs);
+  const fetchSignal = abortSignal ? AbortSignal.any([timeoutSignal, abortSignal]) : timeoutSignal;
 
   let response: Response;
   try {
@@ -569,7 +579,7 @@ async function veniceChat(model: string, request: ChatRequest, apiKeyOverride?: 
         authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(timeoutMs),
+      signal: fetchSignal,
     });
   } catch (error) {
     const reason = error instanceof Error ? error.message : 'Unknown error';
@@ -669,7 +679,7 @@ function getAnthropicClient(apiKeyOverride?: string): Anthropic {
 
 type AnthropicCreateParams = Parameters<Anthropic['messages']['create']>[0];
 
-async function anthropicChat(model: string, request: ChatRequest, apiKeyOverride?: string): Promise<LlmBlock[]> {
+async function anthropicChat(model: string, request: ChatRequest, apiKeyOverride?: string, _abortSignal?: AbortSignal): Promise<LlmBlock[]> {
   const messages = request.messages.map((message) => ({
     role: message.role,
     content:
@@ -742,7 +752,8 @@ async function anthropicChat(model: string, request: ChatRequest, apiKeyOverride
 async function orchestrateChat(
   model: string,
   request: ChatRequest,
-  apiKeyOverride?: string
+  apiKeyOverride?: string,
+  abortSignal?: AbortSignal,
 ): Promise<LlmBlock[]> {
   const apiKey = apiKeyOverride?.trim() || envValue('ORCHESTRATE_API_KEY');
   if (!apiKey) {
@@ -763,8 +774,8 @@ async function orchestrateChat(
     messages.push({ role: message.role, content });
   }
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+  const timeoutSignal = AbortSignal.timeout(DEFAULT_TIMEOUT_MS);
+  const fetchSignal = abortSignal ? AbortSignal.any([timeoutSignal, abortSignal]) : timeoutSignal;
   let response: Response;
   try {
     response = await fetch(url, {
@@ -774,10 +785,11 @@ async function orchestrateChat(
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({ messages, stream: false }),
-      signal: controller.signal,
+      signal: fetchSignal,
     });
-  } finally {
-    clearTimeout(timer);
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : 'Unknown error';
+    throw new Error(`Network error calling Orchestrate: ${reason}`);
   }
 
   if (!response.ok) {

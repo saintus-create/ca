@@ -16,7 +16,8 @@ function providerFrom(value: string | null): LlmProvider | undefined {
   return provider === 'sarvam' ||
     provider === 'venice' ||
     provider === 'anthropic' ||
-    provider === 'cloudflare'
+    provider === 'cloudflare' ||
+    provider === 'orchestrate'
     ? provider
     : undefined
 }
@@ -62,9 +63,6 @@ export async function POST(req: NextRequest) {
   if (!modelResult.ok) return NextResponse.json({ ok: false, error: modelResult.error }, { status: 400 })
   const model = modelResult.value ?? providerDefaults(provider).model
 
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
-
   try {
     let url: string
     let headers: Record<string, string>
@@ -107,7 +105,7 @@ export async function POST(req: NextRequest) {
       method: 'POST',
       headers,
       body: JSON.stringify(payload),
-      signal: controller.signal,
+      signal: AbortSignal.timeout(TIMEOUT_MS),
     })
 
     if (response.ok) {
@@ -137,13 +135,11 @@ export async function POST(req: NextRequest) {
     )
   } catch (error) {
     const message =
-      error instanceof Error && error.name === 'AbortError'
+      error instanceof Error && (error.name === 'AbortError' || error.name === 'TimeoutError')
         ? `No response within ${TIMEOUT_MS / 1000}s.`
         : error instanceof Error
           ? error.message
           : 'Unknown error'
     return NextResponse.json({ ok: false, provider, model, error: message }, { status: 200 })
-  } finally {
-    clearTimeout(timer)
   }
 }

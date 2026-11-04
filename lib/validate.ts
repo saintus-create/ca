@@ -95,4 +95,4 @@ export const LIMITS = {
   speechText: 12_000,
 } as const
 
-export const PROVIDERS = ['sarvam', 'cloudflare', 'venice', 'anthropic'] as const
+export const PROVIDERS = ['sarvam', 'cloudflare', 'venice', 'anthropic', 'orchestrate'] as const

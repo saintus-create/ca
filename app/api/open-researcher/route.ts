@@ -8,6 +8,7 @@ import {
   resolveProvider,
   type LlmProvider,
 } from '@/lib/llm'
+import { LIMITS, optionalString, readJsonObject, requiredString } from '@/lib/validate'
 
 const SSE_HEADERS = {
   'Content-Type': 'text/event-stream',
@@ -65,12 +66,21 @@ function corpusOnlyResponse(query: string, dataset: string | undefined, reason: 
 
 export async function POST(req: NextRequest) {
   try {
-    const { query, dataset } = await req.json()
-    const scopeDataset = typeof dataset === 'string' && dataset.trim() ? dataset.trim() : undefined
+    const bodyResult = await readJsonObject(req)
+    if (!bodyResult.ok) return NextResponse.json({ error: bodyResult.error }, { status: 400 })
+    const body = bodyResult.value
 
-    if (!query) {
-      return NextResponse.json({ error: 'Query is required' }, { status: 400 })
-    }
+    const queryResult = requiredString(body.query, 'query', { max: LIMITS.query })
+    if (!queryResult.ok) return NextResponse.json({ error: queryResult.error }, { status: 400 })
+    const query = queryResult.value
+
+    const datasetResult = optionalString(body.dataset, 'dataset', {
+      max: 6,
+      pattern: /^[A-Z]{2,6}$/,
+      patternHint: 'a 2–6 letter uppercase code',
+    })
+    if (!datasetResult.ok) return NextResponse.json({ error: datasetResult.error }, { status: 400 })
+    const scopeDataset = datasetResult.value
 
     // A key supplied by the browser for this request only. It takes precedence
     // over the deployment's environment variable and is never written into

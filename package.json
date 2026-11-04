@@ -83,5 +83,9 @@
     "tailwindcss": "^4",
     "typescript": "^5"
   },
-  "description": "California legal research over the full text of the California codes, Rules of Court and Judicial Council forms, with citations."
+  "description": "California legal research over the full text of the California codes, Rules of Court and Judicial Council forms, with citations.",
+  "allowScripts": {
+    "@tailwindcss/oxide@4.1.11": true,
+    "unrs-resolver@1.9.2": true
+  }
 }

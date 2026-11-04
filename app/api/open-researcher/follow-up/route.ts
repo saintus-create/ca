@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { LIMITS, readJsonObject, requiredString } from '@/lib/validate'
-import { createChat, isProviderConfigured, providerDefaults, resolveProvider } from '@/lib/llm'
+import {
+  createChat,
+  isProviderConfigured,
+  providerDefaults,
+  providerForKey,
+  resolveProvider,
+  type LlmProvider,
+} from '@/lib/llm'
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,7 +22,16 @@ export async function POST(req: NextRequest) {
     // answers follow-up generation too, so one key covers both routes. A key
     // supplied by the browser is used for this request only.
     const browserKey = req.headers.get('X-LLM-API-Key')?.trim() || undefined
-    const provider = resolveProvider()
+    const browserProviderHeader = req.headers.get('X-LLM-Provider')?.trim().toLowerCase()
+    const browserProvider: LlmProvider | undefined =
+      browserProviderHeader === 'sarvam' ||
+      browserProviderHeader === 'venice' ||
+      browserProviderHeader === 'anthropic' ||
+      browserProviderHeader === 'cloudflare' ||
+      browserProviderHeader === 'orchestrate'
+        ? browserProviderHeader
+        : undefined
+    const provider = browserProvider ?? providerForKey(browserKey) ?? resolveProvider()
     if (!isProviderConfigured(provider, browserKey)) {
       return NextResponse.json(
         { error: `${providerDefaults(provider).apiKeyEnv} is not configured` },
@@ -40,11 +56,11 @@ Only return the JSON array, nothing else.`
       system: 'You write concise follow-up research questions and reply with JSON only.',
       messages: [{ role: 'user', content: prompt }],
       maxTokens: 400,
-    }, browserKey
+    }, browserKey || browserProvider
       ? {
           apiKey: browserKey,
+          provider: browserProvider,
           accountId: req.headers.get('X-Cloudflare-Account')?.trim() || undefined,
-          model: req.headers.get('X-LLM-Model')?.trim() || undefined,
         }
       : undefined)
 
