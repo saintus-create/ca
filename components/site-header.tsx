@@ -49,6 +49,9 @@ export function SiteHeader() {
             <Link href="/compliance">Compliance requirements</Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
+            <Link href="/status">Provider status</Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
             <a href="https://leginfo.legislature.ca.gov/" target="_blank" rel="noreferrer">
               Official LegInfo
             </a>
