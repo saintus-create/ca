@@ -40,8 +40,14 @@
    was falling back to the OS UI font.
 --------------------------------------------------------------------------- */
 @theme inline {
-  --font-sans: "Neue Haas Grotesk Display Pro", "Public Sans Variable", "Public Sans", ui-sans-serif, system-ui,
+  /* Body copy: Public Sans, the California design system typeface, drawn for
+     text sizes. */
+  --font-body: "Public Sans Variable", "Public Sans", ui-sans-serif, system-ui,
     -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* Display: headings and the interface chrome only. */
+  --font-display: "Neue Haas Grotesk Display Pro", "Public Sans Variable", "Public Sans", ui-sans-serif, system-ui,
+    -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: var(--font-display);
   --font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
     "Liberation Mono", monospace;
@@ -181,8 +187,9 @@
   }
 
   .markdown-content {
+    font-family: var(--font-body);
     font-size: 1rem;
-    line-height: 1.7;
+    line-height: 1.65;
     letter-spacing: -0.003em;
     color: var(--color-foreground);
     overflow-wrap: break-word;

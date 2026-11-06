@@ -125,17 +125,33 @@ export async function POST(req: NextRequest) {
 
     // Create a streaming response
     const encoder = new TextEncoder()
+    // A disconnected browser cancels the stream; that has to stop the research
+    // loop and any in-flight model call, or the run keeps spending tokens for a
+    // client that has gone and only stops when enqueue throws mid-agent.
+    const abort = new AbortController()
+    let closed = false
     const stream = new ReadableStream({
+      cancel() {
+        closed = true
+        abort.abort()
+      },
       async start(controller) {
-        const send = (payload: unknown) =>
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`))
+        const send = (payload: unknown) => {
+          if (closed) return
+          try {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`))
+          } catch {
+            closed = true
+            abort.abort()
+          }
+        }
         try {
           // Perform research with streaming events
           const finalResponse = await performResearchWithStreaming(query, (event) => {
             // Add timestamp to events
             const eventWithTimestamp = { ...event, timestamp: Date.now() }
             send({ type: 'event', event: eventWithTimestamp })
-          }, scopeDataset, firecrawlApiKey, chatOptions)
+          }, scopeDataset, firecrawlApiKey, chatOptions, abort.signal)
 
           // Send final response
           if (finalResponse) {
@@ -144,7 +160,12 @@ export async function POST(req: NextRequest) {
 
           // Send done event
           send({ type: 'done' })
-          controller.close()
+          closed = true
+          try {
+            controller.close()
+          } catch {
+            /* the cancel handler already closed it */
+          }
         } catch (error) {
           // Research error occurred
           const errorMessage = error instanceof Error ? error.message : 'Unknown error'
@@ -164,7 +185,12 @@ export async function POST(req: NextRequest) {
               send({ type: 'event', event: { type: 'tool_result', tool: 'search_california_law', result: hits.map((h) => `[${h.citation}] ${h.snippet}`).join('\n\n'), timestamp: Date.now() } })
               send({ type: 'response', content: notice + intro + hits.map(renderHit).join('\n\n') })
               send({ type: 'done' })
-              controller.close()
+              closed = true
+              try {
+                controller.close()
+              } catch {
+                /* already closed */
+              }
               return
             }
           } catch {
@@ -181,13 +207,20 @@ export async function POST(req: NextRequest) {
             userFriendlyError = 'The Firecrawl API key is not configured. Add it in the app or as FIRECRAWL_API_KEY.'
           }
 
-          send({
-            type: 'error',
-            error: userFriendlyError,
-            originalError: errorMessage,
-            details: process.env.NODE_ENV === 'development' ? errorDetails : undefined,
-          })
-          controller.close()
+          if (!abort.signal.aborted) {
+            send({
+              type: 'error',
+              error: userFriendlyError,
+              originalError: errorMessage,
+              details: process.env.NODE_ENV === 'development' ? errorDetails : undefined,
+            })
+          }
+          closed = true
+          try {
+            controller.close()
+          } catch {
+            /* already closed */
+          }
         }
       }
     })

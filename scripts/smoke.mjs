@@ -687,21 +687,36 @@ async function main() {
     // ---------------------------------------------------------------------
     section('Failure modes')
 
+    // A rejected key no longer dead-ends the chat: the route falls back to a
+    // direct corpus search and says why in the answer. What must hold is that
+    // the run still terminates cleanly and the failure is named to the reader.
     await fetch(`http://127.0.0.1:${SARVAM_PORT}/__mode?mode=auth`)
     const authFail = await postJson('/api/open-researcher', { query: 'anything' })
     const authEvents = parseSse(await authFail.text())
+    const authText = authEvents
+      .filter((event) => event.type === 'response')
+      .map((event) => event.content)
+      .join('\n')
     const authError = authEvents.find((event) => event.type === 'error')
-    check('bad LLM key surfaces an error event', Boolean(authError))
     check(
-      'error names the key variable',
-      /SARVAM_API_KEY|key/i.test(authError?.error || ''),
-      String(authError?.error).slice(0, 120)
+      'a rejected key still terminates the run',
+      authEvents.some((event) => event.type === 'done'),
+      authEvents.map((event) => event.type).join(','),
+    )
+    check(
+      'the failure is named to the reader',
+      /SARVAM_API_KEY|key|unavailable/i.test(authText + (authError?.error || '')),
+      (authText + (authError?.error || '')).slice(0, 160),
     )
 
     await fetch(`http://127.0.0.1:${SARVAM_PORT}/__mode?mode=boom`)
     const boom = await postJson('/api/open-researcher', { query: 'anything' })
     const boomEvents = parseSse(await boom.text())
-    check('upstream 500 surfaces an error event', boomEvents.some((event) => event.type === 'error'))
+    check(
+      'an upstream 500 still terminates the run',
+      boomEvents.some((event) => event.type === 'done'),
+      boomEvents.map((event) => event.type).join(','),
+    )
 
     await fetch(`http://127.0.0.1:${SARVAM_PORT}/__mode?mode=empty`)
     const empty = await postJson('/api/open-researcher', { query: 'anything' })
